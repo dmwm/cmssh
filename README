@@ -1,0 +1,29 @@
+Interactive shell for CMS experiment, http://cms.cern.ch
+
+Installation:
+-------------
+Download cmssw_install.py script and use it for install purpose. See
+cmssh_install.py --help
+for more instructions.
+
+Usage:
+------
+The cmssw_install.py installs all required software in a self-contained area
+which you specify at install time. It contains all dependencies, configuration
+and scripts required to run cmssh. Upon install you will be provided with
+a list to cmssh. Just run it! Here is a snapshot of what you will get:
+
+Welcome to cms-sh 0.1.0!
+[python 2.6.7 (r267:88850, Aug 26 2011, 09:47:49) , ipython 0.11]
+Darwin Kernel Version 10.8.0: Tue Jun  7 16:32:41 PDT 2011; root:xnu-1504.15.3~1/RELEASE_X86_64
+Available commands:
+find     search CMS meta-data (query DBS/Phedex/SiteDB)
+ls       list LFNs, e.g. ls /store/user/file.root
+cp       copy LFNs, e.g. cp /store/user/file.root .
+releases list available CMSSW releases
+install  install CMSSW releases, e.g. install CMSSW_5_0_0
+
+License:
+--------
+cmssh is distributed under GNU GPL license, for more information please visit
+http://www.gnu.org/copyleft/gpl.html
