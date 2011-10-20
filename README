@@ -4,8 +4,8 @@ Dependencies:
 -------------
 The cmssh shell is written in IPython. So by definition it requires
 python (version 2.6 and above), IPython, as well as GRID middleware tools
-(Globus, SRM Client).
-They are installed via cmssh_install.py script for your convenience.
+(Globus, SRM Client). All tools (except python) are installed via 
+cmssh_install.py script for your convenience.
 
 Installation:
 -------------
@@ -33,6 +33,5 @@ install  install CMSSW releases, e.g. install CMSSW_5_0_0
 License:
 --------
 cmssh is distributed as a part of CMS experiment software. Please consult
-CMS experiment page for more information.
-The GRID middleware tools are covered by their own individual licenses,
-please see licenses directory.
+CMS experiment page for more information. The GRID middleware tools are
+covered by their own individual licenses, please see licenses directory.
