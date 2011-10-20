@@ -2,7 +2,7 @@
 #-*- coding: ISO-8859-1 -*-
 """
 File: cmssh_install.py
-Author: Valentin Kuznetsov <vkuznet@gmail.com>
+Author: Valentin Kuznetsov [ vkuznet AT gmail DOT com ]
 Description: Install cmssh on local machine
 """
 
@@ -61,8 +61,8 @@ def getdata(url, params, verbose=0):
 
 def get_file(url, fname, path, debug):
     """Fetch tarball from given url and store it as fname, untar it into given path"""
-    with open(fname, 'w') as pacman_file:
-         pacman_file.write(getdata(url, {}, debug))
+    with open(fname, 'w') as tar_file:
+         tar_file.write(getdata(url, {}, debug))
     tar = tarfile.open(fname, 'r:gz')
     tar.extractall(path)
     tar.close()
@@ -214,7 +214,7 @@ ipython --no-banner --ipython-dir=$ipdir --profile=cmssh
         cmssh.write(msg)
     os.chmod('bin/cmssh', 0755)
 
-    print "Contratulations! cmssh is available at %s/bin/cmssh" % path
+    print "Contratulations, cmssh is available at %s/bin/cmssh" % path
 
 if __name__ == '__main__':
     main()
