@@ -32,7 +32,7 @@ class MyOptionParser:
             type="int", default=0, dest="debug", 
             help="verbose output")
         self.parser.add_option("-d", "--dir", action="store",
-            type="string", default=os.path.join(os.getcwd(), 'cmssh'),
+            type="string", default=None,
             dest="install_dir", help="install directory")
         self.parser.add_option("-i", "--install", action="store_true",
             dest="install", help="install command")
@@ -86,6 +86,11 @@ def main():
 
     debug = opts.debug
     idir = opts.install_dir
+    if  not idir:
+        msg  = "Please specify the install area"
+        msg += " (it should have enough space to hold CMSSW releases)"
+        print msg
+        sys.exit(0)
     arch = opts.arch
     if  not opts.install:
         print "Usage: cmssh_install.py --help"
@@ -135,10 +140,10 @@ def main():
     
     # download and install cmssh
     print "Installing cmssh"
-    # TODO: put cmssh on github and write code here to fetch it from there
-    # meanwhile I just copy it from my local disk
     os.chdir(path)
-    cmd = 'cp -r /Users/vk/CMS/cmssh %s' % path
+    url = 'http://github.com/vkuznet/cmssh/tarball/master/'
+    get_file(url, 'cmssh.tar.gz', path, debug)
+    cmd = 'mv vkuznet-cmssh* %s/cmssh' % path
     exe_cmd(path, cmd, debug)
 
     # bootstrap cmssw
@@ -209,7 +214,7 @@ ipython --no-banner --ipython-dir=$ipdir --profile=cmssh
         cmssh.write(msg)
     os.chmod('bin/cmssh', 0755)
 
-    print "Contratulations, cmssh is available at %s/bin/cmssh" % path
+    print "Contratulations! cmssh is available at %s/bin/cmssh" % path
 
 if __name__ == '__main__':
     main()
