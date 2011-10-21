@@ -3,7 +3,7 @@
 """
 File: cmssh_install.py
 Author: Valentin Kuznetsov [ vkuznet AT gmail DOT com ]
-Description: Install cmssh on local machine
+Description: cmssh installation script
 """
 
 # system modules
@@ -96,14 +96,13 @@ def main():
         print "Usage: cmssh_install.py --help"
         sys.exit(0)
 
-    # download and install OSG pieces
+    # setup install area
     cwd = os.getcwd()
     path = os.path.join(os.getcwd(), 'soft')
     try:
         shutil.rmtree(path)
     except:
         pass
-    # standard python setup
     install_dir = '%s/install/lib/python2.6/site-packages' % path
     os.environ['PYTHONPATH'] = install_dir
     try:
@@ -123,7 +122,6 @@ def main():
     cmd += ' --with-globus-location=%s/globus' % path
     exe_cmd(os.path.join(path, 'srmclient2/setup'), cmd, debug)
 
-    # download and install ipython
     print "Installing IPython"
     os.chdir(path)
     url = 'http://archive.ipython.org/release/0.11/ipython-0.11.tar.gz'
@@ -131,14 +129,12 @@ def main():
     cmd = 'python setup.py install --prefix=%s/install' % path
     exe_cmd(os.path.join(path, 'ipython-0.11'), cmd, debug)
 
-    # download and install routes
     print "Installing Routes"
     os.chdir(path)
     url = 'http://pypi.python.org/packages/source/R/Routes/Routes-1.12.3.tar.gz'
     get_file(url, 'routes.tar.gz', path, debug)
     exe_cmd(os.path.join(path, 'Routes-1.12.3'), cmd, debug)
     
-    # download and install cmssh
     print "Installing cmssh"
     os.chdir(path)
     url = 'http://github.com/vkuznet/cmssh/tarball/master/'
@@ -146,7 +142,6 @@ def main():
     cmd = 'mv vkuznet-cmssh* %s/cmssh' % path
     exe_cmd(path, cmd, debug)
 
-    # bootstrap cmssw
     print "Bootstrap CMSSW"
     sdir = '%s/CMSSW' % path 
     os.makedirs(sdir)
@@ -165,7 +160,6 @@ def main():
     cmd += 'apt-get update'
     exe_cmd(path, cmd, debug)
     
-    # create appropriate setup.sh
     print "Create configuration"
     os.chdir(path)
     with open('setup.sh', 'w') as setup:
@@ -186,7 +180,6 @@ def main():
         setup.write(msg)
     os.chmod('setup.sh', 0755)
 
-    # cmssh script
     print "Create cmssh"
     os.makedirs(os.path.join(path, 'bin'))
     with open(os.path.join(path, 'bin/cmssh'), 'w') as cmssh:
