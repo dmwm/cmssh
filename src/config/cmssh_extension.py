@@ -149,6 +149,55 @@ def verbose(arg):
         else:
             ip.debug = True
 
+# CMSSW commands
+def cmsrel(rel):
+    """switch to given CMSSW release"""
+    ipdir = os.environ['IPYTHON_DIR']
+    cmssw_dir = os.path.join(ipdir, 'CMSSW')
+    cmsenv = "eval `scramv1 runtime -sh`"
+    if  not os.path.isdir(cmssw_dir):
+        os.makedirs(cmssw_dir)
+    if  os.path.isdir(os.path.join(cmssw_dir, rel + '/src')):
+        os.chdir(os.path.join(cmssw_dir, rel + '/src'))
+        subprocess.call(cmsenv, shell=True)
+    else:
+        os.chdir(cmssw_dir)
+        subprocess.call("scramv1 project CMSSW %s" % rel, shell=True)
+        os.chdir(os.path.join(rel, 'src'))
+        subprocess.call(cmsenv, shell=True)
+
+def scram(arg):
+    """scram CMSSW command"""
+    subprocess.call("scramv1 %s" % arg, shell=True)
+
+def cmsrun(arg):
+    """cmsRun CMSSW command"""
+    subprocess.call("cmsRun %s" % arg, shell=True)
+
+def cmsenv(arg=None):
+    """cmsenv CMSSW command"""
+    subprocess.call("eval `scramv1 runtime -sh`")
+
+def cms_help_msg():
+    """cmsHelp message"""
+    msg  = '\nAvailable cmssh commands:\n'
+    msg += PM.msg_green('find    ') + ' search CMS meta-data (query DBS/Phedex/SiteDB)\n'
+    msg += PM.msg_green('ls      ') + ' list LFNs, e.g. ls /store/user/file.root\n'
+    msg += PM.msg_green('cp      ') + ' copy LFNs, e.g. cp /store/user/file.root .\n'
+    msg += PM.msg_green('releases') + ' list available CMSSW releases\n'
+    msg += PM.msg_green('install ') + ' install CMSSW releases, e.g. install CMSSW_5_0_0\n'
+    msg += '\nAvailable CMSSW commands:\n'
+    msg += PM.msg_green('scram   ') + ' CMSSW scram command\n'
+    msg += PM.msg_green('cmsrel  ') + ' setup CMSSW release environment\n'
+    msg += PM.msg_green('cmsRun  ') + ' cmsRun command for release in question\n'
+    msg += '\nAvailable GRID commands:\n'
+    msg += PM.msg_green('grid-proxy-init') + ' setup your proxy\n'
+    msg += PM.msg_green('grid-proxy-info') + ' show your proxy info\n'
+    return msg
+
+def cms_help(arg=None):
+    """cmsHelp command"""
+    print cms_help_msg()
 #
 # load managers
 #
@@ -174,6 +223,12 @@ cmsMagicList = [ \
     ('apt-cache', apt_cache),
     ('install', cmssw_install),
     ('releases', releases),
+    ('cmsrel', cmsrel),
+    ('cmsRun', cmsrun),
+    ('cmsrun', cmsrun),
+    ('cmsenv', cmsenv),
+    ('scram', scram),
+    ('cmsHelp', cms_help),
     ('grid-proxy-init', grid_proxy_init),
 ]
 
@@ -201,15 +256,8 @@ def main(ipython):
     ver    = "%s.%s" % (cmssh.__version__, cmssh.__revision__)
     msg    = "Welcome to cmssh %s!\n[python %s, ipython %s]\n%s\n" \
             % (ver, pyver, ipyver ,os.uname()[3])
-    msg   += '\nAvailable CMS commands:\n'
-    msg   += PM.msg_green('find    ') + ' search CMS meta-data (query DBS/Phedex/SiteDB)\n'
-    msg   += PM.msg_green('ls      ') + ' list LFNs, e.g. ls /store/user/file.root\n'
-    msg   += PM.msg_green('cp      ') + ' copy LFNs, e.g. cp /store/user/file.root .\n'
-    msg   += PM.msg_green('releases') + ' list available CMSSW releases\n'
-    msg   += PM.msg_green('install ') + ' install CMSSW releases, e.g. install CMSSW_5_0_0\n'
-    msg   += '\nAvailable GRID commands:\n'
-    msg   += PM.msg_green('grid-proxy-init') + ' setup your proxy\n'
-    msg   += PM.msg_green('grid-proxy-info') + ' show your proxy info\n'
+    msg   += PM.msg_blue('cmsHelp') + ':\n'
+    msg   += cms_help_msg()
     print msg
 
 def load_ipython_extension(ipython):
