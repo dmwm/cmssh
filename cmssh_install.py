@@ -116,7 +116,7 @@ def main():
     print "Installing Globus"
     url_src = 'http://www.globus.org/ftppub/gt5/5.0/5.0.4/installers/src/gt5.0.4-all-source-installer.tar.bz2'
     if  os.uname()[0] == 'Linux':
-        if  os.uname()[2].find('Ubuntu') != -1:
+        if  os.uname()[3].find('Ubuntu') != -1:
             ver = 'deb_5.0'
         else:
             ver = 'sles_9'
