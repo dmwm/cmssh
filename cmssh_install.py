@@ -84,6 +84,9 @@ def main():
     mgr = MyOptionParser()
     opts, args = mgr.getOpt()
 
+    if  not opts.install:
+        print "Usage: cmssh_install.py --help"
+        sys.exit(0)
     debug = opts.debug
     idir = opts.install_dir
     if  not idir:
@@ -92,9 +95,6 @@ def main():
         print msg
         sys.exit(0)
     arch = opts.arch
-    if  not opts.install:
-        print "Usage: cmssh_install.py --help"
-        sys.exit(0)
 
     # setup install area
     cwd = os.getcwd()
@@ -103,7 +103,9 @@ def main():
         shutil.rmtree(path)
     except:
         pass
-    install_dir = '%s/install/lib/python2.6/site-packages' % path
+    sysver = sys.version_info
+    py_ver = '%s.%s' % (sysver[0], sysver[1])
+    install_dir = '%s/install/lib/python%s/site-packages' % (path, py_ver)
     os.environ['PYTHONPATH'] = install_dir
     try:
         os.makedirs(install_dir)
@@ -112,7 +114,20 @@ def main():
     os.chdir(path)
 
     print "Installing Globus"
-    url = 'http://vdt.cs.wisc.edu/software//globus/4.0.8_VDT2.0.0/vdt_globus_essentials-VDT2.0.0-x86_macos_10.4.tar.gz'
+    url_src = 'http://www.globus.org/ftppub/gt5/5.0/5.0.4/installers/src/gt5.0.4-all-source-installer.tar.bz2'
+    if  os.uname()[0] == 'Linux':
+        if  os.uname()[2].find('Ubuntu') != -1:
+            ver = 'deb_5.0'
+        else:
+            ver = 'sles_9'
+    elif os.uname()[0] == 'Darwin':
+        ver = 'macos_10.4'
+    else:
+        msg = 'Unsupported OS "%s"' % os.uname()[0]
+        print msg
+        sys.exit(1)
+    url = 'http://vdt.cs.wisc.edu/software/globus/4.0.8_VDT2.0.0/vdt_globus_essentials-VDT2.0.0-x86_%s.tar.gz' % ver
+#    url = 'http://vdt.cs.wisc.edu/software/globus/4.0.8_VDT2.0.0/vdt_globus_essentials-VDT2.0.0-x86_macos_10.4.tar.gz'
     get_file(url, 'globus.tar.gz', path, debug)
 
     print "Installing SRM client"
@@ -131,8 +146,12 @@ def main():
 
     print "Installing Routes"
     os.chdir(path)
+    url = 'http://peak.telecommunity.com/dist/ez_setup.py'
+    with open('ez_setup.py', 'w') as ez_setup:
+         ez_setup.write(getdata(url, {}, debug))
     url = 'http://pypi.python.org/packages/source/R/Routes/Routes-1.12.3.tar.gz'
     get_file(url, 'routes.tar.gz', path, debug)
+    cmd = 'cp ../ez_setup.py .; python setup.py install --prefix=%s/install' % path
     exe_cmd(os.path.join(path, 'Routes-1.12.3'), cmd, debug)
     
     print "Installing cmssh"
@@ -169,6 +188,7 @@ def main():
         msg += 'export PATH=%s/install/bin:$PATH\n' % path
         msg += 'export PATH=%s/bin:$PATH\n' % path
         msg += 'export PYTHONPATH=%s/cmssh/src\n' % path
+        msg += 'export PYTHONPATH=$PYTHONPATH:$PWD/soft/install/lib/python%s/site-packages\n' % py_ver
         msg += 'export VO_CMS_SW_DIR=%s/CMSSW\n' % path 
         msg += 'export SCRAM_ARCH=%s\n' % arch
         msg += 'export LANG="C"\n'
