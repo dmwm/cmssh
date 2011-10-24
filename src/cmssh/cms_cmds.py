@@ -32,7 +32,7 @@ def cms_ls(arg):
     opts = options(arg)
     if  opts:
         arg = arg.strip().replace(''.join(opts), '').strip()
-    if  os.path.exists(arg):
+    if  os.path.exists(arg) or not arg:
         prc = Popen("ls" + " " + ''.join(opts) + " " + arg, shell=True)
         sts = os.waitpid(prc.pid, 0)[1]
     else:
