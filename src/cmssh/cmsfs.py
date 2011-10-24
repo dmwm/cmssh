@@ -115,7 +115,7 @@ class CMSFS(object):
         """
         Controller to get DBS datasets
         """
-        url = 'http://localhost:8989/dbs/DBSReader'
+        url = 'https://cmsweb.cern.ch/dbs/DBSReader'
         method = 'datasets'
         params = {'dataset':kwargs['dataset']}
         data = get_data(url, method, params)
@@ -138,7 +138,7 @@ class CMSFS(object):
         Controller to get files
         """
 #        print "list_files kwargs", kwargs
-        url = 'http://localhost:8989/dbs/DBSReader'
+        url = 'https://cmsweb.cern.ch/dbs/DBSReader'
         method = 'files'
         params = {'dataset': kwargs['dataset'], 'detail': 'True'}
         data = get_data(url, method, params)

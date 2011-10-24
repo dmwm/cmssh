@@ -38,8 +38,10 @@ class HTTPSClientAuthHandler(urllib2.HTTPSHandler):
                                                 cert_file=self.cert)
         return httplib.HTTPSConnection(host)
 
-def get_data(url, method, kwargs, ckey=None, cert=None, verbose=None):
+def get_data(url, method, kwargs, verbose=None):
     """Retrieve data"""
+    if  url.find('https') != -1:
+        ckey, cert = get_key_cert()
     url = os.path.join(url, method)
     if  kwargs:
         params = kwargs
@@ -61,4 +63,45 @@ def get_data(url, method, kwargs, ckey=None, cert=None, verbose=None):
     res  = urllib2.urlopen(req)
     data = json.load(res)
     return data
+
+def get_key_cert():
+    """
+    Get user key/certificate
+    """
+    key  = None
+    cert = None
+    globus_key  = os.path.join(os.environ['HOME'], '.globus/userkey.pem')
+    globus_cert = os.path.join(os.environ['HOME'], '.globus/usercert.pem')
+    if  os.path.isfile(globus_key):
+        key  = globus_key
+    if  os.path.isfile(globus_cert):
+        cert  = globus_cert
+
+    # First presendence to HOST Certificate, RARE
+    if  os.environ.has_key('X509_HOST_CERT'):
+        cert = os.environ['X509_HOST_CERT']
+        key  = os.environ['X509_HOST_KEY']
+
+    # Second preference to User Proxy, very common
+    elif os.environ.has_key('X509_USER_PROXY'):
+        cert = os.environ['X509_USER_PROXY']
+        key  = cert
+
+    # Third preference to User Cert/Proxy combinition
+    elif os.environ.has_key('X509_USER_CERT'):
+        cert = os.environ['X509_USER_CERT']
+        key  = os.environ['X509_USER_KEY']
+
+    # Worst case, look for cert at default location /tmp/x509up_u$uid
+    elif not key or not cert:
+        uid  = os.getuid()
+        cert = '/tmp/x509up_u'+str(uid)
+        key  = cert
+
+    if  not os.path.exists(cert):
+        raise Exception("Certificate PEM file %s not found" % key)
+    if  not os.path.exists(key):
+        raise Exception("Key PEM file %s not found" % key)
+
+    return key, cert
 
