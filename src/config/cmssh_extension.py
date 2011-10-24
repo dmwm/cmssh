@@ -93,7 +93,7 @@ def apt_cache(arg):
 def releases(_arg):
     """releases shell command"""
     cmd  = "apt-cache search CMSSW | grep CMSSW | grep -v -i fwlite"
-    cmd += "| awk '{print $1}' | sed 's/cms+cmssw+//g'"
+    cmd += "| awk '{print $1}' | sed -e 's/cms+cmssw+//g' -e 's/cms+cmssw-patch+//g'"
     subprocess.call(cmd, shell=True)
 
 def cmssw_install(arg):
@@ -101,7 +101,10 @@ def cmssw_install(arg):
     print "Searching for %s" % arg
     subprocess.call('apt-cache search %s | grep -v -i fwlite' % arg, shell=True)
     print "Installing %s" % arg
-    subprocess.call('apt-get install cms+cmssw+%s' % arg, shell=True)
+    if  arg.lower().find('patch') != -1:
+        subprocess.call('apt-get install cms+cmssw-patch+%s' % arg, shell=True)
+    else:
+        subprocess.call('apt-get install cms+cmssw+%s' % arg, shell=True)
 
 def debug(arg):
     """debug shell command"""

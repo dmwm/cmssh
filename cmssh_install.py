@@ -15,6 +15,7 @@ import urllib
 import urllib2
 import tarfile
 import subprocess
+import traceback
 
 # local modules
 from pprint import pformat
@@ -39,6 +40,9 @@ class MyOptionParser:
         self.parser.add_option("--arch", action="store",
             type="string", default=None, dest="arch",
             help="CMSSW architecture")
+        self.parser.add_option("--unsupported", action="store_true",
+            dest="unsupported",
+            help="enforce installation on unsupported Linux platforms, e.g. Ubuntu")
     def getOpt(self):
         """Returns parse list of options"""
         return self.parser.parse_args()
@@ -99,9 +103,11 @@ def main():
     # setup install area
     cwd = os.getcwd()
     path = os.path.join(os.getcwd(), 'soft')
+    print "Clean-up %s" % path
     try:
         shutil.rmtree(path)
     except:
+        traceback.print_exc()
         pass
     sysver = sys.version_info
     py_ver = '%s.%s' % (sysver[0], sysver[1])
@@ -113,25 +119,30 @@ def main():
         pass
     os.chdir(path)
 
+    platform = os.uname()[0]
+    unsupported_linux = False
+    if  os.uname()[3].find('Ubuntu') != -1 or opts.unsupported:
+        unsupported_linux = True
+
     print "Installing Globus"
     url_src = 'http://www.globus.org/ftppub/gt5/5.0/5.0.4/installers/src/gt5.0.4-all-source-installer.tar.bz2'
-    if  os.uname()[0] == 'Linux':
-        if  os.uname()[3].find('Ubuntu') != -1:
+    parch = 'x86'
+    if  platform == 'Linux':
+        if  unsupported_linux:
             ver = 'deb_5.0'
         else:
-            ver = 'sles_9'
+            ver = 'rhap_5'
         if  not arch:
-            arch = 'slc5_amd64_gcc461'
-    elif os.uname()[0] == 'Darwin':
+            arch = 'slc5_ia32_gcc434'
+    elif platform == 'Darwin':
         ver  = 'macos_10.4'
         if  not arch:
             arch = 'osx106_amd64_gcc461'
     else:
-        msg = 'Unsupported OS "%s"' % os.uname()[0]
+        msg = 'Unsupported OS "%s"' % platform
         print msg
         sys.exit(1)
-    url = 'http://vdt.cs.wisc.edu/software/globus/4.0.8_VDT2.0.0/vdt_globus_essentials-VDT2.0.0-x86_%s.tar.gz' % ver
-#    url = 'http://vdt.cs.wisc.edu/software/globus/4.0.8_VDT2.0.0/vdt_globus_essentials-VDT2.0.0-x86_macos_10.4.tar.gz'
+    url = 'http://vdt.cs.wisc.edu/software/globus/4.0.8_VDT2.0.0/vdt_globus_essentials-VDT2.0.0-%s_%s.tar.gz' % (parch, ver)
     get_file(url, 'globus.tar.gz', path, debug)
 
     print "Installing SRM client"
@@ -167,7 +178,10 @@ def main():
 
     print "Bootstrap CMSSW"
     sdir = '%s/CMSSW' % path 
-    os.makedirs(sdir)
+    try:
+        os.makedirs(sdir)
+    except:
+        pass
     os.chdir(sdir)
     url  = 'http://cmsrep.cern.ch/cmssw/cms/bootstrap.sh'
     with open('bootstrap.sh', 'w') as bootstrap:
@@ -176,8 +190,10 @@ def main():
     os.environ['VO_CMS_SW_DIR'] = sdir
     os.environ['SCRAM_ARCH'] = arch
     os.environ['LANG'] = 'C'
-    cmd  = 'sh -x $VO_CMS_SW_DIR/bootstrap.sh setup -path $VO_CMS_SW_DIR -arch $SCRAM_ARCH;'
-    cmd += 'source $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt/429/profile.d/init.sh;'
+    cmd  = 'sh -x $VO_CMS_SW_DIR/bootstrap.sh setup -path $VO_CMS_SW_DIR -arch $SCRAM_ARCH'
+    if  unsupported_linux:
+        cmd += ' -unsupported_distribution_hack'
+    cmd += ';source $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt/*/profile.d/init.sh;'
     cmd += 'apt-get install external+fakesystem+1.0;'
     cmd += 'apt-get update'
     exe_cmd(sdir, cmd, debug)
@@ -199,7 +215,7 @@ def main():
         msg += 'export CMSSW_RELEASES=%s/Releases\n' % path
         msg += 'if [ -f $VO_CMS_SW_DIR/cmsset_default.sh ]; then\n'
         msg += '   source $VO_CMS_SW_DIR/cmsset_default.sh\nfi\n'
-        msg += 'source $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt/429/etc/profile.d/init.sh\n'
+        msg += 'source $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt/*/etc/profile.d/init.sh\n'
         if  debug:
             print "+++ write setup.sh"
         setup.write(msg)
