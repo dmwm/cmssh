@@ -108,10 +108,9 @@ def main():
         shutil.rmtree(path)
     except:
         pass
-    try: # on second pass we should clean-up everything, printout exception
+    try: # on second pass we should clean-up everything
         shutil.rmtree(path)
     except:
-        traceback.print_exc()
         pass
     sysver = sys.version_info
     py_ver = '%s.%s' % (sysver[0], sysver[1])
@@ -156,11 +155,18 @@ def main():
     url = 'http://vdt.cs.wisc.edu/software/globus/4.0.8_VDT2.0.0/vdt_globus_essentials-VDT2.0.0-%s_%s.tar.gz' % (parch, ver)
     get_file(url, 'globus.tar.gz', path, debug)
 
+    print "Installing certificates"
+    os.chdir(path)
+    url = 'http://vdt.cs.wisc.edu/software/certificates/62/certificates-62-1.tar.gz'
+    get_file(url, 'certificates.tar.gz', path, debug)
+
     print "Installing SRM client"
+    os.chdir(path)
     url = 'http://vdt.cs.wisc.edu/software/srm-client-lbnl/2.2.1.3.19/srmclient2-2.2.1.3.19.tar.gz'
     get_file(url, 'srmclient.tar.gz', path, debug)
     cmd  = './configure --with-java-home=$JAVA_HOME --enable-clientonly'
     cmd += ' --with-globus-location=%s/globus' % path
+    cmd += ' --with-cacert-path=%s/certificates' % path
     exe_cmd(os.path.join(path, 'srmclient2/setup'), cmd, debug)
 
     print "Installing IPython"
