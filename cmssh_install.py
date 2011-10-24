@@ -183,6 +183,7 @@ def main():
     os.chdir(path)
     with open('setup.sh', 'w') as setup:
         msg  = '#!/bin/bash\nexport DYLD_LIBRARY_PATH=%s/globus/lib\n' % path
+        msg  = 'export LD_LIBRARY_PATH=%s/globus/lib\n' % path
         msg += 'export PATH=%s/globus/bin:$PATH\n' % path
         msg += 'export PATH=%s/srmclient2/bin:$PATH\n' % path
         msg += 'export PATH=%s/install/bin:$PATH\n' % path
