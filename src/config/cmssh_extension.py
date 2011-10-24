@@ -152,8 +152,7 @@ def verbose(arg):
 # CMSSW commands
 def cmsrel(rel):
     """switch to given CMSSW release"""
-    ipdir = os.environ['IPYTHON_DIR']
-    cmssw_dir = os.path.join(ipdir, 'CMSSW')
+    cmssw_dir = os.environ.get('CMSSW_RELEASES', os.getcwd())
     cmsenv = "eval `scramv1 runtime -sh`"
     if  not os.path.isdir(cmssw_dir):
         os.makedirs(cmssw_dir)
@@ -184,8 +183,9 @@ def cms_help_msg():
     msg += PM.msg_green('find    ') + ' search CMS meta-data (query DBS/Phedex/SiteDB)\n'
     msg += PM.msg_green('ls      ') + ' list LFNs, e.g. ls /store/user/file.root\n'
     msg += PM.msg_green('cp      ') + ' copy LFNs, e.g. cp /store/user/file.root .\n'
+    msg += PM.msg_green('du      ') + ' display disk usage for given site, e.g. du T3_US_Cornell\n'
     msg += PM.msg_green('releases') + ' list available CMSSW releases\n'
-    msg += PM.msg_green('install ') + ' install CMSSW releases, e.g. install CMSSW_5_0_0\n'
+    msg += PM.msg_green('install ') + ' install CMSSW release, e.g. install CMSSW_5_0_0\n'
     msg += '\nAvailable CMSSW commands:\n'
     msg += PM.msg_green('scram   ') + ' CMSSW scram command\n'
     msg += PM.msg_green('cmsrel  ') + ' setup CMSSW release environment\n'

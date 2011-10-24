@@ -37,7 +37,7 @@ class MyOptionParser:
         self.parser.add_option("-i", "--install", action="store_true",
             dest="install", help="install command")
         self.parser.add_option("--arch", action="store",
-            type="string", default="osx106_amd64_gcc421", dest="arch",
+            type="string", default=None, dest="arch",
             help="CMSSW architecture")
     def getOpt(self):
         """Returns parse list of options"""
@@ -120,8 +120,12 @@ def main():
             ver = 'deb_5.0'
         else:
             ver = 'sles_9'
+        if  not arch:
+            arch = 'slc5_amd64_gcc461'
     elif os.uname()[0] == 'Darwin':
-        ver = 'macos_10.4'
+        ver  = 'macos_10.4'
+        if  not arch:
+            arch = 'osx106_amd64_gcc461'
     else:
         msg = 'Unsupported OS "%s"' % os.uname()[0]
         print msg
@@ -173,17 +177,16 @@ def main():
     os.environ['SCRAM_ARCH'] = arch
     os.environ['LANG'] = 'C'
     cmd  = 'sh -x $VO_CMS_SW_DIR/bootstrap.sh setup -path $VO_CMS_SW_DIR -arch $SCRAM_ARCH;'
-    cmd += 'source $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt/429-cms/profile.d/init.sh;'
+    cmd += 'source $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt/429/profile.d/init.sh;'
     cmd += 'apt-get install external+fakesystem+1.0;'
-    cmd += 'source $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt/429-cms/profile.d/init.sh;'
     cmd += 'apt-get update'
-    exe_cmd(path, cmd, debug)
+    exe_cmd(sdir, cmd, debug)
     
     print "Create configuration"
     os.chdir(path)
     with open('setup.sh', 'w') as setup:
         msg  = '#!/bin/bash\nexport DYLD_LIBRARY_PATH=%s/globus/lib\n' % path
-        msg  = 'export LD_LIBRARY_PATH=%s/globus/lib\n' % path
+        msg += 'export LD_LIBRARY_PATH=%s/globus/lib\n' % path
         msg += 'export PATH=%s/globus/bin:$PATH\n' % path
         msg += 'export PATH=%s/srmclient2/bin:$PATH\n' % path
         msg += 'export PATH=%s/install/bin:$PATH\n' % path
@@ -193,9 +196,10 @@ def main():
         msg += 'export VO_CMS_SW_DIR=%s/CMSSW\n' % path 
         msg += 'export SCRAM_ARCH=%s\n' % arch
         msg += 'export LANG="C"\n'
+        msg += 'export CMSSW_RELEASES=%s/Releases\n' % path
         msg += 'if [ -f $VO_CMS_SW_DIR/cmsset_default.sh ]; then\n'
         msg += '   source $VO_CMS_SW_DIR/cmsset_default.sh\nfi\n'
-        msg += 'source $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt/429-cms/etc/profile.d/init.sh'
+        msg += 'source $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt/429/etc/profile.d/init.sh\n'
         if  debug:
             print "+++ write setup.sh"
         setup.write(msg)
