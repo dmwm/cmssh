@@ -10,7 +10,6 @@ Description: cmssh installation script
 import os
 import sys
 import time
-import shutil
 import urllib
 import urllib2
 import tarfile
@@ -104,14 +103,13 @@ def main():
     cwd = os.getcwd()
     path = os.path.join(os.getcwd(), 'soft')
     print "Clean-up %s" % path
-    try: # ignore exception on first pass
-        shutil.rmtree(path)
-    except:
-        pass
-    try: # on second pass we should clean-up everything
-        shutil.rmtree(path)
-    except:
-        pass
+    try:
+        cmd = 'rm -rf %s' % path
+        retcode = subprocess.call(cmd, shell=True)
+        if  retcode < 0:
+            print >> sys.stderr, "Child was terminated by signal", -retcode
+    except OSError, err:
+        print >> sys.stderr, "Execution failed:", err
     sysver = sys.version_info
     py_ver = '%s.%s' % (sysver[0], sysver[1])
     install_dir = '%s/install/lib/python%s/site-packages' % (path, py_ver)
