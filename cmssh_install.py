@@ -104,7 +104,11 @@ def main():
     cwd = os.getcwd()
     path = os.path.join(os.getcwd(), 'soft')
     print "Clean-up %s" % path
-    try:
+    try: # ignore exception on first pass
+        shutil.rmtree(path)
+    except:
+        pass
+    try: # on second pass we should clean-up everything, printout exception
         shutil.rmtree(path)
     except:
         traceback.print_exc()
@@ -123,6 +127,13 @@ def main():
     unsupported_linux = False
     if  os.uname()[3].find('Ubuntu') != -1 or opts.unsupported:
         unsupported_linux = True
+        if  os.readlink('/bin/sh') != 'bash':
+            msg  = 'The /bin/sh is pointing to %s.\n'
+            msg += 'For proper installation of CMSSW software\n'
+            msg += 're-configure /bin/sh to point to /bin/bash.\n'
+            msg += 'On Ubuntu, if you have /bin/sh -> /bin/dash, just do:\n'
+            msg += 'sudo dpkg-reconfigure dash'
+            sys.exit(1)
 
     print "Installing Globus"
     url_src = 'http://www.globus.org/ftppub/gt5/5.0/5.0.4/installers/src/gt5.0.4-all-source-installer.tar.bz2'
