@@ -177,7 +177,6 @@ def resolve_srm_path(node, verbose=None):
     """
     Use TFC phedex API to resolve srm path for given node
     """
-#    if  not verbose: sys.stdout.write('.')
     url    = phedex_url('tfc')
     params = {'node':node}
     data   = urllib2.urlopen(url, urllib.urlencode(params, doseq=True))
@@ -186,11 +185,21 @@ def resolve_srm_path(node, verbose=None):
         if  row['protocol'] == 'srmv2' and row['element_name'] == 'lfn-to-pfn':
             yield (row['result'], row['path-match'])
 
+def resolve_user_srm_path(node, verbose=None):
+    """
+    Use TFC phedex API to resolve srm path for given node
+    """
+    url    = phedex_url('lfn2pfn')
+    params = {'node':node, 'lfn':'/store/user', 'protocol': 'srmv2'}
+    data   = urllib2.urlopen(url, urllib.urlencode(params, doseq=True))
+    result = json.load(data)
+    for row in result['phedex']['mapping']:
+        yield row['pfn']
+
 def get_pfns(lfn, verbose=None):
     """
     Look-up LFN in Phedex and get corresponding list of PFNs
     """
-#    if  not verbose: sys.stdout.write('.')
     pfnlist   = []
     params    = {'se':'*', 'lfn':lfn}
     url       = phedex_url('fileReplicas')
@@ -210,8 +219,6 @@ def get_pfns(lfn, verbose=None):
             se      = replica['se']
             if  se not in selist:
                 selist.append(se)
-#            if  not verbose:
-#                print "found LFN on node=%s, se=%s" % (cmsname, se)
 #            if  cmsname.count('T0', 0, 2) == 1:
 #                continue # skip T0's
             # query Phedex for PFN
@@ -234,22 +241,22 @@ def srmcp(srmcmd, lfn, dst, verbose=None):
     """
     Look-up LFN in Phedex and construct srmcp command for further processing
     """
-#    if  not verbose: sys.stdout.write('.')
     pat = re.compile('^T[0-9]_[A-Z]+(_)[A-Z]+')
     if  pat.match(dst):
         dst_split = dst.split(':')
         dst = dst_split[0]
         if  len(dst_split) > 1:
             local_path = dst_split[1]
+            for srm_path, lfn_match in resolve_srm_path(dst, verbose):
+                lfn_pat = re.compile(lfn_match)
+                if  lfn_pat.match(lfn):
+                    srm_path = srm_path.replace('\?', '?').replace('$1', local_path)
+                    if  verbose:
+                        print "Resolve %s into %s" % (dst, srm_path)
+                    dst = srm_path
         else:
-            local_path = '/store/user/%s' % get_username(verbose)
-        for srm_path, lfn_match in resolve_srm_path(dst, verbose):
-            lfn_pat = re.compile(lfn_match)
-            if  lfn_pat.match(lfn):
-                srm_path = srm_path.replace('\?', '?').replace('$1', local_path)
-                if  verbose:
-                    print "Resolve %s into %s" % (dst, srm_path)
-                dst = srm_path
+            paths = [p for p in resolve_user_srm_path(dst, verbose)]
+            dst = '%s/%s' % (paths[0], get_username())
         check_permission(dst, verbose)
     else:
         if  not dst.find('file:///') != -1:

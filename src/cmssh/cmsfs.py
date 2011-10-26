@@ -17,7 +17,7 @@ from   types import GeneratorType
 # cmssh modules
 from   cmssh.url_utils import get_data
 from   cmssh.cms_objects import Run, File, Block, Dataset, Site, User
-from   cmssh.filemover import get_pfns
+from   cmssh.filemover import get_pfns, resolve_user_srm_path
 from   cmssh.cms_urls import phedex_url, dbs_url, conddb_url, sitedb_url
 
 def rowdict(columns, row):
@@ -308,6 +308,9 @@ def site_info(dst, verbose=None):
     params = {'node': dst}
     data   = get_data(url, method, params)
     res    = [Site(s) for s in data['phedex']['node']]
+    paths  = [r for r in resolve_user_srm_path(dst)]
+    for site in res:
+        site.assign('pfn_path', paths)
     pat    = re.compile('^T[0-9]_[A-Z]+(_)[A-Z]+')
     if  pat.match(dst) and verbose:
         url       = phedex_url('blockReplicas')
