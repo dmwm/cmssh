@@ -8,7 +8,7 @@ Set of UNIX commands, e.g. ls, cp, supported in cmssh.
 import os
 import re
 import traceback
-from   subprocess import Popen
+import subprocess
 
 # cmssh modules
 from cmssh.iprint import print_red, print_blue, PrintManager
@@ -165,7 +165,7 @@ def cms_ls(arg):
     if  opts:
         arg = arg.strip().replace(''.join(opts), '').strip()
     if  os.path.exists(arg) or not arg:
-        prc = Popen("ls" + " " + ''.join(opts) + " " + arg, shell=True)
+        prc = subprocess.Popen("ls" + " " + ''.join(opts) + " " + arg, shell=True)
         sts = os.waitpid(prc.pid, 0)[1]
     else:
         pat_site = re.compile('^T[0-9]_[A-Z]+(_)[A-Z]+')
@@ -196,7 +196,7 @@ def cms_cp(arg):
     if  not arg:
         print_red("Usage: cp <options> source_file target_{file,directory}")
     if  os.path.exists(arg):
-        prc = Popen("cp " + arg, shell=True)
+        prc = subprocess.Popen("cp " + arg, shell=True)
         sts = os.waitpid(prc.pid, 0)[1]
     else:
         try:
