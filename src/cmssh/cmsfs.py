@@ -327,5 +327,5 @@ def site_info(dst, verbose=None):
             print row['name']
         print "Total number of blocks:", totblocks
         print "Total number of files :", totfiles
-        return totsize
+        return res
     return res
