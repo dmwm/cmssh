@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 
+"""Filemover cli equivalent"""
+
 # system modules
 import os
 import re
 import sys
-import time
 import json
-import types
 import urllib
 import urllib2
 import datetime
-import traceback
 from   subprocess import Popen, PIPE
 
 # for DBS2 XML parsing
@@ -19,17 +18,7 @@ import xml.etree.ElementTree as ET
 # cmssh modules
 from cmssh.utils import size_format
 from cmssh.ddict import DotDict
-from cmssh.cmsfs import CMSFS
-from cmssh.url_utils import get_data
-from cmssh.cms_objects import File, Block, Dataset
-
-def phedex_url(api=''):
-    """Return Phedex URL for given API name"""
-    return 'https://cmsweb.cern.ch/phedex/datasvc/json/prod/%s' % api
-
-def dbs_url(api=''):
-    """Return DBS URL for given API name"""
-    return 'https://cmsweb.cern.ch/dbs/DBSReader/%s' % api
+from cmssh.cms_urls import phedex_url
 
 def check_permission(dst, verbose=None):
     """
@@ -62,7 +51,7 @@ def check_software(softlist):
     """
     help     = 'Please run with --help for more options'
     for cmd in softlist:
-        pipe   = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE, close_fds=True)
+        pipe = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE, close_fds=True)
         (child_stdout, child_stderr) = (pipe.stdout, pipe.stderr)
         stdout = child_stdout.read()
         stderr = child_stderr.read()
@@ -155,11 +144,13 @@ def get_username(verbose=None):
     if  verbose:
         print "userdn :", userdn
     if  not userdn:
-        raise Exception('Unable to determine your DN, please run grid-proxy-init')
+        msg = 'Unable to determine your DN, please run grid-proxy-init'
+        raise Exception(msg)
+    # TODO: replace with new SiteDB
     url    = 'https://cmsweb.cern.ch/sitedb/json/index/dnUserName'
     params = {'dn': userdn}
     data   = urllib2.urlopen(url, urllib.urlencode(params, doseq=True))
-    result = eval(data.read()) # for some reason SiteDB is not shipped JSON properly
+    result = eval(data.read()) 
     return result['user']
 
 def nodes(select=True):
@@ -195,11 +186,10 @@ def resolve_srm_path(node, verbose=None):
         if  row['protocol'] == 'srmv2' and row['element_name'] == 'lfn-to-pfn':
             yield (row['result'], row['path-match'])
 
-def get_pfns(lfnobj, verbose=None):
+def get_pfns(lfn, verbose=None):
     """
     Look-up LFN in Phedex and get corresponding list of PFNs
     """
-    lfn = lfnobj.logical_file_name
 #    if  not verbose: sys.stdout.write('.')
     pfnlist   = []
     params    = {'se':'*', 'lfn':lfn}
@@ -218,11 +208,12 @@ def get_pfns(lfnobj, verbose=None):
         for replica in fname['replica']:
             cmsname = replica['node']
             se      = replica['se']
-            selist.append(se)
-            if  not verbose:
-                print "found LFN on node=%s, se=%s" % (cmsname, se)
-            if  cmsname.count('T0', 0, 2) == 1:
-                continue # skip T0's
+            if  se not in selist:
+                selist.append(se)
+#            if  not verbose:
+#                print "found LFN on node=%s, se=%s" % (cmsname, se)
+#            if  cmsname.count('T0', 0, 2) == 1:
+#                continue # skip T0's
             # query Phedex for PFN
             url    = phedex_url('lfn2pfn')
             params = {'protocol':'srmv2', 'lfn':lfn, 'node':cmsname}
@@ -237,52 +228,7 @@ def get_pfns(lfnobj, verbose=None):
                 msg = "Fail to look-up PFNs in Phedex\n" + str(result)
                 print msg
                 continue
-    lfnobj.assign('se', selist)
-    return pfnlist
-
-def list_dataset(dataset, verbose=None):
-    """List dataset"""
-    url = dbs_url('')
-    params = {'dataset': dataset, 'detail':'True'}
-    result = get_data(url, 'datasets', params, verbose)
-    return [Dataset(r) for r in result]
-
-def list_block(block, verbose=None):
-    """List block"""
-    url = dbs_url()
-    params = {'block_name': block, 'detail':'True'}
-    result = get_data(url, 'blocks', params, verbose)
-    return [Block(r) for r in result]
-
-def list_file(lfn, verbose=None):
-    """List file"""
-    url = dbs_url()
-    params = {'logical_file_name': lfn, 'detail':'True'}
-    result = get_data(url, 'files', params, verbose)
-    return [File(r) for r in result]
-
-def srmls(dst, verbose=None):
-    """list files at given destination"""
-    site = dst
-    pat = re.compile('^T[0-9]_[A-Z]+(_)[A-Z]+')
-    if  pat.match(dst):
-        url       = phedex_url('blockReplicas')
-        params    = {'node': dst}
-        data      = urllib2.urlopen(url, urllib.urlencode(params, doseq=True))
-        json_dict = json.load(data)
-        totfiles  = 0
-        totblocks = 0
-        totsize   = 0
-        for row in json_dict['phedex']['block']:
-            totfiles += long(row['files'])
-            totblocks += 1
-            for rep in row['replica']:
-                if  rep['node'] == dst:
-                    totsize += long(rep['bytes'])
-            print row['name']
-        print "Total number of blocks:", totblocks
-        print "Total number of files :", totfiles
-        return totsize
+    return pfnlist, selist
 
 def srmcp(srmcmd, lfn, dst, verbose=None):
     """
@@ -351,8 +297,9 @@ def srmcp(srmcmd, lfn, dst, verbose=None):
 
     # finally let's create srmcp commands for each found pfn
     for item in pfnlist:
-        file = item.split("/")[-1]
-        cmd = "%s %s %s/%s -pushmode -statuswaittime 30" % (srmcmd, item, dst, file)
+        ifile = item.split("/")[-1]
+        cmd = "%s %s %s/%s -pushmode -statuswaittime 30" \
+                % (srmcmd, item, dst, ifile)
         yield cmd
 
 def get_size(cmd, verbose=None):
@@ -434,7 +381,8 @@ def add_request(lfn, src, dst, verbose):
 #    if  not verbose: sys.stdout.write('.')
     url  = filemover_url() + '/record'
     date = '%s' % datetime.date.today()
-    args = {'userdn':get_username(), 'src':src, 'dst':dst, 'date':date, 'lfn':lfn}
+    args = {'userdn':get_username(), 'src':src,
+                'dst':dst, 'date':date, 'lfn':lfn}
     if  verbose:
         print "add_request", url, args
     data = urllib2.urlopen(url, urllib.urlencode(args, doseq=True))
@@ -443,7 +391,6 @@ def add_request(lfn, src, dst, verbose):
 class FileMover(object):
     def __init__(self):
         self.instance = "Instance at %d" % self.__hash__()
-        self.cmsfs = CMSFS()
         check_proxy()
     def copy(self, lfn, dst, verbose=0):
         """Copy lfn to destination"""
@@ -455,25 +402,14 @@ class FileMover(object):
                     print "\nDone, file located at %s (%s)" \
                         % (dst, size_format(dst_size))
                     break
-    def list(self, arg, verbose=0):
+    def list(self, lfn, verbose=0):
         """List function"""
-        pat_site = re.compile('^T[0-9]_[A-Z]+(_)[A-Z]+')
-        pat_dataset = re.compile('^/.*/.*/.*')
-        pat_block = re.compile('^/.*/.*/.*#.*')
         pat_lfn = re.compile('^/.*\.root$')
-        if  pat_site.match(arg):
-            return srmls(arg)
-        elif pat_lfn.match(arg):
-            lfn = list_file(arg)[0]
-            pfnlist = get_pfns(lfn, verbose)
-            lfn.assign('pfn', pfnlist)
-            return lfn
-        elif pat_block.match(arg):
-            return list_block(arg)
-        elif pat_dataset.match(arg):
-            return list_dataset(arg)
-        else:
-            raise Exception('Unsupported input')
+        if  pat_lfn.match(lfn):
+            pfnlist, selist = get_pfns(arg, verbose)
+            for pfn in pfnlist:
+                cmd = "srm-ls %s" % pfn
+                print '%s %s' % (lfn, get_size(cmd, verbose))
 
 FM_SINGLETON = FileMover()
 def copy_lfn(lfn, dst, verbose=0):

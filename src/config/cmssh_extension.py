@@ -13,12 +13,15 @@ from   types import GeneratorType
 import IPython
 from   IPython import release
 
+# cmssh modules
 import cmssh
 from   cmssh.iprint import PrintManager
 from   cmssh.debug import DebugManager
-from   cmssh.cmsfs import CMSFS, apply_filter
-from   cmssh.cms_cmds import cms_ls, cms_cp
-from   cmssh.utils import list_results
+from   cmssh.cms_cmds import cvs, lookup, cms_ls, cms_cp, verbose
+from   cmssh.cms_cmds import apt_get, apt_cache, cmssw_install, releases
+from   cmssh.cms_cmds import cmsrel, cmsrun, cmsenv, scram, cms_help
+from   cmssh.cms_cmds import cms_help_msg, results
+from   cmssh.cms_cmds import grid_proxy_init, grid_proxy_info
 
 class ShellName(object):
     def __init__(self):
@@ -70,130 +73,11 @@ def get_prompt():
     prompt = getattr(IP.outputcache, 'prompt1') 
     return IP.outputcache.prompt1.p_template
 
-# main magic commands available in cms-sh
-def cvs(arg):
-    """cvs shell command"""
-    subprocess.call("cvs %s" % arg, shell=True)
-    
-def grid_proxy_init(_arg):
-    """grid-proxy-init shell command"""
-    subprocess.call("grid-proxy-init")
-    
-def grid_proxy_info(_arg):
-    """grid-proxy-info shell command"""
-    subprocess.call("grid-proxy-info")
-    
-def apt_get(arg):
-    """apt-get shell command"""
-    subprocess.call("apt-get %s" % arg, shell=True)
-    
-def apt_cache(arg):
-    """apt-cache shell command"""
-    subprocess.call("apt-cache %s" % arg, shell=True)
-
-def releases(_arg):
-    """releases shell command"""
-    cmd  = "apt-cache search CMSSW | grep CMSSW | grep -v -i fwlite"
-    cmd += "| awk '{print $1}' | sed -e 's/cms+cmssw+//g' -e 's/cms+cmssw-patch+//g'"
-    subprocess.call(cmd, shell=True)
-
-def cmssw_install(arg):
-    """CMSSW install shell command"""
-    print "Searching for %s" % arg
-    subprocess.call('apt-cache search %s | grep -v -i fwlite' % arg, shell=True)
-    print "Installing %s" % arg
-    if  arg.lower().find('patch') != -1:
-        subprocess.call('apt-get install cms+cmssw-patch+%s' % arg, shell=True)
-    else:
-        subprocess.call('apt-get install cms+cmssw+%s' % arg, shell=True)
-
-def debug(arg):
-    """debug shell command"""
-    if  arg:
-        PM.print_blue("Set debug level to %s" % arg)
-        DEBUG.set(arg)
-    else:
-        PM.print_blue("Debug level is %s" % DEBUG.level)
-
-def lookup(arg):
-    """Perform CMSFS lookup for provided query"""
-    debug = get_ipython().debug
-    args  = arg.split('|')
-    if  len(args) == 1: # no filter
-        res = CMSMGR.lookup(arg)
-    else:
-        gen = CMSMGR.lookup(args[0].strip())
-        for flt in args[1:]:
-            res = apply_filter(flt.strip(), gen)
-    list_results(res, debug)
-
-def verbose(arg):
-    """Set/get verbosity level"""
-    ip = get_ipython()
-    if  arg == '':
-        print "verbose", ip.debug
-    else:
-        if  arg == 0 or arg == '0':
-            ip.debug = False
-        else:
-            ip.debug = True
-
-# CMSSW commands
-def cmsrel(rel):
-    """switch to given CMSSW release"""
-    cmssw_dir = os.environ.get('CMSSW_RELEASES', os.getcwd())
-    cmsenv = "eval `scramv1 runtime -sh`"
-    if  not os.path.isdir(cmssw_dir):
-        os.makedirs(cmssw_dir)
-    if  os.path.isdir(os.path.join(cmssw_dir, rel + '/src')):
-        os.chdir(os.path.join(cmssw_dir, rel + '/src'))
-        subprocess.call(cmsenv, shell=True)
-    else:
-        os.chdir(cmssw_dir)
-        subprocess.call("scramv1 project CMSSW %s" % rel, shell=True)
-        os.chdir(os.path.join(rel, 'src'))
-        subprocess.call(cmsenv, shell=True)
-
-def scram(arg):
-    """scram CMSSW command"""
-    subprocess.call("scramv1 %s" % arg, shell=True)
-
-def cmsrun(arg):
-    """cmsRun CMSSW command"""
-    subprocess.call("cmsRun %s" % arg, shell=True)
-
-def cmsenv(arg=None):
-    """cmsenv CMSSW command"""
-    subprocess.call("eval `scramv1 runtime -sh`")
-
-def cms_help_msg():
-    """cmsHelp message"""
-    msg  = '\nAvailable cmssh commands:\n'
-    msg += PM.msg_green('find    ') + ' search CMS meta-data (query DBS/Phedex/SiteDB)\n'
-    msg += PM.msg_green('ls      ') + ' list LFNs, e.g. ls /store/user/file.root\n'
-    msg += PM.msg_green('cp      ') + ' copy LFNs, e.g. cp /store/user/file.root .\n'
-    msg += PM.msg_green('du      ') + ' display disk usage for given site, e.g. du T3_US_Cornell\n'
-    msg += PM.msg_green('releases') + ' list available CMSSW releases\n'
-    msg += PM.msg_green('install ') + ' install CMSSW release, e.g. install CMSSW_5_0_0\n'
-    msg += '\nAvailable CMSSW commands:\n'
-    msg += PM.msg_green('scram   ') + ' CMSSW scram command\n'
-    msg += PM.msg_green('cmsrel  ') + ' setup CMSSW release environment\n'
-    msg += PM.msg_green('cmsRun  ') + ' cmsRun command for release in question\n'
-    msg += '\nAvailable GRID commands:\n'
-    msg += PM.msg_green('grid-proxy-init') + ' setup your proxy\n'
-    msg += PM.msg_green('grid-proxy-info') + ' show your proxy info\n'
-    return msg
-
-def cms_help(arg=None):
-    """cmsHelp command"""
-    print cms_help_msg()
 #
 # load managers
 #
 try:
-    CMSMGR   = CMSFS()
     PM       = PrintManager()
-    ARCH     = "slc4_ia32_gcc345"
     DEBUG    = DebugManager()
     ID       = ShellName()
 except:
@@ -201,7 +85,6 @@ except:
 
 # list of cms-sh magic functions
 cmsMagicList = [ \
-    ('debug', debug),
     ('cvs', cvs),
     ('find', lookup),
     ('du', lookup),
@@ -233,6 +116,9 @@ def main(ipython):
     for m in cmsMagicList:
         magic_name = 'magic_%s' % m[0]
         setattr(ip, magic_name, m[1])
+
+    # import required modules for the shell
+    ip.ex("from cmssh.cms_cmds import results")
 
     # Set cmssh prompt
     prompt = 'cms-sh'
