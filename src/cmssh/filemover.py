@@ -1,40 +1,41 @@
 #!/usr/bin/env python
 
+# system modules
 import os
 import re
 import sys
 import time
+import json
 import types
 import urllib
 import urllib2
 import datetime
 import traceback
-
-from cmssh.utils import size_format
-from cmssh.ddict import DotDict
-
-required_python_version = '2.6'
-if sys.version < required_python_version:
-    s = "I'm sorry, but filemover requires Python %s or later."
-    print s % required_python_version
-    sys.exit(1)
-
-import json
 from   subprocess import Popen, PIPE
-from   optparse import OptionParser, OptionGroup
 
 # for DBS2 XML parsing
 import xml.etree.ElementTree as ET
 
-def phedex_url(api):
+# cmssh modules
+from cmssh.utils import size_format
+from cmssh.ddict import DotDict
+from cmssh.cmsfs import CMSFS
+from cmssh.url_utils import get_data
+from cmssh.cms_objects import File, Block, Dataset
+
+def phedex_url(api=''):
     """Return Phedex URL for given API name"""
     return 'https://cmsweb.cern.ch/phedex/datasvc/json/prod/%s' % api
+
+def dbs_url(api=''):
+    """Return DBS URL for given API name"""
+    return 'https://cmsweb.cern.ch/dbs/DBSReader/%s' % api
 
 def check_permission(dst, verbose=None):
     """
     Check permission to write to given destination area
     """
-    if  not verbose: sys.stdout.write('.')
+#    if  not verbose: sys.stdout.write('.')
     if  verbose:
         print "Check permission to write to %s" % dst
     cmd    = 'srm-mkdir %s' % dst
@@ -135,7 +136,7 @@ def get_username(verbose=None):
     """
     Get user name from provided DN
     """
-    if  not verbose: sys.stdout.write('.')
+#    if  not verbose: sys.stdout.write('.')
     # get DN from grid-proxy-info
     cmd    = 'grid-proxy-info'
     pipe   = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE, close_fds=True)
@@ -185,7 +186,7 @@ def resolve_srm_path(node, verbose=None):
     """
     Use TFC phedex API to resolve srm path for given node
     """
-    if  not verbose: sys.stdout.write('.')
+#    if  not verbose: sys.stdout.write('.')
     url    = phedex_url('tfc')
     params = {'node':node}
     data   = urllib2.urlopen(url, urllib.urlencode(params, doseq=True))
@@ -194,31 +195,31 @@ def resolve_srm_path(node, verbose=None):
         if  row['protocol'] == 'srmv2' and row['element_name'] == 'lfn-to-pfn':
             yield (row['result'], row['path-match'])
 
-def get_pfns(lfn, verbose=None):
+def get_pfns(lfnobj, verbose=None):
     """
     Look-up LFN in Phedex and get corresponding list of PFNs
     """
-    if  not verbose: sys.stdout.write('.')
+    lfn = lfnobj.logical_file_name
+#    if  not verbose: sys.stdout.write('.')
     pfnlist   = []
     params    = {'se':'*', 'lfn':lfn}
     url       = phedex_url('fileReplicas')
     data      = urllib2.urlopen(url, urllib.urlencode(params, doseq=True))
     json_dict = json.load(data)
     ddict     = DotDict(json_dict)
-    if  verbose:
-        print "Look-up LFN:"
-        print lfn
     if  not json_dict['phedex']['block']:
         msg  = "LFN: %s\n" % lfn
         msg += 'No replicas found\n'
         msg += str(json_dict)
         print msg
         return pfnlist
+    selist = []
     for fname in ddict.get('phedex.block.file'):
         for replica in fname['replica']:
             cmsname = replica['node']
             se      = replica['se']
-            if  verbose:
+            selist.append(se)
+            if  not verbose:
                 print "found LFN on node=%s, se=%s" % (cmsname, se)
             if  cmsname.count('T0', 0, 2) == 1:
                 continue # skip T0's
@@ -236,13 +237,58 @@ def get_pfns(lfn, verbose=None):
                 msg = "Fail to look-up PFNs in Phedex\n" + str(result)
                 print msg
                 continue
+    lfnobj.assign('se', selist)
     return pfnlist
+
+def list_dataset(dataset, verbose=None):
+    """List dataset"""
+    url = dbs_url('')
+    params = {'dataset': dataset, 'detail':'True'}
+    result = get_data(url, 'datasets', params, verbose)
+    return [Dataset(r) for r in result]
+
+def list_block(block, verbose=None):
+    """List block"""
+    url = dbs_url()
+    params = {'block_name': block, 'detail':'True'}
+    result = get_data(url, 'blocks', params, verbose)
+    return [Block(r) for r in result]
+
+def list_file(lfn, verbose=None):
+    """List file"""
+    url = dbs_url()
+    params = {'logical_file_name': lfn, 'detail':'True'}
+    result = get_data(url, 'files', params, verbose)
+    return [File(r) for r in result]
+
+def srmls(dst, verbose=None):
+    """list files at given destination"""
+    site = dst
+    pat = re.compile('^T[0-9]_[A-Z]+(_)[A-Z]+')
+    if  pat.match(dst):
+        url       = phedex_url('blockReplicas')
+        params    = {'node': dst}
+        data      = urllib2.urlopen(url, urllib.urlencode(params, doseq=True))
+        json_dict = json.load(data)
+        totfiles  = 0
+        totblocks = 0
+        totsize   = 0
+        for row in json_dict['phedex']['block']:
+            totfiles += long(row['files'])
+            totblocks += 1
+            for rep in row['replica']:
+                if  rep['node'] == dst:
+                    totsize += long(rep['bytes'])
+            print row['name']
+        print "Total number of blocks:", totblocks
+        print "Total number of files :", totfiles
+        return totsize
 
 def srmcp(srmcmd, lfn, dst, verbose=None):
     """
     Look-up LFN in Phedex and construct srmcp command for further processing
     """
-    if  not verbose: sys.stdout.write('.')
+#    if  not verbose: sys.stdout.write('.')
     pat = re.compile('^T[0-9]_[A-Z]+(_)[A-Z]+')
     if  pat.match(dst):
         dst_split = dst.split(':')
@@ -313,7 +359,7 @@ def get_size(cmd, verbose=None):
     """
     Execute srm-ls <surl> command and retrieve file size information
     """
-    if  not verbose: sys.stdout.write('.')
+#    if  not verbose: sys.stdout.write('.')
     pipe  = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE, close_fds=True)
     (child_stdout, child_stderr) = (pipe.stdout, pipe.stderr)
     stdout = child_stdout.read()
@@ -335,7 +381,7 @@ def check_file(src, dst, verbose):
     """
     Check if file is transfered and return dst, dst_size upon success.
     """
-    if  not verbose: sys.stdout.write('.')
+#    if  not verbose: sys.stdout.write('.')
     # find file size from replica
     rcmd  = 'srm-ls %s' % src
     orig_size = get_size(rcmd, verbose)
@@ -373,7 +419,7 @@ def check_allowance(verbose):
     Check if user is allowed to perform srm-copy command.
     We send request to FileMover server, who response with ok/fail.
     """
-    if  not verbose: sys.stdout.write('.')
+#    if  not verbose: sys.stdout.write('.')
     url  = filemover_url() + '/allow'
     args = {'userdn': get_username()}
     if  verbose:
@@ -385,7 +431,7 @@ def add_request(lfn, src, dst, verbose):
     """
     Send request to FileMover server to add information abotu src/dst request.
     """
-    if  not verbose: sys.stdout.write('.')
+#    if  not verbose: sys.stdout.write('.')
     url  = filemover_url() + '/record'
     date = '%s' % datetime.date.today()
     args = {'userdn':get_username(), 'src':src, 'dst':dst, 'date':date, 'lfn':lfn}
@@ -397,6 +443,7 @@ def add_request(lfn, src, dst, verbose):
 class FileMover(object):
     def __init__(self):
         self.instance = "Instance at %d" % self.__hash__()
+        self.cmsfs = CMSFS()
         check_proxy()
     def copy(self, lfn, dst, verbose=0):
         """Copy lfn to destination"""
@@ -408,13 +455,25 @@ class FileMover(object):
                     print "\nDone, file located at %s (%s)" \
                         % (dst, size_format(dst_size))
                     break
-    def list(self, lfn, verbose=0):
-        """List info about lfn"""
-        pfnlist = get_pfns(lfn, verbose)
-        for pfn in pfnlist:
-            if  pfn:
-                cmd = "srm-ls %s" % pfn
-                return get_size(cmd, verbose)
+    def list(self, arg, verbose=0):
+        """List function"""
+        pat_site = re.compile('^T[0-9]_[A-Z]+(_)[A-Z]+')
+        pat_dataset = re.compile('^/.*/.*/.*')
+        pat_block = re.compile('^/.*/.*/.*#.*')
+        pat_lfn = re.compile('^/.*\.root$')
+        if  pat_site.match(arg):
+            return srmls(arg)
+        elif pat_lfn.match(arg):
+            lfn = list_file(arg)[0]
+            pfnlist = get_pfns(lfn, verbose)
+            lfn.assign('pfn', pfnlist)
+            return lfn
+        elif pat_block.match(arg):
+            return list_block(arg)
+        elif pat_dataset.match(arg):
+            return list_dataset(arg)
+        else:
+            raise Exception('Unsupported input')
 
 FM_SINGLETON = FileMover()
 def copy_lfn(lfn, dst, verbose=0):

@@ -6,9 +6,9 @@ All commands have prefix cms_
 import os
 import traceback
 from subprocess import Popen
-from cmssh.utils import size_format
 from cmssh.iprint import print_red, print_blue
 from cmssh.filemover import list_lfn, copy_lfn
+from cmssh.utils import list_results
 
 def options(arg):
     """Extract options from given arg string"""
@@ -36,9 +36,8 @@ def cms_ls(arg):
         prc = Popen("ls" + " " + ''.join(opts) + " " + arg, shell=True)
         sts = os.waitpid(prc.pid, 0)[1]
     else:
-        size = list_lfn(arg, verbose=verbose)
-        msg = "File size=%s (%s bytes)" % (size_format(size), size)
-        print_blue(msg)
+        res = list_lfn(arg, verbose=verbose)
+        list_results(res, verbose)
 
 def cms_cp(arg):
     """

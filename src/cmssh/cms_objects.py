@@ -15,10 +15,12 @@ class CMSObj(object):
     def __repr__(self):
         """CMSObj representation"""
         return format_dict(self.data)
-
     def __getattr__(self, name):
         """CMSObj attribute"""
         return self.data[name]
+    def assign(self, key, val):
+        """assign CMSObj attribute"""
+        self.data[key] = val
 
 class Dataset(CMSObj):
     """DBS3 Dataset object"""
@@ -50,7 +52,12 @@ class Block(CMSObj):
         CMSObj.__init__(self, data)
     def __str__(self):
         """Block string representation"""
-        return self.data['name']
+        if  self.data.has_key('name'):
+            return self.data['name']
+        elif self.data.has_key('block_name'):
+            return self.data['block_name']
+        else:
+            return self.data
         
 class Site(CMSObj):
     """docstring for Site"""

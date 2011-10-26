@@ -14,10 +14,11 @@ import IPython
 from   IPython import release
 
 import cmssh
-from   cmssh.iprint import PrintManager, format_dict
+from   cmssh.iprint import PrintManager
 from   cmssh.debug import DebugManager
 from   cmssh.cmsfs import CMSFS, apply_filter
 from   cmssh.cms_cmds import cms_ls, cms_cp
+from   cmssh.utils import list_results
 
 class ShellName(object):
     def __init__(self):
@@ -124,22 +125,7 @@ def lookup(arg):
         gen = CMSMGR.lookup(args[0].strip())
         for flt in args[1:]:
             res = apply_filter(flt.strip(), gen)
-    if  isinstance(res, list) or isinstance(res, GeneratorType):
-        for row in res:
-            if  not debug:
-                print row
-            else:
-                print repr(row)
-    elif  isinstance(res, set):
-        for row in list(res):
-            if  not debug:
-                print row
-            else:
-                print repr(row)
-    elif isinstance(res, dict):
-        print format_dict(res)
-    else:
-        print res
+    list_results(res, debug)
 
 def verbose(arg):
     """Set/get verbosity level"""
