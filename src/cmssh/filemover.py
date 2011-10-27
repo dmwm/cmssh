@@ -10,28 +10,26 @@ import json
 import urllib
 import urllib2
 import datetime
-from   subprocess import Popen, PIPE
 
 # for DBS2 XML parsing
 import xml.etree.ElementTree as ET
 
 # cmssh modules
+from cmssh.iprint import print_red
 from cmssh.utils import size_format
 from cmssh.ddict import DotDict
 from cmssh.cms_urls import phedex_url
+from cmssh.cms_objects import CMSObj
+from cmssh.utils import execmd
 
 def check_permission(dst, verbose=None):
     """
     Check permission to write to given destination area
     """
-#    if  not verbose: sys.stdout.write('.')
     if  verbose:
         print "Check permission to write to %s" % dst
     cmd    = 'srm-mkdir %s' % dst
-    pipe   = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE, close_fds=True)
-    (child_stdout, child_stderr) = (pipe.stdout, pipe.stderr)
-    stdout = child_stdout.read()
-    stderr = child_stderr.read()
+    stdout, stderr = execmd(cmd)
     if  stderr.find('command not found') != -1:
         print 'Unable to find srm-ls tool'
         print help
@@ -51,10 +49,7 @@ def check_software(softlist):
     """
     help     = 'Please run with --help for more options'
     for cmd in softlist:
-        pipe = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE, close_fds=True)
-        (child_stdout, child_stderr) = (pipe.stdout, pipe.stderr)
-        stdout = child_stdout.read()
-        stderr = child_stderr.read()
+        stdout, stderr = execmd(cmd)
         if  not stdout:
             print 'Unable to find %s' % cmd
             print help
@@ -66,10 +61,7 @@ def check_proxy():
     """
     # check valid proxy
     cmd    = 'grid-proxy-info'
-    pipe   = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE, close_fds=True)
-    (child_stdout, child_stderr) = (pipe.stdout, pipe.stderr)
-    stdout = child_stdout.read()
-    stderr = child_stderr.read()
+    stdout, stderr = execmd(cmd)
     if  stderr.find('command not found') != -1:
         print 'Unable to find grid-proxy-info tool'
         print help
@@ -99,39 +91,43 @@ def lfns(run=None, dataset=None):
     """
     Get lfns list for provided run/dataset
     """
-    url  = 'http://cmsdbsprod.cern.ch/cms_dbs_prod_global/servlet/DBSServlet'
+#    url  = 'http://cmsdbsprod.cern.ch/cms_dbs_prod_global/servlet/DBSServlet'
+#    api  = 'listFiles' # DBS2 
+#    args = dict(data_tier_list='', analysis_dataset_name='',
+#                  processed_dataset='', detail='False',
+#                  retrive_list='', block_name='', path='',
+#                  run_number='', primay_dataset='',
+#                  other_details='False')
+#    params = {'user_type': 'NORMAL', 'apiversion': 'DBS_2_0_9', 'api': api}
+#    if  run:
+#        args['run_number'] = run
+#    if  dataset:
+#        args['path'] = dataset
+    url  = dbs_url()
+    params = {'detail':'True'}
     api  = 'files' # DBS3
-    api  = 'listFiles' # DBS2 
-    args = dict(data_tier_list='', analysis_dataset_name='',
-                  processed_dataset='', detail='False',
-                  retrive_list='', block_name='', path='',
-                  run_number='', primay_dataset='',
-                  other_details='False')
-    params = {'user_type': 'NORMAL', 'apiversion': 'DBS_2_0_9', 'api': api}
     if  run:
-        args['run_number'] = run
+        args['minrun'] = run
+        args['maxrun'] = run
     if  dataset:
-        args['path'] = dataset
+        args['dataset'] = dataset
     params.update(args)
     data = urllib2.urlopen(url, urllib.urlencode(params, doseq=True))
-    result = data.read()
-    for row in parser(result):
-        yield row
+#    result = data.read() # DBS2
+#    for row in parser(result):
+#        yield row
 
-#    json_dict = json.load(data) # JSON is only for DBS3
-#    print json_dict
+    json_dict = json.load(data) # JSON is only for DBS3
+    for row in json_dict:
+        yield row['logical_file_name']
 
 def get_username(verbose=None):
     """
     Get user name from provided DN
     """
-#    if  not verbose: sys.stdout.write('.')
     # get DN from grid-proxy-info
     cmd    = 'grid-proxy-info'
-    pipe   = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE, close_fds=True)
-    (child_stdout, child_stderr) = (pipe.stdout, pipe.stderr)
-    stdout = child_stdout.read()
-    stderr = child_stderr.read()
+    stdout, stderr = execmd(cmd)
     if  stderr.find('command not found') != -1:
         raise Exception(stderr)
     userdn = None 
@@ -185,12 +181,12 @@ def resolve_srm_path(node, verbose=None):
         if  row['protocol'] == 'srmv2' and row['element_name'] == 'lfn-to-pfn':
             yield (row['result'], row['path-match'])
 
-def resolve_user_srm_path(node, verbose=None):
+def resolve_user_srm_path(node, ldir='/store/user', verbose=None):
     """
     Use TFC phedex API to resolve srm path for given node
     """
     url    = phedex_url('lfn2pfn')
-    params = {'node':node, 'lfn':'/store/user', 'protocol': 'srmv2'}
+    params = {'node':node, 'lfn':ldir, 'protocol': 'srmv2'}
     data   = urllib2.urlopen(url, urllib.urlencode(params, doseq=True))
     result = json.load(data)
     for row in result['phedex']['mapping']:
@@ -219,8 +215,6 @@ def get_pfns(lfn, verbose=None):
             se      = replica['se']
             if  se not in selist:
                 selist.append(se)
-#            if  cmsname.count('T0', 0, 2) == 1:
-#                continue # skip T0's
             # query Phedex for PFN
             url    = phedex_url('lfn2pfn')
             params = {'protocol':'srmv2', 'lfn':lfn, 'node':cmsname}
@@ -255,7 +249,7 @@ def srmcp(srmcmd, lfn, dst, verbose=None):
                         print "Resolve %s into %s" % (dst, srm_path)
                     dst = srm_path
         else:
-            paths = [p for p in resolve_user_srm_path(dst, verbose)]
+            paths = [p for p in resolve_user_srm_path(dst, verbose=verbose)]
             dst = '%s/%s' % (paths[0], get_username())
         check_permission(dst, verbose)
     else:
@@ -313,11 +307,7 @@ def get_size(cmd, verbose=None):
     """
     Execute srm-ls <surl> command and retrieve file size information
     """
-#    if  not verbose: sys.stdout.write('.')
-    pipe  = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE, close_fds=True)
-    (child_stdout, child_stderr) = (pipe.stdout, pipe.stderr)
-    stdout = child_stdout.read()
-    stderr = child_stderr.read()
+    stdout, stderr = execmd(cmd)
     if  stderr.find('command not found') != -1:
         print 'Unable to find srm-ls tool'
         print help
@@ -335,7 +325,6 @@ def check_file(src, dst, verbose):
     """
     Check if file is transfered and return dst, dst_size upon success.
     """
-#    if  not verbose: sys.stdout.write('.')
     # find file size from replica
     rcmd  = 'srm-ls %s' % src
     orig_size = get_size(rcmd, verbose)
@@ -352,7 +341,7 @@ def check_file(src, dst, verbose):
         return (dst, dst_size)
     return False
 
-def execute(lfn, cmd, verbose):
+def execute(cmd, lfn, verbose):
     """
     Execute given srm-copy command, but also check if file is in place at dst
     cmd = srm-copy <from> <to> <options>
@@ -364,7 +353,12 @@ def execute(lfn, cmd, verbose):
     if  status:
         return status
     else:
-        os.system(cmd) # execute given command
+#        os.system(cmd) # execute given command
+        stdout, stderr = execmd(cmd)
+        if  stderr:
+            print_red(stderr)
+        if  not stdout.find('SRM_SUCCESS') != -1:
+            print stdout
     status = check_file(src, dst, verbose) # check again since SRM may fail
     return status
     
@@ -373,7 +367,6 @@ def check_allowance(verbose):
     Check if user is allowed to perform srm-copy command.
     We send request to FileMover server, who response with ok/fail.
     """
-#    if  not verbose: sys.stdout.write('.')
     url  = filemover_url() + '/allow'
     args = {'userdn': get_username()}
     if  verbose:
@@ -385,7 +378,6 @@ def add_request(lfn, src, dst, verbose):
     """
     Send request to FileMover server to add information abotu src/dst request.
     """
-#    if  not verbose: sys.stdout.write('.')
     url  = filemover_url() + '/record'
     date = '%s' % datetime.date.today()
     args = {'userdn':get_username(), 'src':src,
@@ -403,14 +395,16 @@ class FileMover(object):
         """Copy lfn to destination"""
         for cmd in srmcp("srm-copy", lfn, dst, verbose):
             if  cmd:
-                status = execute(lfn, cmd, verbose)
+                status = execute(cmd, lfn, verbose)
                 if  status:
                     dst, dst_size = status
                     print "\nDone, file located at %s (%s)" \
                         % (dst, size_format(dst_size))
                     break
-    def list(self, lfn, verbose=0):
-        """List function"""
+        return 'success'
+
+    def list_lfn(self, lfn, verbose=0):
+        """List LFN"""
         pat_lfn = re.compile('^/.*\.root$')
         if  pat_lfn.match(lfn):
             pfnlist, selist = get_pfns(arg, verbose)
@@ -418,12 +412,119 @@ class FileMover(object):
                 cmd = "srm-ls %s" % pfn
                 print '%s %s' % (lfn, get_size(cmd, verbose))
 
+    def list_se(self, arg, verbose=0):
+        """list content of given directory on SE"""
+        try:
+            node, ldir = arg.split(':')
+        except:
+            msg = 'Given argument "%s" does not represent SE:dir' % arg
+            raise Exception(msg)
+        cmd = 'srm-ls'
+        dst = [r for r in resolve_user_srm_path(node, ldir)][0]
+        cmd = "srm-ls %s" % dst
+        print cmd
+        stdout, stderr = execmd(cmd)
+        if  stderr:
+            print_red(stderr)
+        output = []
+        row = {}
+        for line in stdout.split():
+            if  line.find('SRM-CLIENT*SURL') != -1:
+                if  row:
+                    output.append(CMSObj(row))
+                    row = {}
+                row['data'] = line.replace('SRM-CLIENT*SURL=', '')
+            if  line.find('SRM-CLIENT*FILETYPE') != -1:
+                row['type'] = line.replace('SRM-CLIENT*FILETYPE=', '').lower()
+            if  line.find('SRM-CLIENT*BYTES') != -1:
+                row['bytes'] = long(line.replace('SRM-CLIENT*BYTES=', ''))
+        if  row:
+            output.append(CMSObj(row))
+        return output
+
+    def rm_lfn(self, arg, verbose=0):
+        """Remove user lfn from a node"""
+        try:
+            node, lfn = arg.split(':')
+        except:
+            msg = 'Given argument "%s" does not represent SE:LFN' % arg
+            raise Exception(msg)
+        cmd = 'srm-rm'
+        dst = [r for r in resolve_user_srm_path(node)][0]
+        dst = dst.replace('/store/user', '') # remove default path
+        if  dst[-1] == '/':
+            dst = dst[:-1]
+        cmd = "%s %s" % (cmd, dst+lfn)
+        print cmd
+        stdout, stderr = execmd(cmd)
+        if  stderr:
+            print_red(stderr)
+        if  stdout.find('SRM_SUCCESS') != -1:
+            return 'success'
+        else:
+            print stdout
+
+    def rmdir(self, path, verbose=0):
+        """rmdir command"""
+        spath = path.split(':')
+        if  len(spath) == 1:
+            node = spath[0]
+            ldir = '/store/user'
+        else:
+            node = spath[0]
+            ldir = spath[1]
+        dst = [r for r in resolve_user_srm_path(node, ldir)][0]
+        cmd = 'srm-rmdir %s' % dst
+        print cmd
+        stdout, stderr = execmd(cmd)
+        if  stderr:
+            print_red(stderr)
+        if  stdout.find('SRM_SUCCESS') != -1:
+            return 'success'
+        else:
+            print stdout
+
+    def mkdir(self, path, verbose=0):
+        """mkdir command"""
+        spath = path.split(':')
+        if  len(spath) == 1:
+            node = spath[0]
+            ldir = '/store/user'
+        else:
+            node = spath[0]
+            ldir = spath[1]
+        dst = [r for r in resolve_user_srm_path(node, ldir)][0]
+        cmd = 'srm-mkdir %s' % dst
+        print cmd
+        stdout, stderr = execmd(cmd)
+        if  stderr:
+            print_red(stderr)
+        if  stdout.find('SRM_SUCCESS') != -1:
+            return 'success'
+        else:
+            print stdout
+
 FM_SINGLETON = FileMover()
 def copy_lfn(lfn, dst, verbose=0):
     """Copy lfn to destination"""
-    FM_SINGLETON.copy(lfn, dst, verbose)
+    return FM_SINGLETON.copy(lfn, dst, verbose)
 
 def list_lfn(lfn, verbose=0):
     """List lfn info"""
-    return FM_SINGLETON.list(lfn, verbose)
+    return FM_SINGLETON.list_lfn(lfn, verbose)
 
+def list_se(arg, verbose=0):
+    """List SE content"""
+    return FM_SINGLETON.list_se(arg, verbose)
+
+def rm_lfn(lfn, verbose=0):
+    """Remove lfn from destination"""
+    return FM_SINGLETON.rm_lfn(lfn, verbose)
+
+def mkdir(dst, verbose=0):
+    """mkdir via srm-mkdir"""
+    return FM_SINGLETON.mkdir(dst, verbose)
+
+def rmdir(dst, verbose=0):
+    """rmdir via srm-rmdir"""
+    return FM_SINGLETON.rmdir(dst, verbose)

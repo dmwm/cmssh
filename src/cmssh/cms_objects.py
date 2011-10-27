@@ -21,6 +21,9 @@ class CMSObj(object):
     def assign(self, key, val):
         """assign CMSObj attribute"""
         self.data[key] = val
+    def __str__(self):
+        """String representation"""
+        return format_dict(self.data)
 
 class Dataset(CMSObj):
     """DBS3 Dataset object"""

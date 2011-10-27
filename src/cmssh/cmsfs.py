@@ -311,6 +311,8 @@ def site_info(dst, verbose=None):
     paths  = [r for r in resolve_user_srm_path(dst)]
     for site in res:
         site.assign('pfn_path', paths)
+    for pdir in paths:
+        site.assign('default_path', pdir.split('=')[-1])
     pat    = re.compile('^T[0-9]_[A-Z]+(_)[A-Z]+')
     if  pat.match(dst) and verbose:
         url       = phedex_url('blockReplicas')

@@ -147,8 +147,7 @@ def main():
         if  not arch:
             arch = 'osx106_amd64_gcc461'
     else:
-        msg = 'Unsupported OS "%s"' % platform
-        print msg
+        print 'Unsupported OS "%s"' % platform
         sys.exit(1)
     url = 'http://vdt.cs.wisc.edu/software/globus/4.0.8_VDT2.0.0/vdt_globus_essentials-VDT2.0.0-%s_%s.tar.gz' % (parch, ver)
     get_file(url, 'globus.tar.gz', path, debug)
@@ -157,6 +156,20 @@ def main():
     os.chdir(path)
     url = 'http://vdt.cs.wisc.edu/software/certificates/62/certificates-62-1.tar.gz'
     get_file(url, 'certificates.tar.gz', path, debug)
+
+    print "Installing root"
+    os.chdir(path)
+    if  platform == 'Linux':
+        if  unsupported_linux:
+            url = 'ftp://root.cern.ch/root/root_v5.30.03.Linux-slc5-gcc4.3.tar.gz'
+        else:
+            url = 'ftp://root.cern.ch/root/root_v5.30.03.Linux-slc5_amd64-gcc4.3.tar.gz'
+    elif platform == 'Darwin':
+        url = 'ftp://root.cern.ch/root/root_v5.30.02.macosx106-x86_64-gcc-4.2.tar.gz'
+    else:
+        print 'Unsupported OS "%s"' % platform
+        sys.exit(1)
+    get_file(url, 'root.tar.gz', path, debug)
 
     print "Installing SRM client"
     os.chdir(path)
@@ -216,11 +229,14 @@ def main():
     print "Create configuration"
     os.chdir(path)
     with open('setup.sh', 'w') as setup:
-        msg  = '#!/bin/bash\nexport DYLD_LIBRARY_PATH=%s/globus/lib\n' % path
-        msg += 'export LD_LIBRARY_PATH=%s/globus/lib\n' % path
+        msg  = '#!/bin/bash\nexport DYLD_LIBRARY_PATH=%s/globus/lib:%s/root/lib\n' \
+                % (path, path)
+        msg += 'export LD_LIBRARY_PATH=%s/globus/lib:%s/root/lib\n' \
+                % (path, path)
         msg += 'export PATH=%s/globus/bin:$PATH\n' % path
         msg += 'export PATH=%s/srmclient2/bin:$PATH\n' % path
         msg += 'export PATH=%s/install/bin:$PATH\n' % path
+        msg += 'export PATH=%s/root/bin:$PATH\n' % path
         msg += 'export PATH=%s/bin:$PATH\n' % path
         msg += 'export PYTHONPATH=%s/cmssh/src\n' % path
         msg += 'export PYTHONPATH=$PYTHONPATH:$PWD/soft/install/lib/python%s/site-packages\n' % py_ver

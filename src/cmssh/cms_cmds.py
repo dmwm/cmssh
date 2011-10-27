@@ -12,7 +12,7 @@ import subprocess
 
 # cmssh modules
 from cmssh.iprint import print_red, print_blue, PrintManager
-from cmssh.filemover import copy_lfn
+from cmssh.filemover import copy_lfn, rm_lfn, mkdir, rmdir, list_se
 from cmssh.utils import list_results
 from cmssh.cmsfs import dataset_info, block_info, file_info, site_info
 from cmssh.cmsfs import CMSFS, apply_filter
@@ -132,16 +132,30 @@ def cmsenv(arg=None):
 def cms_help_msg():
     """cmsHelp message"""
     msg  = '\nAvailable cmssh commands:\n'
-    msg += PM.msg_green('find    ') + ' search CMS meta-data (query DBS/Phedex/SiteDB)\n'
-    msg += PM.msg_green('ls      ') + ' list LFNs, e.g. ls /store/user/file.root\n'
-    msg += PM.msg_green('cp      ') + ' copy LFNs, e.g. cp /store/user/file.root .\n'
-    msg += PM.msg_green('du      ') + ' display disk usage for given site, e.g. du T3_US_Cornell\n'
-    msg += PM.msg_green('releases') + ' list available CMSSW releases\n'
-    msg += PM.msg_green('install ') + ' install CMSSW release, e.g. install CMSSW_5_0_0\n'
+    msg += PM.msg_green('find    ') \
+        + ' search CMS meta-data (query DBS/Phedex/SiteDB)\n'
+    msg += PM.msg_green('mkdir   ') \
+        + ' mkdir command, e.g. mkdir /path/foo or mkdir T3_US_Cornell:/store/user/foo\n'
+    msg += PM.msg_green('rmdir   ') \
+        + ' rmdir command, e.g. rmdir /path/foo or rmdir T3_US_Cornell:/store/user/foo\n'
+    msg += PM.msg_green('ls      ') \
+        + ' list file/LFN, e.g. ls local.file or ls /store/user/file.root\n'
+    msg += PM.msg_green('rm      ') \
+        + ' remove file/LFN, e.g. rm local.file or rm T3_US_Cornell:/store/user/file.root\n'
+    msg += PM.msg_green('cp      ') \
+        + ' copy file/LFN, e.g. cp local.file or cp /store/user/file.root .\n'
+    msg += PM.msg_green('root    ') + ' invoke ROOT\n'
+    msg += PM.msg_green('du      ') \
+        + ' display disk usage for given site, e.g. du T3_US_Cornell\n'
+    msg += PM.msg_green('releases') \
+        + ' list available CMSSW releases\n'
+    msg += PM.msg_green('install ') \
+        + ' install CMSSW release, e.g. install CMSSW_5_0_0\n'
     msg += '\nAvailable CMSSW commands:\n'
     msg += PM.msg_green('scram   ') + ' CMSSW scram command\n'
     msg += PM.msg_green('cmsrel  ') + ' setup CMSSW release environment\n'
-    msg += PM.msg_green('cmsRun  ') + ' cmsRun command for release in question\n'
+    msg += PM.msg_green('cmsRun  ') \
+        + ' cmsRun command for release in question\n'
     msg += '\nAvailable GRID commands:\n'
     msg += PM.msg_green('grid-proxy-init') + ' setup your proxy\n'
     msg += PM.msg_green('grid-proxy-info') + ' show your proxy info\n'
@@ -150,6 +164,65 @@ def cms_help_msg():
 def cms_help(arg=None):
     """cmsHelp command"""
     print cms_help_msg()
+
+def cms_rm(arg):
+    """CMS rm command"""
+    try:
+        verbose = get_ipython().debug
+    except:
+        verbose = 0
+    if  not arg:
+        print_red("Usage: rm <options> source_file")
+    if  os.path.exists(arg):
+        prc = subprocess.Popen("rm " + arg, shell=True)
+        sts = os.waitpid(prc.pid, 0)[1]
+    else:
+        pat_lfn = re.compile('.*\.root$')
+        if  pat_lfn.match(arg):
+            status = rm_lfn(arg, verbose=verbose)
+            print_blue("Status %s" % status)
+        else:
+            raise Exception('Not implemented yet')
+
+def cms_rmdir(arg):
+    """CMS rmdir command"""
+    try:
+        verbose = get_ipython().debug
+    except:
+        verbose = 0
+    if  not arg:
+        print_red("Usage: rmdir <options> dir")
+    if  os.path.exists(arg):
+        prc = subprocess.Popen("rmdir " + arg, shell=True)
+        sts = os.waitpid(prc.pid, 0)[1]
+    else:
+        try:
+            status = rmdir(arg, verbose=verbose)
+            print_blue("Status %s" % status)
+        except:
+            traceback.print_exc()
+
+def cms_mkdir(arg):
+    """CMS mkdir command"""
+    try:
+        verbose = get_ipython().debug
+    except:
+        verbose = 0
+    if  not arg:
+        print_red("Usage: mkdir <options> dir")
+    if  arg.find(':') == -1: # not a SE:dir pattern
+        prc = subprocess.Popen("mkdir " + arg, shell=True)
+        sts = os.waitpid(prc.pid, 0)[1]
+    else:
+        try:
+            status = mkdir(arg, verbose=verbose)
+            print_blue("Status %s" % status)
+        except:
+            traceback.print_exc()
+
+def cms_root(arg):
+    """CMS root command"""
+    subprocess.call("root -l %s" % arg, shell=True)
 
 def cms_ls(arg):
     """
@@ -165,14 +238,17 @@ def cms_ls(arg):
     if  opts:
         arg = arg.strip().replace(''.join(opts), '').strip()
     if  os.path.exists(arg) or not arg:
-        prc = subprocess.Popen("ls" + " " + ''.join(opts) + " " + arg, shell=True)
+        prc = subprocess.Popen("ls " + " " + ''.join(opts) + " " + arg, shell=True)
         sts = os.waitpid(prc.pid, 0)[1]
     else:
         pat_site = re.compile('^T[0-9]_[A-Z]+(_)[A-Z]+')
         pat_dataset = re.compile('^/.*/.*/.*')
         pat_block = re.compile('^/.*/.*/.*#.*')
         pat_lfn = re.compile('^/.*\.root$')
-        if  pat_site.match(arg):
+        pat_se = re.compile('^T[0-3]_.*:/.*')
+        if  pat_se.match(arg):
+            res = list_se(arg, verbose)
+        elif  pat_site.match(arg):
             res = site_info(arg, verbose)
         elif pat_lfn.match(arg):
             res = file_info(arg, verbose)

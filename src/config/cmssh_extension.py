@@ -18,6 +18,7 @@ import cmssh
 from   cmssh.iprint import PrintManager
 from   cmssh.debug import DebugManager
 from   cmssh.cms_cmds import cvs, lookup, cms_ls, cms_cp, verbose
+from   cmssh.cms_cmds import cms_rm, cms_rmdir, cms_mkdir, cms_root
 from   cmssh.cms_cmds import apt_get, apt_cache, cmssw_install, releases
 from   cmssh.cms_cmds import cmsrel, cmsrun, cmsenv, scram, cms_help
 from   cmssh.cms_cmds import cms_help_msg, results
@@ -89,7 +90,11 @@ cmsMagicList = [ \
     ('find', lookup),
     ('du', lookup),
     ('ls', cms_ls),
+    ('rm', cms_rm),
+    ('mkdir', cms_mkdir),
+    ('rmdir', cms_rmdir),
     ('cp', cms_cp),
+    ('root', cms_root),
     ('verbose', verbose),
     ('apt-get', apt_get),
     ('apt-cache', apt_cache),

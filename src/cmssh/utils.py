@@ -10,6 +10,7 @@ import time
 import types
 import readline
 import traceback
+import subprocess
 from   types import GeneratorType
 
 from   cmssh.iprint import format_dict
@@ -55,6 +56,8 @@ class Completer:
 
 def list_results(res, debug):
     """List results"""
+    if  not res:
+        return
     if  isinstance(res, list) or isinstance(res, GeneratorType):
         for row in res:
             if  not debug:
@@ -74,3 +77,13 @@ def list_results(res, debug):
             print res
         else:
             print repr(res)
+
+def execmd(cmd):
+    """Execute given command in subprocess"""
+    pipe = subprocess.Popen(cmd, shell=True, 
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
+    (child_stdout, child_stderr) = (pipe.stdout, pipe.stderr)
+    stdout = child_stdout.read()
+    stderr = child_stderr.read()
+    return stdout, stderr
+
