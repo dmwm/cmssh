@@ -136,7 +136,6 @@ def main(ipython):
     ver    = "%s.%s" % (cmssh.__version__, cmssh.__revision__)
     msg    = "Welcome to cmssh %s!\n[python %s, ipython %s]\n%s\n" \
             % (ver, pyver, ipyver ,os.uname()[3])
-    msg   += PM.msg_blue('cmsHelp') + ':\n'
     msg   += cms_help_msg()
     print msg
 
