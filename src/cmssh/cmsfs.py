@@ -15,6 +15,7 @@ import urllib2
 from   types import GeneratorType
 
 # cmssh modules
+from   cmssh.iprint import format_dict
 from   cmssh.url_utils import get_data
 from   cmssh.cms_objects import Run, File, Block, Dataset, Site, User
 from   cmssh.filemover import get_pfns, resolve_user_srm_path
@@ -291,10 +292,11 @@ def file_info(lfn, verbose=None):
         msg  = 'The %s LFN yield %s results' % (lfn, len(res))
         raise Exception(msg)
     if  verbose:
+        params = {'logical_file_name': lfn}
         result = get_data(url, 'filelumis', params, verbose)
-        print "Dataset %s has the following file/lumis:"
+        print "File %s has the following file/lumis:" % lfn
         for row in result:
-            print row
+            print format_dict(row)
     lfnobj = res[0]
     pfnlist, selist = get_pfns(lfn, verbose)
     lfnobj.assign('pfn', pfnlist)

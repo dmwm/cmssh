@@ -16,12 +16,10 @@ class HTTPSClientAuthHandler(urllib2.HTTPSHandler):
     Simple HTTPS client authentication class based on provided 
     key/ca information
     """
-    def __init__(self, key=None, cert=None, level=0):
-        if  level:
-            urllib2.HTTPSHandler.__init__(self, debuglevel=1)
-        else:
-            urllib2.HTTPSHandler.__init__(self)
-        self.key = key
+    def __init__(self, ckey=None, cert=None):
+#        urllib2.HTTPSHandler.__init__(self, debuglevel=1)
+        urllib2.HTTPSHandler.__init__(self)
+        self.ckey = ckey
         self.cert = cert
 
     def https_open(self, req):
@@ -33,8 +31,8 @@ class HTTPSClientAuthHandler(urllib2.HTTPSHandler):
 
     def get_connection(self, host, timeout=300):
         """Connection method"""
-        if  self.key:
-            return httplib.HTTPSConnection(host, key_file=self.key,
+        if  self.ckey:
+            return httplib.HTTPSConnection(host, key_file=self.ckey,
                                                 cert_file=self.cert)
         return httplib.HTTPSConnection(host)
 
@@ -50,14 +48,14 @@ def get_data(url, method, kwargs, verbose=None):
     if  method == 'datasets':
         params.update({'dataset_access_type':'PRODUCTION', 'detail':'True'})
     url = url + '?' + urllib.urlencode(params, doseq=True)
-#    print "\n### URL", url
+#    print "\n### URL", url, ckey, cert
     req = urllib2.Request(url)
     headers = {'Accept':'application/json;text/json'}
     if  headers:
         for key, val in headers.items():
             req.add_header(key, val)
     if  ckey and cert:
-        handler = HTTPSClientAuthHandler(ckey, cert, verbose)
+        handler = HTTPSClientAuthHandler(ckey, cert)
         opener  = urllib2.build_opener(handler)
         urllib2.install_opener(opener)
     res  = urllib2.urlopen(req)

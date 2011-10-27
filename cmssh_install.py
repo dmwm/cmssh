@@ -160,10 +160,7 @@ def main():
     print "Installing root"
     os.chdir(path)
     if  platform == 'Linux':
-        if  unsupported_linux:
-            url = 'ftp://root.cern.ch/root/root_v5.30.03.Linux-slc5-gcc4.3.tar.gz'
-        else:
-            url = 'ftp://root.cern.ch/root/root_v5.30.03.Linux-slc5_amd64-gcc4.3.tar.gz'
+        url = 'ftp://root.cern.ch/root/root_v5.30.03.Linux-slc5-gcc4.3.tar.gz'
     elif platform == 'Darwin':
         url = 'ftp://root.cern.ch/root/root_v5.30.02.macosx106-x86_64-gcc-4.2.tar.gz'
     else:
