@@ -159,6 +159,9 @@ def cms_help_msg():
     msg += '\nAvailable GRID commands:\n'
     msg += PM.msg_green('grid-proxy-init') + ' setup your proxy\n'
     msg += PM.msg_green('grid-proxy-info') + ' show your proxy info\n'
+    msg += '\nQuery results are accessible via results() function:\n'
+    msg += 'find dataset=/*Zee*\n'
+    msg += 'for r in results(): print r, type(r)\n'
     return msg
 
 def cms_help(arg=None):
