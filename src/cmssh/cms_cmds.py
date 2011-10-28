@@ -162,7 +162,7 @@ def cms_help_msg():
         + ' list available CMSSW releases\n'
     msg += PM.msg_green('install ') \
         + ' install CMSSW release, e.g. install CMSSW_5_0_0\n'
-    msg += '\nAvailable CMSSW commands:\n'
+    msg += '\nAvailable CMSSW commands (once you install any CMSSW release):\n'
     msg += PM.msg_green('scram   ') + ' CMSSW scram command\n'
     msg += PM.msg_green('cmsrel  ') + ' setup CMSSW release environment\n'
     msg += PM.msg_green('cmsRun  ') \
