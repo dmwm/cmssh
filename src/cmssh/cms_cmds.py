@@ -82,7 +82,7 @@ def lookup(arg):
     debug = get_ipython().debug
     args  = arg.split('|')
     if  len(args) == 1: # no filter
-        res = CMSMGR.lookup(arg)
+        res = CMSMGR.lookup(arg.strip())
     else:
         gen = CMSMGR.lookup(args[0].strip())
         for flt in args[1:]:
