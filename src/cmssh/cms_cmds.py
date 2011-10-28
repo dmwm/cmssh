@@ -168,8 +168,8 @@ def cms_help_msg():
     msg += PM.msg_green('cmsRun  ') \
         + ' cmsRun command for release in question\n'
     msg += '\nAvailable GRID commands:\n'
-    msg += PM.msg_green('grid-proxy-init') + ' setup your proxy\n'
-    msg += PM.msg_green('grid-proxy-info') + ' show your proxy info\n'
+    msg += PM.msg_green('gpinit  ') + ' setup your proxy (aka grid-proxy-init)\n'
+    msg += PM.msg_green('gpinfo  ') + ' show your proxy info (aka grid-proxy-info)\n'
     msg += '\nQuery results are accessible via %s function:\n' % PM.msg_blue('results()')
     msg += '   find dataset=/*Zee*\n'
     msg += '   for r in results(): print r, type(r)\n'

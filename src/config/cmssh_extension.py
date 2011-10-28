@@ -106,8 +106,8 @@ cmsMagicList = [ \
     ('cmsenv', cmsenv),
     ('scram', scram),
     ('cmsHelp', cms_help),
-    ('grid-proxy-init', grid_proxy_init),
-    ('grid-proxy-info', grid_proxy_info),
+    ('gpinit', grid_proxy_init),
+    ('gpinfo', grid_proxy_info),
 ]
 
 #
