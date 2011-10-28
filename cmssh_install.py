@@ -281,7 +281,7 @@ ipython --no-banner --ipython-dir=$ipdir --profile=cmssh
         cmssh.write(msg)
     os.chmod('bin/cmssh', 0755)
 
-    print "Contratulations, cmssh is available at %s/bin/cmssh" % path
+    print "Congratulations, cmssh is available at %s/bin/cmssh" % path
 
 if __name__ == '__main__':
     main()
