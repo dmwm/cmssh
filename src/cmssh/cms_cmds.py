@@ -43,7 +43,7 @@ def grid_proxy_init(_arg):
     
 def grid_proxy_info(_arg):
     """grid-proxy-info shell command"""
-    subprocess.call("grid-proxy-info")
+    subprocess.call("grid-proxy-info", shell=True)
     
 def apt_get(arg):
     """apt-get shell command"""
