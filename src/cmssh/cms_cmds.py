@@ -35,6 +35,7 @@ def options(arg):
 # main magic commands available in cms-sh
 def cvs(arg):
     """cvs shell command"""
+    arg = arg.strip()
     subprocess.call("cvs %s" % arg, shell=True)
     
 def grid_proxy_init(_arg):
@@ -47,10 +48,12 @@ def grid_proxy_info(_arg):
     
 def apt_get(arg):
     """apt-get shell command"""
+    arg = arg.strip()
     subprocess.call("apt-get %s" % arg, shell=True)
     
 def apt_cache(arg):
     """apt-cache shell command"""
+    arg = arg.strip()
     subprocess.call("apt-cache %s" % arg, shell=True)
 
 def releases(_arg):
@@ -61,6 +64,7 @@ def releases(_arg):
 
 def cmssw_install(arg):
     """CMSSW install shell command"""
+    arg = arg.strip()
     print "Searching for %s" % arg
     subprocess.call('apt-cache search %s | grep -v -i fwlite' % arg, shell=True)
     print "Installing %s" % arg
@@ -71,6 +75,7 @@ def cmssw_install(arg):
 
 def debug(arg):
     """debug shell command"""
+    arg = arg.strip()
     if  arg:
         PM.print_blue("Set debug level to %s" % arg)
         DEBUG.set(arg)
@@ -79,10 +84,11 @@ def debug(arg):
 
 def lookup(arg):
     """Perform CMSFS lookup for provided query"""
+    arg = arg.strip()
     debug = get_ipython().debug
     args  = arg.split('|')
     if  len(args) == 1: # no filter
-        res = CMSMGR.lookup(arg.strip())
+        res = CMSMGR.lookup(arg)
     else:
         gen = CMSMGR.lookup(args[0].strip())
         for flt in args[1:]:
@@ -92,6 +98,7 @@ def lookup(arg):
 
 def verbose(arg):
     """Set/get verbosity level"""
+    arg = arg.strip()
     ip = get_ipython()
     if  arg == '':
         print "verbose", ip.debug
@@ -104,6 +111,7 @@ def verbose(arg):
 # CMSSW commands
 def cmsrel(rel):
     """switch to given CMSSW release"""
+    rel = rel.strip()
     cmssw_dir = os.environ.get('CMSSW_RELEASES', os.getcwd())
     cmsenv = "eval `scramv1 runtime -sh`"
     if  not os.path.isdir(cmssw_dir):
@@ -119,14 +127,17 @@ def cmsrel(rel):
 
 def scram(arg):
     """scram CMSSW command"""
+    arg = arg.strip()
     subprocess.call("scramv1 %s" % arg, shell=True)
 
 def cmsrun(arg):
     """cmsRun CMSSW command"""
+    arg = arg.strip()
     subprocess.call("cmsRun %s" % arg, shell=True)
 
 def cmsenv(arg=None):
     """cmsenv CMSSW command"""
+    arg = arg.strip()
     subprocess.call("eval `scramv1 runtime -sh`")
 
 def cms_help_msg():
@@ -171,6 +182,7 @@ def cms_help(arg=None):
 
 def cms_rm(arg):
     """CMS rm command"""
+    arg = arg.strip()
     try:
         verbose = get_ipython().debug
     except:
@@ -190,6 +202,7 @@ def cms_rm(arg):
 
 def cms_rmdir(arg):
     """CMS rmdir command"""
+    arg = arg.strip()
     try:
         verbose = get_ipython().debug
     except:
@@ -208,6 +221,7 @@ def cms_rmdir(arg):
 
 def cms_mkdir(arg):
     """CMS mkdir command"""
+    arg = arg.strip()
     try:
         verbose = get_ipython().debug
     except:
@@ -226,12 +240,12 @@ def cms_mkdir(arg):
 
 def cms_root(arg):
     """CMS root command"""
+    arg = arg.strip()
     subprocess.call("root -l %s" % arg, shell=True)
 
 def cms_ls(arg):
-    """
-    CMS ls command
-    """
+    """CMS ls command"""
+    arg = arg.strip()
     try:
         verbose = get_ipython().debug
     except:
@@ -266,9 +280,8 @@ def cms_ls(arg):
         list_results(res, debug=True)
 
 def cms_cp(arg):
-    """
-    CMS cp command
-    """
+    """CMS cp command"""
+    arg = arg.strip()
     try:
         verbose = get_ipython().debug
     except:

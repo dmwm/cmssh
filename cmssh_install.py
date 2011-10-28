@@ -42,6 +42,9 @@ class MyOptionParser:
         self.parser.add_option("--unsupported", action="store_true",
             dest="unsupported",
             help="enforce installation on unsupported Linux platforms, e.g. Ubuntu")
+        self.parser.add_option("--no_cmssw", action="store_true",
+            dest="no_cmssw",
+            help="do not bootstrap CMSSW area")
     def getOpt(self):
         """Returns parse list of options"""
         return self.parser.parse_args()
@@ -157,17 +160,6 @@ def main():
     url = 'http://vdt.cs.wisc.edu/software/certificates/62/certificates-62-1.tar.gz'
     get_file(url, 'certificates.tar.gz', path, debug)
 
-    print "Installing root"
-    os.chdir(path)
-    if  platform == 'Linux':
-        url = 'ftp://root.cern.ch/root/root_v5.30.03.Linux-slc5-gcc4.3.tar.gz'
-    elif platform == 'Darwin':
-        url = 'ftp://root.cern.ch/root/root_v5.30.02.macosx106-x86_64-gcc-4.2.tar.gz'
-    else:
-        print 'Unsupported OS "%s"' % platform
-        sys.exit(1)
-    get_file(url, 'root.tar.gz', path, debug)
-
     print "Installing SRM client"
     os.chdir(path)
     url = 'http://vdt.cs.wisc.edu/software/srm-client-lbnl/2.2.1.3.19/srmclient2-2.2.1.3.19.tar.gz'
@@ -201,27 +193,39 @@ def main():
     cmd = 'mv vkuznet-cmssh* %s/cmssh' % path
     exe_cmd(path, cmd, debug)
 
-    print "Bootstrap CMSSW"
-    sdir = '%s/CMSSW' % path 
-    try:
-        os.makedirs(sdir)
-    except:
-        pass
-    os.chdir(sdir)
-    url  = 'http://cmsrep.cern.ch/cmssw/cms/bootstrap.sh'
-    with open('bootstrap.sh', 'w') as bootstrap:
-         bootstrap.write(getdata(url, {}, debug))
-    os.chmod('bootstrap.sh', 0755)
-    os.environ['VO_CMS_SW_DIR'] = sdir
-    os.environ['SCRAM_ARCH'] = arch
-    os.environ['LANG'] = 'C'
-    cmd  = 'sh -x $VO_CMS_SW_DIR/bootstrap.sh setup -path $VO_CMS_SW_DIR -arch $SCRAM_ARCH'
-    if  unsupported_linux:
-        cmd += ' -unsupported_distribution_hack'
-    cmd += ';source $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt/*/profile.d/init.sh;'
-    cmd += 'apt-get install external+fakesystem+1.0;'
-    cmd += 'apt-get update'
-    exe_cmd(sdir, cmd, debug)
+    if  not opts.no_cmssw:
+        print "Installing root"
+        os.chdir(path)
+        if  platform == 'Linux':
+            url = 'ftp://root.cern.ch/root/root_v5.30.03.Linux-slc5-gcc4.3.tar.gz'
+        elif platform == 'Darwin':
+            url = 'ftp://root.cern.ch/root/root_v5.30.02.macosx106-x86_64-gcc-4.2.tar.gz'
+        else:
+            print 'Unsupported OS "%s"' % platform
+            sys.exit(1)
+        get_file(url, 'root.tar.gz', path, debug)
+
+        print "Bootstrap CMSSW"
+        sdir = '%s/CMSSW' % path
+        try:
+            os.makedirs(sdir)
+        except:
+            pass
+        os.chdir(sdir)
+        url  = 'http://cmsrep.cern.ch/cmssw/cms/bootstrap.sh'
+        with open('bootstrap.sh', 'w') as bootstrap:
+             bootstrap.write(getdata(url, {}, debug))
+        os.chmod('bootstrap.sh', 0755)
+        os.environ['VO_CMS_SW_DIR'] = sdir
+        os.environ['SCRAM_ARCH'] = arch
+        os.environ['LANG'] = 'C'
+        cmd  = 'sh -x $VO_CMS_SW_DIR/bootstrap.sh setup -path $VO_CMS_SW_DIR -arch $SCRAM_ARCH'
+        if  unsupported_linux:
+            cmd += ' -unsupported_distribution_hack'
+        cmd += ';source $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt/*/profile.d/init.sh;'
+        cmd += 'apt-get install external+fakesystem+1.0;'
+        cmd += 'apt-get update'
+        exe_cmd(sdir, cmd, debug)
     
     print "Create configuration"
     os.chdir(path)
@@ -237,13 +241,14 @@ def main():
         msg += 'export PATH=%s/bin:$PATH\n' % path
         msg += 'export PYTHONPATH=%s/cmssh/src\n' % path
         msg += 'export PYTHONPATH=$PYTHONPATH:$PWD/soft/install/lib/python%s/site-packages\n' % py_ver
-        msg += 'export VO_CMS_SW_DIR=%s/CMSSW\n' % path 
-        msg += 'export SCRAM_ARCH=%s\n' % arch
-        msg += 'export LANG="C"\n'
-        msg += 'export CMSSW_RELEASES=%s/Releases\n' % path
-        msg += 'if [ -f $VO_CMS_SW_DIR/cmsset_default.sh ]; then\n'
-        msg += '   source $VO_CMS_SW_DIR/cmsset_default.sh\nfi\n'
-        msg += 'source $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt/*/etc/profile.d/init.sh\n'
+        if  not opts.no_cmssw:
+            msg += 'export VO_CMS_SW_DIR=%s/CMSSW\n' % path
+            msg += 'export SCRAM_ARCH=%s\n' % arch
+            msg += 'export LANG="C"\n'
+            msg += 'export CMSSW_RELEASES=%s/Releases\n' % path
+            msg += 'if [ -f $VO_CMS_SW_DIR/cmsset_default.sh ]; then\n'
+            msg += '   source $VO_CMS_SW_DIR/cmsset_default.sh\nfi\n'
+            msg += 'source $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt/*/etc/profile.d/init.sh\n'
         if  debug:
             print "+++ write setup.sh"
         setup.write(msg)
