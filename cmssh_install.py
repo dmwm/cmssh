@@ -148,7 +148,7 @@ def main():
     elif platform == 'Darwin':
         ver  = 'macos_10.4'
         if  not arch:
-            arch = 'osx106_amd64_gcc461'
+            arch = 'osx106_amd64_gcc421'
     else:
         print 'Unsupported OS "%s"' % platform
         sys.exit(1)
