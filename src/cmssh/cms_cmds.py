@@ -33,10 +33,20 @@ def options(arg):
     return opts
 
 # main magic commands available in cms-sh
-def cvs(arg):
+def cmd_cvs(arg):
     """cvs shell command"""
     arg = arg.strip()
     subprocess.call("cvs %s" % arg, shell=True)
+
+def cmd_vim(arg):
+    """vim shell command"""
+    arg = arg.strip()
+    subprocess.call("vim %s" % arg, shell=True)
+
+def cmd_python(arg):
+    """python shell command"""
+    arg = arg.strip()
+    subprocess.call("python %s" % arg, shell=True)
     
 def grid_proxy_init(_arg):
     """grid-proxy-init shell command"""
@@ -113,17 +123,39 @@ def cmsrel(rel):
     """switch to given CMSSW release"""
     rel = rel.strip()
     cmssw_dir = os.environ.get('CMSSW_RELEASES', os.getcwd())
-    cmsenv = "eval `scramv1 runtime -sh`"
+#    cmsenv = "eval `scramv1 runtime -sh`"
     if  not os.path.isdir(cmssw_dir):
         os.makedirs(cmssw_dir)
     if  os.path.isdir(os.path.join(cmssw_dir, rel + '/src')):
         os.chdir(os.path.join(cmssw_dir, rel + '/src'))
-        subprocess.call(cmsenv, shell=True)
     else:
         os.chdir(cmssw_dir)
         subprocess.call("scramv1 project CMSSW %s" % rel, shell=True)
         os.chdir(os.path.join(rel, 'src'))
-        subprocess.call(cmsenv, shell=True)
+    vdir = os.environ['VO_CMS_SW_DIR']
+    arch = os.environ['SCRAM_ARCH']
+#    path = '/usr/lib:%s/%s/cms/cmssw/%s/external/%s/lib:' % (vdir, arch, rel, arch)
+#    if  arch.find('osx') != -1:
+#        os.environ['DYLD_LIBRARY_PATH'] = path + os.environ['DYLD_LIBRARY_PATH']
+#    path = '%s/%s/cms/cmssw/%s/bin/%s:' % (vdir, arch, rel, arch)
+#    os.environ['PATH'] = path + os.environ['PATH']
+#    if  arch.find('osx') != -1:
+#        cmd = "eval `scramv1 runtime -sh`; env | grep ^DYLD_FALLBACK_LIBRARY_PATH="
+#    else:
+#        cmd = "eval `scramv1 runtime -sh`; env | grep ^LD_LIBRARY_PATH="
+#    proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+#    key, val = proc.stdout.read().split('=')
+#    os.environ[key] = val
+    cmd = "eval `scramv1 runtime -sh`; env"
+    proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+    for line in proc.stdout.read().split('\n'):
+        if  line and line.find('=') != -1 and line[0] != '_':
+            key, val = line.replace('\n', '').split('=')
+            os.environ[key] = val
+    path = '/usr/lib:%s/%s/cms/cmssw/%s/external/%s/lib:' % (vdir, arch, rel, arch)
+    if  arch.find('osx') != -1:
+        os.environ['DYLD_LIBRARY_PATH'] = path + os.environ['DYLD_LIBRARY_PATH']
+    print "Setup and switch to %s" % os.getcwd()
 
 def scram(arg):
     """scram CMSSW command"""

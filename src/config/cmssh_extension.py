@@ -17,11 +17,11 @@ from   IPython import release
 import cmssh
 from   cmssh.iprint import PrintManager
 from   cmssh.debug import DebugManager
-from   cmssh.cms_cmds import cvs, lookup, cms_ls, cms_cp, verbose
+from   cmssh.cms_cmds import cmd_cvs, lookup, cms_ls, cms_cp, verbose
 from   cmssh.cms_cmds import cms_rm, cms_rmdir, cms_mkdir, cms_root
 from   cmssh.cms_cmds import apt_get, apt_cache, cmssw_install, releases
 from   cmssh.cms_cmds import cmsrel, cmsrun, cmsenv, scram, cms_help
-from   cmssh.cms_cmds import cms_help_msg, results
+from   cmssh.cms_cmds import cmd_vim, cmd_python, cms_help_msg, results
 from   cmssh.cms_cmds import grid_proxy_init, grid_proxy_info
 
 class ShellName(object):
@@ -86,7 +86,7 @@ except:
 
 # list of cms-sh magic functions
 cmsMagicList = [ \
-    ('cvs', cvs),
+    ('cvs', cmd_cvs),
     ('find', lookup),
     ('du', lookup),
     ('ls', cms_ls),
@@ -108,6 +108,8 @@ cmsMagicList = [ \
     ('cmsHelp', cms_help),
     ('gpinit', grid_proxy_init),
     ('gpinfo', grid_proxy_info),
+    ('vim', cmd_vim),
+    ('python', cmd_python),
 ]
 
 #

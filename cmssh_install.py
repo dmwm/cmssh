@@ -230,7 +230,8 @@ def main():
     print "Create configuration"
     os.chdir(path)
     with open('setup.sh', 'w') as setup:
-        msg  = '#!/bin/bash\nexport DYLD_LIBRARY_PATH=%s/globus/lib:%s/root/lib\n' \
+        msg  = '#!/bin/bash\nexport CMSSH_ROOT=%s\n' % path
+        msg += 'export DYLD_LIBRARY_PATH=%s/globus/lib:%s/root/lib\n' \
                 % (path, path)
         msg += 'export LD_LIBRARY_PATH=%s/globus/lib:%s/root/lib\n' \
                 % (path, path)
