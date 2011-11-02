@@ -77,10 +77,11 @@ def cmssw_install(arg):
     arg = arg.strip()
     print "Searching for %s" % arg
     subprocess.call('apt-cache search %s | grep -v -i fwlite' % arg, shell=True)
-    print "Installing %s" % arg
     if  arg.lower().find('patch') != -1:
+        print "Installing cms+cmssw-patch+%s" % arg
         subprocess.call('apt-get install cms+cmssw-patch+%s' % arg, shell=True)
     else:
+        print "Installing cms+cmssw+%s" % arg
         subprocess.call('apt-get install cms+cmssw+%s' % arg, shell=True)
 
 def debug(arg):
