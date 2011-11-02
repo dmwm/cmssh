@@ -8,7 +8,7 @@ def phedex_url(api=''):
 
 def dbs_url(api=''):
     """Return DBS URL for given API name"""
-    return 'https://cmsweb.cern.ch/dbs/DBSReader/%s' % api
+    return 'https://cmsweb.cern.ch/dbs/prod/global/DBSReader/%s' % api
 
 def conddb_url(api=''):
     """Return CondDB URL for given API name"""

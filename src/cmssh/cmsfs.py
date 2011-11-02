@@ -90,7 +90,7 @@ class CMSFS(object):
     def make_map(self):
         rmp = routes.Mapper()
         rmp.connect('run={run:\d+}', controller='list_runs')
-        rmp.connect('dataset={dataset:/.*?}', controller='list_datasets')
+        rmp.connect('dataset={dataset:.*?}', controller='list_datasets')
         rmp.connect('file dataset={dataset:/.*?}', controller='list_files')
         rmp.connect('site dataset={dataset:/.*?}', \
                controller='list_sites4dataset')
@@ -127,7 +127,10 @@ class CMSFS(object):
         """
         url = dbs_url()
         method = 'datasets'
-        params = {'dataset':kwargs['dataset']}
+        pat = kwargs['dataset']
+        if  pat[0] == '*':
+            pat = '/' + pat
+        params = {'dataset':pat}
         data = get_data(url, method, params)
         plist = [Dataset(d) for d in data]
         return plist
