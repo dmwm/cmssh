@@ -203,10 +203,10 @@ def get_pfns(lfn, verbose=None):
     json_dict = json.load(data)
     ddict     = DotDict(json_dict)
     if  not json_dict['phedex']['block']:
-        msg  = "LFN: %s\n" % lfn
-        msg += 'No replicas found\n'
-        msg += str(json_dict)
-        print msg
+#        msg  = "LFN: %s\n" % lfn
+#        msg += 'No replicas found\n'
+#        msg += str(json_dict)
+#        print msg
         return pfnlist
     selist = []
     for fname in ddict.get('phedex.block.file'):

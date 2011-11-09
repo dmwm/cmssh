@@ -301,9 +301,13 @@ def file_info(lfn, verbose=None):
         for row in result:
             print format_dict(row)
     lfnobj = res[0]
-    pfnlist, selist = get_pfns(lfn, verbose)
-    lfnobj.assign('pfn', pfnlist)
-    lfnobj.assign('se', selist)
+    try:
+        pfnlist, selist = get_pfns(lfn, verbose)
+        lfnobj.assign('pfn', pfnlist)
+        lfnobj.assign('se', selist)
+    except:
+        lfnobj.assign('pfn', [])
+        lfnobj.assign('se', [])
     return lfnobj
 
 def site_info(dst, verbose=None):
