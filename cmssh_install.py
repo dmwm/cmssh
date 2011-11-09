@@ -155,6 +155,14 @@ def main():
     url = 'http://vdt.cs.wisc.edu/software/globus/4.0.8_VDT2.0.0/vdt_globus_essentials-VDT2.0.0-%s_%s.tar.gz' % (parch, ver)
     get_file(url, 'globus.tar.gz', path, debug)
 
+    print "Installing LCG info"
+    os.chdir(path)
+    lcg_infosites = 'http://vdt.cs.wisc.edu/software/lcg-infosites//2.6-2/lcg-infosites-2.6-2.tar.gz'
+    get_file(lcg_infosites, 'lcg-infosites.tar.gz', path, debug)
+    os.chdir(path)
+    lcg_info = 'http://vdt.cs.wisc.edu/software/lcg-info//1.11.4-1/lcg-info-1.11.4-1.tar.gz'
+    get_file(lcg_info, 'lcg-info.tar.gz', path, debug)
+
     print "Installing certificates"
     os.chdir(path)
     url = 'http://vdt.cs.wisc.edu/software/certificates/62/certificates-62-1.tar.gz'
@@ -240,6 +248,7 @@ def main():
         msg += 'export PATH=%s/install/bin:$PATH\n' % path
         msg += 'export PATH=%s/root/bin:$PATH\n' % path
         msg += 'export PATH=%s/bin:$PATH\n' % path
+        msg += 'export PATH=%s/lcg/bin:$PATH\n' % path
         msg += 'export PYTHONPATH=%s/cmssh/src\n' % path
         msg += 'export PYTHONPATH=$PYTHONPATH:$PWD/soft/install/lib/python%s/site-packages\n' % py_ver
         if  not opts.no_cmssw:
@@ -250,6 +259,7 @@ def main():
             msg += 'if [ -f $VO_CMS_SW_DIR/cmsset_default.sh ]; then\n'
             msg += '   source $VO_CMS_SW_DIR/cmsset_default.sh\nfi\n'
             msg += 'source $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt/*/etc/profile.d/init.sh\n'
+        msg += 'export LCG_GFAL_INFOSYS=lcg-bdii.cern.ch:2170\n'
         if  debug:
             print "+++ write setup.sh"
         setup.write(msg)
