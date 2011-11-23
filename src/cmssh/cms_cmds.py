@@ -38,6 +38,11 @@ def cmd_cvs(arg):
     arg = arg.strip()
     subprocess.call("cvs %s" % arg, shell=True)
 
+def cmd_chmod(arg):
+    """chmod shell command"""
+    arg = arg.strip()
+    subprocess.call("chmod %s" % arg, shell=True)
+
 def cmd_vim(arg):
     """vim shell command"""
     arg = arg.strip()

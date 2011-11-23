@@ -5,6 +5,7 @@
 # system modules
 import os
 import sys
+import stat
 import traceback
 import subprocess
 from   types import GeneratorType
@@ -18,7 +19,7 @@ import cmssh
 from   cmssh.iprint import PrintManager
 from   cmssh.debug import DebugManager
 from   cmssh.cms_cmds import cmd_cvs, lookup, cms_ls, cms_cp, verbose
-from   cmssh.cms_cmds import cms_rm, cms_rmdir, cms_mkdir, cms_root
+from   cmssh.cms_cmds import cms_rm, cms_rmdir, cms_mkdir, cms_root, cmd_chmod
 from   cmssh.cms_cmds import apt_get, apt_cache, cmssw_install, releases
 from   cmssh.cms_cmds import cmsrel, cmsrun, cmsenv, scram, cms_help
 from   cmssh.cms_cmds import cmd_vim, cmd_python, cms_help_msg, results
@@ -87,6 +88,7 @@ except:
 # list of cms-sh magic functions
 cmsMagicList = [ \
     ('cvs', cmd_cvs),
+    ('chmod', cmd_chmod),
     ('find', lookup),
     ('du', lookup),
     ('ls', cms_ls),
@@ -112,11 +114,36 @@ cmsMagicList = [ \
     ('python', cmd_python),
 ]
 
+def test_key_cert():
+    """Test user key/cert file and their permissions"""
+    kfile = os.path.join(os.environ['HOME'], '.globus/userkey.pem')
+    cfile = os.path.join(os.environ['HOME'], '.globus/usercert.pem')
+    if  os.path.isfile(kfile):
+        mode = os.stat(kfile).st_mode
+        cond = bool(mode & stat.S_IRUSR) and not bool(mode & stat.S_IWUSR) \
+                and not bool(mode & stat.S_IXUSR) \
+                and not bool(mode & stat.S_IRWXO) \
+                and not bool(mode & stat.S_IRWXG)
+        if  not cond:
+            PM.print_red("File %s has wrong permission, try chmod 0400 %s" % (kfile, kfile))
+    else:
+        PM.print_red("File %s does not exists, grid/cp commands will not work" % kfile)
+    if  os.path.isfile(cfile):
+        mode = os.stat(cfile).st_mode
+        cond = bool(mode & stat.S_IRUSR) and not bool(mode & stat.S_IXUSR) \
+                and not bool(mode & stat.S_IRWXO) \
+                and not bool(mode & stat.S_IRWXG)
+        if  not cond:
+            PM.print_red("File %s has wrong permission, try chmod 0600 %s" % (cfile, cfile))
+    else:
+        PM.print_red("File %s does not exists, grid/cp commands will not work" % cfile)
+
 #
 # Main function
 #
 def main(ipython):
     """Define custom extentions"""
+
     # global IP API
     ip = ipython
 
@@ -141,6 +168,9 @@ def main(ipython):
             % (ver, pyver, ipyver ,os.uname()[3])
     msg   += cms_help_msg()
     print msg
+
+    # check existance and permission of key/cert 
+    test_key_cert()
 
 def load_ipython_extension(ipython):
     """Load custom extensions"""
