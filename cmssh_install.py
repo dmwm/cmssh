@@ -235,6 +235,14 @@ def main():
         cmd += 'apt-get update'
         exe_cmd(sdir, cmd, debug)
     
+    print "Installing CRAB"
+    os.chdir(path)
+    crab_ver = 'CRAB_2_7_9'
+    url = 'http://cmsdoc.cern.ch/cms/ccs/wm/www/Crab/Docs/%s.tgz' % crab_ver
+    get_file(url, 'crab.tar.gz', path, debug)
+    cmd = 'cd %s; ./configure' % crab_ver
+    exe_cmd(path, cmd, debug)
+
     print "Create configuration"
     os.chdir(path)
     with open('setup.sh', 'w') as setup:

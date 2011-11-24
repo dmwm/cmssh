@@ -18,7 +18,7 @@ from   IPython import release
 import cmssh
 from   cmssh.iprint import PrintManager
 from   cmssh.debug import DebugManager
-from   cmssh.cms_cmds import cmd_cvs, lookup, cms_ls, cms_cp, verbose
+from   cmssh.cms_cmds import cmd_cvs, lookup, cms_ls, cms_cp, verbose, crab
 from   cmssh.cms_cmds import cms_rm, cms_rmdir, cms_mkdir, cms_root, cmd_chmod
 from   cmssh.cms_cmds import apt_get, apt_cache, cmssw_install, releases
 from   cmssh.cms_cmds import cmsrel, cmsrun, cmsenv, scram, cms_help
@@ -102,6 +102,7 @@ cmsMagicList = [ \
     ('apt-cache', apt_cache),
     ('install', cmssw_install),
     ('releases', releases),
+    ('crab', crab),
     ('cmsrel', cmsrel),
     ('cmsRun', cmsrun),
     ('cmsrun', cmsrun),

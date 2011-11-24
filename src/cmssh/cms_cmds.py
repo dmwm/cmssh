@@ -170,8 +170,23 @@ def scram(arg):
 
 def cmsrun(arg):
     """cmsRun CMSSW command"""
+    vdir = os.environ.get('VO_CMS_SW_DIR', None)
+    arch = os.environ.get('SCRAM_ARCH', None)
+    base = os.environ.get('CMSSW_RELEASE_BASE', None)
+    if  not vdir or not arch or not base:
+        msg  = PM.msg_red('Unable to identify CMSSW environment, please run first: ')
+        msg += PM.msg_blue('cmsrel <rel>\n')
+        releases = os.listdir(os.environ['CMSSW_RELEASES'])
+        msg += '\nInstalled releases: ' + PM.msg_green(', '.join(releases))
+        print msg
+        return
     arg = arg.strip()
     subprocess.call("cmsRun %s" % arg, shell=True)
+
+def crab(arg=None):
+    """crab CMSSW command"""
+    arg = arg.strip()
+    subprocess.call("crab %s" % arg, shell=True)
 
 def cmsenv(arg=None):
     """cmsenv CMSSW command"""
