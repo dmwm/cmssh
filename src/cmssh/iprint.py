@@ -239,7 +239,8 @@ class PrintManager(object):
         """yield message using blue color"""
         if  not msg:
             msg = ''
-        return self.term.BLUE + msg + self.term.NORMAL
+#        return self.term.BLUE + msg + self.term.NORMAL
+        return self.term.CYAN + msg + self.term.NORMAL
 
     def print_txt(self, tlist, olist, llist, msg=None):
         """

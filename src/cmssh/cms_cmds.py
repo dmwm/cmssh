@@ -15,7 +15,8 @@ from cmssh.iprint import print_red, print_blue, PrintManager
 from cmssh.filemover import copy_lfn, rm_lfn, mkdir, rmdir, list_se
 from cmssh.utils import list_results
 from cmssh.cmsfs import dataset_info, block_info, file_info, site_info
-from cmssh.cmsfs import CMSFS, apply_filter
+from cmssh.cmsfs import CMSFS, apply_filter, validate_dbs_instance
+from cmssh.cms_urls import dbs_url
 from cmssh.results import ResultManager
 
 # global scope
@@ -61,6 +62,11 @@ def grid_proxy_info(_arg):
     """grid-proxy-info shell command"""
     subprocess.call("grid-proxy-info", shell=True)
     
+def xrdcp(arg):
+    """xrdcp shell command"""
+    arg = arg.strip()
+    subprocess.call("xrdcp %s" % arg, shell=True)
+
 def apt_get(arg):
     """apt-get shell command"""
     arg = arg.strip()
@@ -183,6 +189,20 @@ def cmsrun(arg):
     arg = arg.strip()
     subprocess.call("cmsRun %s" % arg, shell=True)
 
+def dbs_instance(arg=None):
+    """set dbs instance"""
+    arg = arg.strip()
+    if  arg:
+        if  validate_dbs_instance(arg):
+            os.environ['DBS_INSTANCE'] = arg
+            print "Switch to %s DBS instance" % arg
+        else:
+            print "Invalid DBS instance"
+    else:
+        msg  = "DBS3 instance is set to: %s" \
+                % os.environ.get('DBS_INSTANCE', 'global')
+        print msg
+
 def crab(arg=None):
     """crab CMSSW command"""
     arg = arg.strip()
@@ -198,6 +218,8 @@ def cms_help_msg():
     msg  = '\nAvailable cmssh commands:\n'
     msg += PM.msg_green('find    ') \
         + ' search CMS meta-data (query DBS/Phedex/SiteDB)\n'
+    msg += PM.msg_green('dbs_instance') \
+        + ' show/set DBS instance, default is global\n'
     msg += PM.msg_green('mkdir   ') \
         + ' mkdir command, e.g. mkdir /path/foo or mkdir T3_US_Cornell:/store/user/foo\n'
     msg += PM.msg_green('rmdir   ') \

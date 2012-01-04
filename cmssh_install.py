@@ -170,7 +170,9 @@ def main():
 
     print "Installing SRM client"
     os.chdir(path)
-    url = 'http://vdt.cs.wisc.edu/software/srm-client-lbnl/2.2.1.3.19/srmclient2-2.2.1.3.19.tar.gz'
+    ver = '2.2.1.3.19'
+    url = 'http://vdt.cs.wisc.edu/software/srm-client-lbnl/%s/srmclient2-%s.tar.gz' \
+        % (ver, ver)
     get_file(url, 'srmclient.tar.gz', path, debug)
     cmd  = './configure --with-java-home=$JAVA_HOME --enable-clientonly'
     cmd += ' --with-globus-location=%s/globus' % path
@@ -179,20 +181,22 @@ def main():
 
     print "Installing IPython"
     os.chdir(path)
-    url = 'http://archive.ipython.org/release/0.11/ipython-0.11.tar.gz'
+    ver = '0.12'
+    url = 'http://archive.ipython.org/release/%s/ipython-%s.tar.gz' % (ver, ver)
     get_file(url, 'ipython.tar.gz', path, debug)
     cmd = 'python setup.py install --prefix=%s/install' % path
-    exe_cmd(os.path.join(path, 'ipython-0.11'), cmd, debug)
+    exe_cmd(os.path.join(path, 'ipython-%s' % ver), cmd, debug)
 
     print "Installing Routes"
     os.chdir(path)
+    ver = '1.12.3'
     url = 'http://peak.telecommunity.com/dist/ez_setup.py'
     with open('ez_setup.py', 'w') as ez_setup:
          ez_setup.write(getdata(url, {}, debug))
-    url = 'http://pypi.python.org/packages/source/R/Routes/Routes-1.12.3.tar.gz'
+    url = 'http://pypi.python.org/packages/source/R/Routes/Routes-%s.tar.gz' % ver
     get_file(url, 'routes.tar.gz', path, debug)
     cmd = 'cp ../ez_setup.py .; python setup.py install --prefix=%s/install' % path
-    exe_cmd(os.path.join(path, 'Routes-1.12.3'), cmd, debug)
+    exe_cmd(os.path.join(path, 'Routes-%s' % ver), cmd, debug)
     
     print "Installing cmssh"
     os.chdir(path)

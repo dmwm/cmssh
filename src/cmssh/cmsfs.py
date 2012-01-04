@@ -80,6 +80,15 @@ def apply_filter(flt, gen):
     else:
         yield gen
 
+def validate_dbs_instance(inst):
+    "Validate DBS url"
+    try:
+        data = get_data(dbs_url(inst), 'serverinfo', {})
+        plist = [d for d in data]
+    except:
+        return False
+    return True
+
 class CMSFS(object):
     """CMS filesystem on top of CMS data-services"""
     def __init__(self, *args, **kwargs):

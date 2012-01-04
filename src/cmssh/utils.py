@@ -15,6 +15,11 @@ from   types import GeneratorType
 
 from   cmssh.iprint import format_dict
 
+def print_progress(progress, msg='Download progress:'):
+    "Print on stdout progress message"
+    sys.stdout.write("%s %d%%   \r" % (msg, progress) )
+    sys.stdout.flush()
+
 def size_format(i):
     """
     Format file size utility, it converts file size into KB, MB, GB, TB, PB units
@@ -22,8 +27,8 @@ def size_format(i):
     try:
         num = long(i)
     except:
-        traceback.print_exc()
-        return "N/A"
+#        traceback.print_exc()
+        return None
     for x in ['','KB','MB','GB','TB','PB']:
         if num < 1024.:
             return "%3.1f%s" % (num, x)

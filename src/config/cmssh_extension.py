@@ -23,7 +23,8 @@ from   cmssh.cms_cmds import cms_rm, cms_rmdir, cms_mkdir, cms_root, cmd_chmod
 from   cmssh.cms_cmds import apt_get, apt_cache, cmssw_install, releases
 from   cmssh.cms_cmds import cmsrel, cmsrun, cmsenv, scram, cms_help
 from   cmssh.cms_cmds import cmd_vim, cmd_python, cms_help_msg, results
-from   cmssh.cms_cmds import grid_proxy_init, grid_proxy_info
+from   cmssh.cms_cmds import grid_proxy_init, grid_proxy_info, xrdcp
+from   cmssh.cms_cmds import dbs_instance
 
 class ShellName(object):
     def __init__(self):
@@ -66,14 +67,16 @@ def set_prompt(in1):
     if  in1.find('|\#>') != -1:
         in1 = in1.replace('|\#>', '').strip()
     ip = get_ipython()
-    ip.displayhook.prompt1.p_template = \
-        '\C_LightBlue[\C_LightCyan%s\C_LightBlue]|\#> ' % in1
+#    ip.displayhook.prompt1.p_template = \
+#        '\C_LightBlue[\C_LightCyan%s\C_LightBlue]|\#> ' % in1
+    ip.prompt_manager.in_template = \
+        '%s|\#> ' % in1
 
-def get_prompt():
-    """Get prompt name"""
-    IP = __main__.__dict__['__IP'] 
-    prompt = getattr(IP.outputcache, 'prompt1') 
-    return IP.outputcache.prompt1.p_template
+#def get_prompt():
+#    """Get prompt name"""
+#    IP = __main__.__dict__['__IP'] 
+#    prompt = getattr(IP.outputcache, 'prompt1') 
+#    return IP.outputcache.prompt1.p_template
 
 #
 # load managers
@@ -96,12 +99,14 @@ cmsMagicList = [ \
     ('mkdir', cms_mkdir),
     ('rmdir', cms_rmdir),
     ('cp', cms_cp),
+    ('xrdcp', xrdcp),
     ('root', cms_root),
     ('verbose', verbose),
     ('apt-get', apt_get),
     ('apt-cache', apt_cache),
     ('install', cmssw_install),
     ('releases', releases),
+    ('dbs_instance', dbs_instance),
     ('crab', crab),
     ('cmsrel', cmsrel),
     ('cmsRun', cmsrun),
@@ -158,8 +163,9 @@ def main(ipython):
 
     # Set cmssh prompt
     prompt = 'cms-sh'
-    ip.displayhook.prompt1.p_template = \
-        '\C_LightBlue[\C_LightCyan%s\C_LightBlue]|\#> ' % prompt
+#    ip.displayhook.prompt1.p_template = \
+#        '\C_LightBlue[\C_LightCyan%s\C_LightBlue]|\#> ' % prompt
+    ip.prompt_manager.in_template = '%s|\#> ' % prompt
     
     # define dbsh banner
     pyver  = sys.version.split('\n')[0]

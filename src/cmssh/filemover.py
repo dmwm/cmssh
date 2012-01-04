@@ -7,6 +7,9 @@ import os
 import re
 import sys
 import json
+import stat
+import time
+import thread
 import urllib
 import urllib2
 import datetime
@@ -15,12 +18,18 @@ import datetime
 import xml.etree.ElementTree as ET
 
 # cmssh modules
-from cmssh.iprint import print_red
+from cmssh.iprint import print_red, print_blue
 from cmssh.utils import size_format
 from cmssh.ddict import DotDict
 from cmssh.cms_urls import phedex_url
 from cmssh.cms_objects import CMSObj
-from cmssh.utils import execmd
+from cmssh.utils import execmd, print_progress
+
+def file_size(ifile):
+    "Return file size"
+    if  os.path.isfile(ifile):
+        return os.stat(ifile)[stat.ST_SIZE]
+    return 0
 
 def check_permission(dst, verbose=None):
     """
@@ -307,12 +316,16 @@ def get_size(cmd, verbose=None):
     """
     Execute srm-ls <surl> command and retrieve file size information
     """
+    if  cmd.find('file:///') != -1:
+        return file_size(cmd.split('file:///')[-1])
     stdout, stderr = execmd(cmd)
     if  stderr.find('command not found') != -1:
         print 'Unable to find srm-ls tool'
         print help
         sys.exit(1)
-    orig_size = None
+    if  stderr:
+        print_red(stderr)
+    orig_size = 0
     if  cmd.find('file:///') != -1: # srm-ls returns XML
         orig_size = parse_srmls(stdout)
     else:
@@ -329,13 +342,13 @@ def check_file(src, dst, verbose):
     rcmd  = 'srm-ls %s' % src
     orig_size = get_size(rcmd, verbose)
     if  verbose:
-        print "At %s, file size %s" % (src, orig_size)
+        print "%s, size %s" % (src, orig_size)
 
     # find file size from destination (if any)
     rcmd  = 'srm-ls %s' % dst
     dst_size = get_size(rcmd, verbose)
     if  verbose:
-        print "At %s, file size %s" % (dst, dst_size)
+        print "%s, size %s" % (dst, dst_size)
 
     if  orig_size == dst_size:
         return (dst, dst_size)
@@ -391,16 +404,57 @@ class FileMover(object):
     def __init__(self):
         self.instance = "Instance at %d" % self.__hash__()
         check_proxy()
+
+    def copy_via_xrdcp(self, lfn, dst, verbose=0):
+        "Copy LFN to given destination via xrdcp command"
+        if  not os.path.isdir(dst):
+            msg = 'xrdcp only works with local destination'
+            print_red(msg)
+            return 'fail'
+        cmd = 'xrdcp root://xrootd.unl.edu/%s %s' % (lfn, dst)
+        stdout, stderr = execmd(cmd)
+        if  stderr:
+            print_red(stderr)
+            return 'fail'
+        return 'success'
+
     def copy(self, lfn, dst, verbose=0):
-        """Copy lfn to destination"""
+        """Copy LFN to given destination"""
+        err = 'Unable to identify total size of the file,'
+        err += ' GRID middleware fails.'
         for cmd in srmcp("srm-copy", lfn, dst, verbose):
             if  cmd:
-                status = execute(cmd, lfn, verbose)
-                if  status:
-                    dst, dst_size = status
-                    print "\nDone, file located at %s (%s)" \
-                        % (dst, size_format(dst_size))
-                    break
+                if  verbose:
+                    status = execute(cmd, lfn, verbose)
+                    if  status:
+                        dst, dst_size = status
+                        size = size_format(dst_size)
+                        if  not size or not dst_size:
+                            print_red(err)
+                            print "Status of transfer:\n", status
+                            return 'fail'
+                        else:
+                            print "\nDone, file located at %s (%s)" \
+                                % (dst, size_format(dst_size))
+                        break
+                else:
+                    arr = cmd.split() # srm-copy <sourceURL> <targetURL> <options>
+                    pfn = arr[1] # sourceURL
+                    ifile = arr[2] # targetURL
+                    tot_size = float(get_size('srm-ls %s' % pfn))
+                    if  tot_size:
+                        print_progress(0)
+                        thread.start_new_thread(execute, (cmd, lfn, verbose))
+                        while True:
+                            progress = float(get_size('srm-ls %s' % ifile))*100/tot_size
+                            print_progress(progress)
+                            if  progress == 100:
+                                break
+                            time.sleep(0.5)
+                        print '' # to finish print_progress
+                    else:
+                        print_red(err)
+                        return 'fail'
         return 'success'
 
     def list_lfn(self, lfn, verbose=0):
@@ -507,7 +561,11 @@ class FileMover(object):
 FM_SINGLETON = FileMover()
 def copy_lfn(lfn, dst, verbose=0):
     """Copy lfn to destination"""
-    return FM_SINGLETON.copy(lfn, dst, verbose)
+    status = FM_SINGLETON.copy(lfn, dst, verbose)
+    if  status == 'fail':
+        print_blue('Fallback to xrdcp method')
+        FM_SINGLETON.copy_via_xrdcp(lfn, dst, verbose)
+    return status
 
 def list_lfn(lfn, verbose=0):
     """List lfn info"""
