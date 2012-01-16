@@ -358,13 +358,20 @@ def cms_cp(arg):
     """CMS cp command"""
     arg = arg.strip()
     try:
+        src, dst = arg.split()
+        if  dst == '.':
+            dst = os.getcwd()
+    except:
+        traceback.print_exc()
+        print_red("Wrong argument(s) for, cp '%s'" % arg)
+    try:
         verbose = get_ipython().debug
     except:
         verbose = 0
     if  not arg:
         print_red("Usage: cp <options> source_file target_{file,directory}")
-    if  os.path.exists(arg):
-        prc = subprocess.Popen("cp " + arg, shell=True)
+    if  os.path.exists(src):
+        prc = subprocess.Popen("cp %s %s" % (src, dst), shell=True)
         sts = os.waitpid(prc.pid, 0)[1]
     else:
         try:

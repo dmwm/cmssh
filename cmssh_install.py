@@ -93,6 +93,10 @@ def main():
     if  not opts.install:
         print "Usage: cmssh_install.py --help"
         sys.exit(0)
+    if  not os.environ.has_key('JAVA_HOME'):
+        print "JAVA_HOME environment is required to install GRID middleware tools"
+        print "Please install Java and appropriately setup JAVA_HOME"
+        sys.exit(1)
     debug = opts.debug
     idir = opts.install_dir
     if  not idir:
@@ -154,6 +158,29 @@ def main():
         sys.exit(1)
     url = 'http://vdt.cs.wisc.edu/software/globus/4.0.8_VDT2.0.0/vdt_globus_essentials-VDT2.0.0-%s_%s.tar.gz' % (parch, ver)
     get_file(url, 'globus.tar.gz', path, debug)
+
+
+    print "Installing PythonUtilities"
+    os.chdir(path)
+    url = "http://cmssw.cvs.cern.ch/cgi-bin/cmssw.cgi/CMSSW/FWCore/PythonUtilities.tar.gz?view=tar"
+    get_file(url, 'PythonUtilities.tar.gz', path, debug)
+    cmd = 'touch __init__.py; mv python/*.py .'
+    exe_cmd(os.path.join(path, 'PythonUtilities'), cmd, debug)
+    os.chdir(path)
+    cmd = 'mkdir FWCore; touch FWCore/__init__.py; mv PythonUtilities FWCore'
+    exe_cmd(path, cmd, debug)
+
+    print "Installing CRAB3"
+    os.chdir(path)
+    ver = '3.0.6a'
+    url = 'http://cmsrep.cern.ch/cmssw/comp/SOURCES/slc5_amd64_gcc461/cms/crab-client3/%s/crabclient3.tar.gz' % ver
+    get_file(url, 'crabclient3.tar.gz', path, debug)
+
+    print "Installing WMCore"
+    os.chdir(path)
+    ver = '0.8.21'
+    url = 'http://cmsrep.cern.ch/cmssw/comp/SOURCES/slc5_amd64_gcc461/cms/wmcore/%s/WMCORE.tar.gz' % ver
+    get_file(url, 'wmcore.tar.gz', path, debug)
 
     print "Installing LCG info"
     os.chdir(path)
@@ -239,13 +266,13 @@ def main():
         cmd += 'apt-get update'
         exe_cmd(sdir, cmd, debug)
     
-    print "Installing CRAB"
-    os.chdir(path)
-    crab_ver = 'CRAB_2_7_9'
-    url = 'http://cmsdoc.cern.ch/cms/ccs/wm/www/Crab/Docs/%s.tgz' % crab_ver
-    get_file(url, 'crab.tar.gz', path, debug)
-    cmd = 'cd %s; ./configure' % crab_ver
-    exe_cmd(path, cmd, debug)
+#    print "Installing CRAB"
+#    os.chdir(path)
+#    crab_ver = 'CRAB_2_7_9'
+#    url = 'http://cmsdoc.cern.ch/cms/ccs/wm/www/Crab/Docs/%s.tgz' % crab_ver
+#    get_file(url, 'crab.tar.gz', path, debug)
+#    cmd = 'cd %s; ./configure' % crab_ver
+#    exe_cmd(path, cmd, debug)
 
     print "Create configuration"
     os.chdir(path)
@@ -261,7 +288,11 @@ def main():
         msg += 'export PATH=%s/root/bin:$PATH\n' % path
         msg += 'export PATH=%s/bin:$PATH\n' % path
         msg += 'export PATH=%s/lcg/bin:$PATH\n' % path
+        msg += 'export PATH=$PATH:%s/CRABClient/bin\n' % path
         msg += 'export PYTHONPATH=%s/cmssh/src\n' % path
+        msg += 'export PYTHONPATH=$PYTHONPATH:%s\n' % path
+        msg += 'export PYTHONPATH=$PYTHONPATH:%s/CRABClient/src/python\n' % path
+        msg += 'export PYTHONPATH=$PYTHONPATH:%s/WMCore/src/python\n' % path
         msg += 'export PYTHONPATH=$PYTHONPATH:$PWD/soft/install/lib/python%s/site-packages\n' % py_ver
         if  not opts.no_cmssw:
             msg += 'export VO_CMS_SW_DIR=%s/CMSSW\n' % path
