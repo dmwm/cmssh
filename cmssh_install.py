@@ -326,12 +326,12 @@ def main():
         msg += 'export LCG_GFAL_INFOSYS=lcg-bdii.cern.ch:2170\n'
         msg += 'export VOMS_USERCONF=%s/glite/etc/vomses\n' % path
         msg += 'export VOMS_LOCATION=%s/glite\n' % path
-        msg += 'export X509_CERT_DIR=%s/certificates' % path
-        msg += 'export GLOBUS_ERROR_VERBOSE=true'
-        msg += 'export GLOBUS_OPTIONS=-Xmx512M'
-        msg += 'export GLOBUS_TCP_PORT_RANGE=34000,35000'
-        msg += 'export GLOBUS_PATH=%s/globus' % path
-        msg += 'export GLOBUS_LOCATION=%s/globus' % path
+        msg += 'export X509_CERT_DIR=%s/certificates\n' % path
+        msg += 'export GLOBUS_ERROR_VERBOSE=true\n'
+        msg += 'export GLOBUS_OPTIONS=-Xmx512M\n'
+        msg += 'export GLOBUS_TCP_PORT_RANGE=34000,35000\n'
+        msg += 'export GLOBUS_PATH=%s/globus\n' % path
+        msg += 'export GLOBUS_LOCATION=%s/globus\n' % path
         if  debug:
             print "+++ write setup.sh"
         setup.write(msg)
