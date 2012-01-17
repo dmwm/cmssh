@@ -159,6 +159,28 @@ def main():
     url = 'http://vdt.cs.wisc.edu/software/globus/4.0.8_VDT2.0.0/vdt_globus_essentials-VDT2.0.0-%s_%s.tar.gz' % (parch, ver)
     get_file(url, 'globus.tar.gz', path, debug)
 
+    print "Installing VOMS"
+    # http://www.nikhef.nl/pub/projects/grid/gridwiki/index.php/Using_voms-proxy-init_on_an_OSX_(10.4_or_higher)_system
+    os.chdir(path)
+#    url = 'http://vdt.cs.wisc.edu/software//voms/1.8.8-2p1/voms-client-1.8.8-2p1-x86_macos_10.4.tar.gz'
+    url = 'http://vdt.cs.wisc.edu/software//voms/1.8.8-2p1/voms-client-1.8.8-2p1-%s_%s.tar.gz' % (parch, ver)
+    get_file(url, 'voms-client.tar.gz', path, debug)
+#    url = 'http://vdt.cs.wisc.edu/software//voms/1.8.8-2p1/voms-essentials-1.8.8-2p1-x86_macos_10.4.tar.gz'
+    url = 'http://vdt.cs.wisc.edu/software//voms/1.8.8-2p1/voms-essentials-1.8.8-2p1-%s_%s.tar.gz' % (parch, ver)
+    get_file(url, 'voms-essentials.tar.gz', path, debug)
+
+    print "Installing expat"
+    os.chdir(path)
+    ver = '2.0.1'
+    url = 'http://sourceforge.net/projects/expat/files/expat/2.0.1/expat-%s.tar.gz/download?use_mirror=iweb' % ver
+    get_file(url, 'expat-%s.tar.gz' % ver, path, debug)
+    if platform == 'Darwin':
+        cmd = 'CFLAGS=-m32 ./configure --prefix=%s/install; make; make install' % path
+    else:
+        cmd = './configure --prefix=%s/install; make; make install' % path
+    os.chdir(os.path.join(path, 'expat-%s' % ver))
+    print "\n### cwd", os.getcwd(), cmd
+    exe_cmd(os.path.join(path, 'expat-%s' % ver), cmd, debug)
 
     print "Installing PythonUtilities"
     os.chdir(path)
@@ -278,11 +300,12 @@ def main():
     os.chdir(path)
     with open('setup.sh', 'w') as setup:
         msg  = '#!/bin/bash\nexport CMSSH_ROOT=%s\n' % path
-        msg += 'export DYLD_LIBRARY_PATH=%s/globus/lib:%s/root/lib\n' \
-                % (path, path)
-        msg += 'export LD_LIBRARY_PATH=%s/globus/lib:%s/root/lib\n' \
-                % (path, path)
+        msg += 'export DYLD_LIBRARY_PATH=%s/globus/lib:%s/glite/lib:%s/install/lib:%s/root/lib\n' \
+                % (path, path, path, path)
+        msg += 'export LD_LIBRARY_PATH=%s/globus/lib:%s/glite/lib:%s/install/lib:%s/root/lib\n' \
+                % (path, path, path, path)
         msg += 'export PATH=%s/globus/bin:$PATH\n' % path
+        msg += 'export PATH=%s/glite/bin:$PATH\n' % path
         msg += 'export PATH=%s/srmclient2/bin:$PATH\n' % path
         msg += 'export PATH=%s/install/bin:$PATH\n' % path
         msg += 'export PATH=%s/root/bin:$PATH\n' % path
@@ -303,10 +326,36 @@ def main():
             msg += '   source $VO_CMS_SW_DIR/cmsset_default.sh\nfi\n'
             msg += 'source $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt/*/etc/profile.d/init.sh\n'
         msg += 'export LCG_GFAL_INFOSYS=lcg-bdii.cern.ch:2170\n'
+        msg += 'export VOMS_USERCONF=$HOME/.glite\n'
+        msg += 'export VOMS_LOCATION=$HOME/.glite\n'
+        msg += 'export X509_VOMS_DIR=$HOME/.glite/vomsdir/\n'
         if  debug:
             print "+++ write setup.sh"
         setup.write(msg)
     os.chmod('setup.sh', 0755)
+
+    vomses = os.path.join(os.environ['HOME'], '.glite')
+    if  not os.path.isdir(vomses):
+        print "Create vomses area"
+        vdir = os.path.join(vomses, 'etc')
+        os.makedirs(vdir)
+        msg = '"cms" "lcg-voms.cern.ch" "15002" "/C=CH/O=CERN/OU=GRID/CN=host/lcg-voms.cern.ch" "cms"\n'
+        fname = os.path.join(vdir, 'vomses')
+        with open(fname, 'w') as fds:            fds.write(msg)
+        vdir = os.path.join(vomses, 'vomsdir/cms')
+        os.makedirs(vdir)
+        lcg = '/DC=ch/DC=cern/OU=computers/CN=lcg-voms.cern.ch\n' + \
+              '/DC=ch/DC=cern/CN=CERN Trusted Certification Authority\n'
+        fname = os.path.join(vdir, 'lcg-voms.cern.ch.lsc')
+        with open(fname, 'w') as fds:
+            fds.write(lcg)
+        voms = '/DC=ch/DC=cern/OU=computers/CN=voms.cern.ch\n' + \
+               '/DC=ch/DC=cern/CN=CERN Trusted Certification Authority\n'
+        fname = os.path.join(vdir, 'voms.cern.ch.lsc')
+        with open(fname, 'w') as fds:
+            fds.write(voms)
+    else:
+        print "Found existing vomses area %s, skip ..." % vomses
 
     print "Create cmssh"
     os.makedirs(os.path.join(path, 'bin'))

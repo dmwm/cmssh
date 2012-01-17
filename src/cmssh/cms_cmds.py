@@ -54,6 +54,14 @@ def cmd_python(arg):
     arg = arg.strip()
     subprocess.call("python %s" % arg, shell=True)
     
+def voms_proxy_init(_arg):
+    """voms-proxy-init shell command"""
+    subprocess.call("voms-proxy-init")
+
+def voms_proxy_info(_arg):
+    """voms-proxy-info shell command"""
+    subprocess.call("voms-proxy-info", shell=True)
+
 def grid_proxy_init(_arg):
     """grid-proxy-init shell command"""
     subprocess.call("grid-proxy-init")
@@ -243,8 +251,10 @@ def cms_help_msg():
     msg += PM.msg_green('cmsRun  ') \
         + ' cmsRun command for release in question\n'
     msg += '\nAvailable GRID commands:\n'
-    msg += PM.msg_green('gpinit  ') + ' setup your proxy (aka grid-proxy-init)\n'
-    msg += PM.msg_green('gpinfo  ') + ' show your proxy info (aka grid-proxy-info)\n'
+    msg += PM.msg_green('gridinit') + ' setup your proxy (aka grid-proxy-init)\n'
+    msg += PM.msg_green('gridinfo') + ' show your proxy info (aka grid-proxy-info)\n'
+    msg += PM.msg_green('vomsinit') + ' setup your proxy (aka voms-proxy-init)\n'
+    msg += PM.msg_green('vomsinfo') + ' show your proxy info (aka voms-proxy-info)\n'
     msg += '\nQuery results are accessible via %s function:\n' % PM.msg_blue('results()')
     msg += '   find dataset=/*Zee*\n'
     msg += '   for r in results(): print r, type(r)\n'
@@ -264,7 +274,7 @@ def cms_rm(arg):
         verbose = 0
     if  not arg:
         print_red("Usage: rm <options> source_file")
-    if  os.path.exists(arg):
+    if  os.path.exists(arg.split()[-1]):
         prc = subprocess.Popen("rm " + arg, shell=True)
         sts = os.waitpid(prc.pid, 0)[1]
     else:

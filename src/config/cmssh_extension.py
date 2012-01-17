@@ -24,6 +24,7 @@ from   cmssh.cms_cmds import apt_get, apt_cache, cmssw_install, releases
 from   cmssh.cms_cmds import cmsrel, cmsrun, cmsenv, scram, cms_help
 from   cmssh.cms_cmds import cmd_vim, cmd_python, cms_help_msg, results
 from   cmssh.cms_cmds import grid_proxy_init, grid_proxy_info, xrdcp
+from   cmssh.cms_cmds import voms_proxy_init, voms_proxy_info
 from   cmssh.cms_cmds import dbs_instance
 
 class ShellName(object):
@@ -114,8 +115,10 @@ cmsMagicList = [ \
     ('cmsenv', cmsenv),
     ('scram', scram),
     ('cmsHelp', cms_help),
-    ('gpinit', grid_proxy_init),
-    ('gpinfo', grid_proxy_info),
+    ('gridinit', grid_proxy_init),
+    ('gridinfo', grid_proxy_info),
+    ('vomsinit', voms_proxy_init),
+    ('vomsinfo', voms_proxy_info),
     ('vim', cmd_vim),
     ('python', cmd_python),
 ]
