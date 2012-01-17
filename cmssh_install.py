@@ -161,11 +161,10 @@ def main():
 
     print "Installing VOMS"
     # http://www.nikhef.nl/pub/projects/grid/gridwiki/index.php/Using_voms-proxy-init_on_an_OSX_(10.4_or_higher)_system
+    # https://twiki.grid.iu.edu/bin/view/ReleaseDocumentation/VomsInstallGuide
     os.chdir(path)
-#    url = 'http://vdt.cs.wisc.edu/software//voms/1.8.8-2p1/voms-client-1.8.8-2p1-x86_macos_10.4.tar.gz'
     url = 'http://vdt.cs.wisc.edu/software//voms/1.8.8-2p1/voms-client-1.8.8-2p1-%s_%s.tar.gz' % (parch, ver)
     get_file(url, 'voms-client.tar.gz', path, debug)
-#    url = 'http://vdt.cs.wisc.edu/software//voms/1.8.8-2p1/voms-essentials-1.8.8-2p1-x86_macos_10.4.tar.gz'
     url = 'http://vdt.cs.wisc.edu/software//voms/1.8.8-2p1/voms-essentials-1.8.8-2p1-%s_%s.tar.gz' % (parch, ver)
     get_file(url, 'voms-essentials.tar.gz', path, debug)
 
@@ -179,7 +178,6 @@ def main():
     else:
         cmd = './configure --prefix=%s/install; make; make install' % path
     os.chdir(os.path.join(path, 'expat-%s' % ver))
-    print "\n### cwd", os.getcwd(), cmd
     exe_cmd(os.path.join(path, 'expat-%s' % ver), cmd, debug)
 
     print "Installing PythonUtilities"
@@ -326,36 +324,31 @@ def main():
             msg += '   source $VO_CMS_SW_DIR/cmsset_default.sh\nfi\n'
             msg += 'source $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt/*/etc/profile.d/init.sh\n'
         msg += 'export LCG_GFAL_INFOSYS=lcg-bdii.cern.ch:2170\n'
-        msg += 'export VOMS_USERCONF=$HOME/.glite\n'
-        msg += 'export VOMS_LOCATION=$HOME/.glite\n'
-        msg += 'export X509_VOMS_DIR=$HOME/.glite/vomsdir/\n'
+        msg += 'export VOMS_USERCONF=%s/glite/etc/vomses\n' % path
+        msg += 'export VOMS_LOCATION=%s/glite\n' % path
+        msg += 'export X509_CERT_DIR=%s/certificates' % path
+        msg += 'export GLOBUS_ERROR_VERBOSE=true'
+        msg += 'export GLOBUS_OPTIONS=-Xmx512M'
+        msg += 'export GLOBUS_TCP_PORT_RANGE=34000,35000'
+        msg += 'export GLOBUS_PATH=%s/globus' % path
+        msg += 'export GLOBUS_LOCATION=%s/globus' % path
         if  debug:
             print "+++ write setup.sh"
         setup.write(msg)
     os.chmod('setup.sh', 0755)
 
-    vomses = os.path.join(os.environ['HOME'], '.glite')
-    if  not os.path.isdir(vomses):
-        print "Create vomses area"
-        vdir = os.path.join(vomses, 'etc')
-        os.makedirs(vdir)
-        msg = '"cms" "lcg-voms.cern.ch" "15002" "/C=CH/O=CERN/OU=GRID/CN=host/lcg-voms.cern.ch" "cms"\n'
-        fname = os.path.join(vdir, 'vomses')
-        with open(fname, 'w') as fds:            fds.write(msg)
-        vdir = os.path.join(vomses, 'vomsdir/cms')
-        os.makedirs(vdir)
-        lcg = '/DC=ch/DC=cern/OU=computers/CN=lcg-voms.cern.ch\n' + \
-              '/DC=ch/DC=cern/CN=CERN Trusted Certification Authority\n'
-        fname = os.path.join(vdir, 'lcg-voms.cern.ch.lsc')
-        with open(fname, 'w') as fds:
-            fds.write(lcg)
-        voms = '/DC=ch/DC=cern/OU=computers/CN=voms.cern.ch\n' + \
-               '/DC=ch/DC=cern/CN=CERN Trusted Certification Authority\n'
-        fname = os.path.join(vdir, 'voms.cern.ch.lsc')
-        with open(fname, 'w') as fds:
-            fds.write(voms)
-    else:
-        print "Found existing vomses area %s, skip ..." % vomses
+    vomses = os.path.join(path, 'glite')
+    print "Create vomses area"
+    vdir = os.path.join(vomses, 'etc')
+    os.makedirs(vdir)
+    fname = os.path.join(vdir, 'vomses')
+    with open(fname, 'w') as fds:
+        msg = '"cms" "voms.cern.ch" "15002" "/DC=ch/DC=cern/OU=computers/CN=voms.cern.ch" "cms"'
+        fds.write(msg + '\n')
+        msg = '"cms" "lcg-voms.cern.ch" "15002" "/DC=ch/DC=cern/OU=computers/CN=lcg-voms.cern.ch" "cms"'
+        fds.write(msg + '\n')
+        msg = '"cms" "voms.fnal.gov" "15015" "/DC=org/DC=doegrids/OU=Services/CN=http/voms.fnal.gov" "cms"'
+        fds.write(msg + '\n')
 
     print "Create cmssh"
     os.makedirs(os.path.join(path, 'bin'))

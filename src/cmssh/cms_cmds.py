@@ -54,9 +54,9 @@ def cmd_python(arg):
     arg = arg.strip()
     subprocess.call("python %s" % arg, shell=True)
     
-def voms_proxy_init(_arg):
+def voms_proxy_init(arg):
     """voms-proxy-init shell command"""
-    subprocess.call("voms-proxy-init")
+    subprocess.call("voms-proxy-init %s" % arg, shell=True)
 
 def voms_proxy_info(_arg):
     """voms-proxy-info shell command"""
