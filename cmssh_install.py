@@ -156,8 +156,17 @@ def main():
     else:
         print 'Unsupported OS "%s"' % platform
         sys.exit(1)
-    url = 'http://vdt.cs.wisc.edu/software/globus/4.0.8_VDT2.0.0/vdt_globus_essentials-VDT2.0.0-%s_%s.tar.gz' % (parch, ver)
+#    url = 'http://vdt.cs.wisc.edu/software/globus/4.0.8_VDT2.0.0/vdt_globus_essentials-VDT2.0.0-%s_%s.tar.gz' % (parch, ver)
+    url = 'http://vdt.cs.wisc.edu/software/globus/4.0.8_VDT2.0.0gt4nbs/vdt_globus_essentials-VDT2.0.0-3-%s_%s.tar.gz' % (parch, ver)
     get_file(url, 'globus.tar.gz', path, debug)
+
+    print "Installing Myproxy"
+    os.chdir(path)
+    url = 'http://vdt.cs.wisc.edu/software/myproxy/5.3_VDT-2.0.0/myproxy_client-5.3-%s_%s.tar.gz' % (parch, ver)
+    get_file(url, 'myproxy_client.tar.gz', path, debug)
+    os.chdir(path)
+    url = 'http://vdt.cs.wisc.edu/software/myproxy/5.3_VDT-2.0.0/myproxy_essentials-5.3-%s_%s.tar.gz' % (parch, ver)
+    get_file(url, 'myproxy_essentials.tar.gz', path, debug)
 
     print "Installing VOMS"
     # http://www.nikhef.nl/pub/projects/grid/gridwiki/index.php/Using_voms-proxy-init_on_an_OSX_(10.4_or_higher)_system
@@ -332,6 +341,7 @@ def main():
         msg += 'export GLOBUS_TCP_PORT_RANGE=34000,35000\n'
         msg += 'export GLOBUS_PATH=%s/globus\n' % path
         msg += 'export GLOBUS_LOCATION=%s/globus\n' % path
+        msg += 'export VOMS_PROXY_INFO_DONT_VERIFY_AC=anything_you_want\n'
         if  debug:
             print "+++ write setup.sh"
         setup.write(msg)
@@ -343,11 +353,11 @@ def main():
     os.makedirs(vdir)
     fname = os.path.join(vdir, 'vomses')
     with open(fname, 'w') as fds:
+        msg = '"cms" "voms.fnal.gov" "15015" "/DC=org/DC=doegrids/OU=Services/CN=http/voms.fnal.gov" "cms"'
+        fds.write(msg + '\n')
         msg = '"cms" "voms.cern.ch" "15002" "/DC=ch/DC=cern/OU=computers/CN=voms.cern.ch" "cms"'
         fds.write(msg + '\n')
         msg = '"cms" "lcg-voms.cern.ch" "15002" "/DC=ch/DC=cern/OU=computers/CN=lcg-voms.cern.ch" "cms"'
-        fds.write(msg + '\n')
-        msg = '"cms" "voms.fnal.gov" "15015" "/DC=org/DC=doegrids/OU=Services/CN=http/voms.fnal.gov" "cms"'
         fds.write(msg + '\n')
 
     print "Create cmssh"
@@ -371,7 +381,8 @@ if [ ! -f $soft_dir/.ipython/profile_cmssh/ipython_config.py ]; then
     cp $soft_dir/cmssh/src/config/ipython_config.py $soft_dir/.ipython/profile_cmssh/
 fi
 export IPYTHON_DIR=$ipdir
-grid-proxy-init
+#grid-proxy-init
+voms-proxy-init -voms cms:/cms -valid 24:00
 ipython --no-banner --ipython-dir=$ipdir --profile=cmssh
 """ % path
         cmssh.write(msg)

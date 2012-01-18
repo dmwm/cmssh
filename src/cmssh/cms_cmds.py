@@ -33,58 +33,21 @@ def options(arg):
             opts.append(par)
     return opts
 
-# main magic commands available in cms-sh
-def cmd_cvs(arg):
-    """cvs shell command"""
-    arg = arg.strip()
-    subprocess.call("cvs %s" % arg, shell=True)
+def execute(cmd, args=''):
+    "Execute given command and its args in a shell"
+    if  args.find("|") != -1:
+        cmd_opts = '%s %s' % (cmd, args.strip())
+        subprocess.call(cmd_opts, shell=True)
+    else:
+        cmd_opts = [cmd] + args.strip().split()
+        subprocess.call(cmd_opts)
 
-def cmd_chmod(arg):
-    """chmod shell command"""
-    arg = arg.strip()
-    subprocess.call("chmod %s" % arg, shell=True)
-
-def cmd_vim(arg):
-    """vim shell command"""
-    arg = arg.strip()
-    subprocess.call("vim %s" % arg, shell=True)
-
-def cmd_python(arg):
-    """python shell command"""
-    arg = arg.strip()
-    subprocess.call("python %s" % arg, shell=True)
-    
-def voms_proxy_init(arg):
-    """voms-proxy-init shell command"""
-    subprocess.call("voms-proxy-init %s" % arg, shell=True)
-
-def voms_proxy_info(_arg):
-    """voms-proxy-info shell command"""
-    subprocess.call("voms-proxy-info", shell=True)
-
-def grid_proxy_init(_arg):
-    """grid-proxy-init shell command"""
-    subprocess.call("grid-proxy-init")
-    
-def grid_proxy_info(_arg):
-    """grid-proxy-info shell command"""
-    subprocess.call("grid-proxy-info", shell=True)
-    
-def xrdcp(arg):
-    """xrdcp shell command"""
-    arg = arg.strip()
-    subprocess.call("xrdcp %s" % arg, shell=True)
-
-def apt_get(arg):
-    """apt-get shell command"""
-    arg = arg.strip()
-    subprocess.call("apt-get %s" % arg, shell=True)
-    
-def apt_cache(arg):
-    """apt-cache shell command"""
-    arg = arg.strip()
-    subprocess.call("apt-cache %s" % arg, shell=True)
-
+class Magic(object):
+    def __init__(self, cmd):
+        self.cmd = cmd
+    def execute(self, args=''):
+        "Execute given command and its args in a shell"
+        execute(self.cmd, args)
 def releases(_arg):
     """releases shell command"""
     cmd  = "apt-cache search CMSSW | grep CMSSW | grep -v -i fwlite"
@@ -98,10 +61,10 @@ def cmssw_install(arg):
     subprocess.call('apt-cache search %s | grep -v -i fwlite' % arg, shell=True)
     if  arg.lower().find('patch') != -1:
         print "Installing cms+cmssw-patch+%s" % arg
-        subprocess.call('apt-get install cms+cmssw-patch+%s' % arg, shell=True)
+        execute('apt-get', 'install cms+cmssw-patch+%s' % arg)
     else:
         print "Installing cms+cmssw+%s" % arg
-        subprocess.call('apt-get install cms+cmssw+%s' % arg, shell=True)
+        execute('apt-get', 'install cms+cmssw+%s' % arg)
 
 def debug(arg):
     """debug shell command"""
@@ -177,11 +140,6 @@ def cmsrel(rel):
         os.environ['DYLD_LIBRARY_PATH'] = path + os.environ['DYLD_LIBRARY_PATH']
     print "Setup and switch to %s" % os.getcwd()
 
-def scram(arg):
-    """scram CMSSW command"""
-    arg = arg.strip()
-    subprocess.call("scramv1 %s" % arg, shell=True)
-
 def cmsrun(arg):
     """cmsRun CMSSW command"""
     vdir = os.environ.get('VO_CMS_SW_DIR', None)
@@ -194,8 +152,7 @@ def cmsrun(arg):
         msg += '\nInstalled releases: ' + PM.msg_green(', '.join(releases))
         print msg
         return
-    arg = arg.strip()
-    subprocess.call("cmsRun %s" % arg, shell=True)
+    execute("cmsRun", arg)
 
 def dbs_instance(arg=None):
     """set dbs instance"""
@@ -210,16 +167,6 @@ def dbs_instance(arg=None):
         msg  = "DBS3 instance is set to: %s" \
                 % os.environ.get('DBS_INSTANCE', 'global')
         print msg
-
-def crab(arg=None):
-    """crab CMSSW command"""
-    arg = arg.strip()
-    subprocess.call("crab %s" % arg, shell=True)
-
-def cmsenv(arg=None):
-    """cmsenv CMSSW command"""
-    arg = arg.strip()
-    subprocess.call("eval `scramv1 runtime -sh`")
 
 def cms_help_msg():
     """cmsHelp message"""
@@ -253,8 +200,8 @@ def cms_help_msg():
     msg += '\nAvailable GRID commands:\n'
     msg += PM.msg_green('gridinit') + ' setup your proxy (aka grid-proxy-init)\n'
     msg += PM.msg_green('gridinfo') + ' show your proxy info (aka grid-proxy-info)\n'
-    msg += PM.msg_green('vomsinit') + ' setup your proxy (aka voms-proxy-init)\n'
-    msg += PM.msg_green('vomsinfo') + ' show your proxy info (aka voms-proxy-info)\n'
+    msg += PM.msg_green('vomsinit') + ' setup your VOMS proxy (aka voms-proxy-init)\n'
+    msg += PM.msg_green('vomsinfo') + ' show your VOMS proxy info (aka voms-proxy-info)\n'
     msg += '\nQuery results are accessible via %s function:\n' % PM.msg_blue('results()')
     msg += '   find dataset=/*Zee*\n'
     msg += '   for r in results(): print r, type(r)\n'
@@ -322,11 +269,6 @@ def cms_mkdir(arg):
             print_blue("Status %s" % status)
         except:
             traceback.print_exc()
-
-def cms_root(arg):
-    """CMS root command"""
-    arg = arg.strip()
-    subprocess.call("root -l %s" % arg, shell=True)
 
 def cms_ls(arg):
     """CMS ls command"""

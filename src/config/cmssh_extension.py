@@ -18,14 +18,12 @@ from   IPython import release
 import cmssh
 from   cmssh.iprint import PrintManager
 from   cmssh.debug import DebugManager
-from   cmssh.cms_cmds import cmd_cvs, lookup, cms_ls, cms_cp, verbose, crab
-from   cmssh.cms_cmds import cms_rm, cms_rmdir, cms_mkdir, cms_root, cmd_chmod
-from   cmssh.cms_cmds import apt_get, apt_cache, cmssw_install, releases
-from   cmssh.cms_cmds import cmsrel, cmsrun, cmsenv, scram, cms_help
-from   cmssh.cms_cmds import cmd_vim, cmd_python, cms_help_msg, results
-from   cmssh.cms_cmds import grid_proxy_init, grid_proxy_info, xrdcp
-from   cmssh.cms_cmds import voms_proxy_init, voms_proxy_info
-from   cmssh.cms_cmds import dbs_instance
+from   cmssh.cms_cmds import dbs_instance, Magic
+from   cmssh.cms_cmds import lookup, cms_ls, cms_cp, verbose
+from   cmssh.cms_cmds import cms_rm, cms_rmdir, cms_mkdir
+from   cmssh.cms_cmds import cmssw_install, releases
+from   cmssh.cms_cmds import cmsrel, cmsrun, cms_help
+from   cmssh.cms_cmds import cms_help_msg, results
 
 class ShellName(object):
     def __init__(self):
@@ -68,16 +66,8 @@ def set_prompt(in1):
     if  in1.find('|\#>') != -1:
         in1 = in1.replace('|\#>', '').strip()
     ip = get_ipython()
-#    ip.displayhook.prompt1.p_template = \
-#        '\C_LightBlue[\C_LightCyan%s\C_LightBlue]|\#> ' % in1
     ip.prompt_manager.in_template = \
         '%s|\#> ' % in1
-
-#def get_prompt():
-#    """Get prompt name"""
-#    IP = __main__.__dict__['__IP'] 
-#    prompt = getattr(IP.outputcache, 'prompt1') 
-#    return IP.outputcache.prompt1.p_template
 
 #
 # load managers
@@ -91,8 +81,26 @@ except:
 
 # list of cms-sh magic functions
 cmsMagicList = [ \
-    ('cvs', cmd_cvs),
-    ('chmod', cmd_chmod),
+    # generic commands, we use Magic class and its execute function
+    ('cvs', Magic('cvs').execute),
+    ('svn', Magic('svn').execute),
+    ('git', Magic('git').execute),
+    ('chmod', Magic('chmod').execute),
+    ('xrdcp', Magic('xrdcp').execute),
+    ('root', Magic('root').execute),
+    ('apt-get', Magic('apt-get').execute),
+    ('apt-cache', Magic('apt-cache').execute),
+    ('crab', Magic('crab').execute),
+    ('cmsenv', Magic('eval `scramv1 runtime -sh`').execute),
+    ('scram', Magic('scramv1').execute),
+    ('gridinit', Magic('grid-proxy-init').execute),
+    ('gridinfo', Magic('grid-proxy-info').execute),
+    ('vomsinit', Magic('voms-proxy-init').execute),
+    ('vomsinfo', Magic('voms-proxy-info').execute),
+    ('vim', Magic('vim').execute),
+    ('python', Magic('python').execute),
+    ('env', Magic('env').execute),
+    # specific commands whose execution depends on conditions
     ('find', lookup),
     ('du', lookup),
     ('ls', cms_ls),
@@ -100,27 +108,14 @@ cmsMagicList = [ \
     ('mkdir', cms_mkdir),
     ('rmdir', cms_rmdir),
     ('cp', cms_cp),
-    ('xrdcp', xrdcp),
-    ('root', cms_root),
     ('verbose', verbose),
-    ('apt-get', apt_get),
-    ('apt-cache', apt_cache),
     ('install', cmssw_install),
     ('releases', releases),
     ('dbs_instance', dbs_instance),
-    ('crab', crab),
     ('cmsrel', cmsrel),
     ('cmsRun', cmsrun),
     ('cmsrun', cmsrun),
-    ('cmsenv', cmsenv),
-    ('scram', scram),
     ('cmsHelp', cms_help),
-    ('gridinit', grid_proxy_init),
-    ('gridinfo', grid_proxy_info),
-    ('vomsinit', voms_proxy_init),
-    ('vomsinfo', voms_proxy_info),
-    ('vim', cmd_vim),
-    ('python', cmd_python),
 ]
 
 def test_key_cert():
