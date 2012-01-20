@@ -20,7 +20,7 @@ from   cmssh.iprint import PrintManager
 from   cmssh.debug import DebugManager
 from   cmssh.cms_cmds import dbs_instance, Magic
 from   cmssh.cms_cmds import lookup, cms_ls, cms_cp, verbose
-from   cmssh.cms_cmds import cms_rm, cms_rmdir, cms_mkdir
+from   cmssh.cms_cmds import cms_rm, cms_rmdir, cms_mkdir, cms_root, cms_xrdcp
 from   cmssh.cms_cmds import cmssw_install, releases
 from   cmssh.cms_cmds import cmsrel, cmsrun, cms_help
 from   cmssh.cms_cmds import cms_help_msg, results
@@ -85,9 +85,9 @@ cmsMagicList = [ \
     ('cvs', Magic('cvs').execute),
     ('svn', Magic('svn').execute),
     ('git', Magic('git').execute),
+    ('echo', Magic('echo').execute),
+    ('grep', Magic('grep').execute),
     ('chmod', Magic('chmod').execute),
-    ('xrdcp', Magic('xrdcp').execute),
-    ('root', Magic('root').execute),
     ('apt-get', Magic('apt-get').execute),
     ('apt-cache', Magic('apt-cache').execute),
     ('crab', Magic('crab').execute),
@@ -101,6 +101,8 @@ cmsMagicList = [ \
     ('python', Magic('python').execute),
     ('env', Magic('env').execute),
     # specific commands whose execution depends on conditions
+    ('xrdcp', cms_xrdcp),
+    ('root', cms_root),
     ('find', lookup),
     ('du', lookup),
     ('ls', cms_ls),

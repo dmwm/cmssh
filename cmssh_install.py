@@ -4,6 +4,12 @@
 File: cmssh_install.py
 Author: Valentin Kuznetsov [ vkuznet AT gmail DOT com ]
 Description: cmssh installation script
+
+Some useful URLs
+http://www.globus.org/ftppub/gt5/5.0/5.0.4/installers/src/gt5.0.4-all-source-installer.tar.bz2
+http://www.nikhef.nl/pub/projects/grid/gridwiki/index.php/Using_voms-proxy-init_on_an_OSX_(10.4_or_higher)_system
+https://twiki.grid.iu.edu/bin/view/ReleaseDocumentation/VomsInstallGuide
+
 """
 
 # system modules
@@ -39,6 +45,9 @@ class MyOptionParser:
         self.parser.add_option("--arch", action="store",
             type="string", default=None, dest="arch",
             help="CMSSW architecture")
+#        self.parser.add_option("--update", action="store",
+#            type="string", default=None, dest="update",
+#            help="Update cmssh to newest version, including all dependencies")
         self.parser.add_option("--unsupported", action="store_true",
             dest="unsupported",
             help="enforce installation on unsupported Linux platforms, e.g. Ubuntu")
@@ -65,13 +74,28 @@ def getdata(url, params, verbose=0):
     data = urllib2.urlopen(req)
     return data.read()
 
+def is_installed(url, path):
+    "Check if already installed a package for given URL"
+    fname = os.path.join(path, '.packages')
+    with open(fname, 'r') as packages:
+        for line in packages.readlines():
+            if  url == line.replace('\n', ''):
+                return True
+    return False
+
 def get_file(url, fname, path, debug):
     """Fetch tarball from given url and store it as fname, untar it into given path"""
+    os.chdir(path)
+    if  is_installed(url, path):
+        return
     with open(fname, 'w') as tar_file:
          tar_file.write(getdata(url, {}, debug))
     tar = tarfile.open(fname, 'r:gz')
     tar.extractall(path)
     tar.close()
+    # add url into list of installed packages
+    with open(os.path.join(path, '.packages'), 'a') as packages:
+        packages.write(url)
 
 def exe_cmd(idir, cmd, debug):
     """Execute given command in a given dir"""
@@ -86,50 +110,18 @@ def exe_cmd(idir, cmd, debug):
         except OSError, err:
             print >> sys.stderr, "Execution failed:", err
 
-def main():
-    mgr = MyOptionParser()
-    opts, args = mgr.getOpt()
-
-    if  not opts.install:
-        print "Usage: cmssh_install.py --help"
-        sys.exit(0)
+def check_system(unsupported):
+    "Check system requirements"
+    # check presence of Java, required for GRID middleware
     if  not os.environ.has_key('JAVA_HOME'):
         print "JAVA_HOME environment is required to install GRID middleware tools"
         print "Please install Java and appropriately setup JAVA_HOME"
         sys.exit(1)
-    debug = opts.debug
-    idir = opts.install_dir
-    if  not idir:
-        msg  = "Please specify the install area"
-        msg += " (it should have enough space to hold CMSSW releases)"
-        print msg
-        sys.exit(0)
-    arch = opts.arch
 
-    # setup install area
-    cwd = os.getcwd()
-    path = os.path.join(os.getcwd(), 'soft')
-    print "Clean-up %s" % path
-    try:
-        cmd = 'rm -rf %s' % path
-        retcode = subprocess.call(cmd, shell=True)
-        if  retcode < 0:
-            print >> sys.stderr, "Child was terminated by signal", -retcode
-    except OSError, err:
-        print >> sys.stderr, "Execution failed:", err
-    sysver = sys.version_info
-    py_ver = '%s.%s' % (sysver[0], sysver[1])
-    install_dir = '%s/install/lib/python%s/site-packages' % (path, py_ver)
-    os.environ['PYTHONPATH'] = install_dir
-    try:
-        os.makedirs(install_dir)
-    except:
-        pass
-    os.chdir(path)
-
+    # check Ubuntu default shell
     platform = os.uname()[0]
     unsupported_linux = False
-    if  os.uname()[3].find('Ubuntu') != -1 or opts.unsupported:
+    if  os.uname()[3].find('Ubuntu') != -1 or unsupported:
         unsupported_linux = True
         if  os.readlink('/bin/sh') != 'bash':
             msg  = 'The /bin/sh is pointing to %s.\n'
@@ -139,9 +131,45 @@ def main():
             msg += 'sudo dpkg-reconfigure dash'
             sys.exit(1)
 
+def main():
+    mgr = MyOptionParser()
+    opts, args = mgr.getOpt()
+
+    if  not opts.install:
+        print "Usage: cmssh_install.py --help"
+        sys.exit(0)
+    check_system(opts.unsupported)
+    debug = opts.debug
+    idir = opts.install_dir
+    if  not idir:
+        msg  = "Please specify the install area"
+        msg += " (it should have enough space to hold CMSSW releases)"
+        print msg
+        sys.exit(0)
+    arch   = opts.arch
+    cwd    = os.getcwd()
+    path   = os.path.join(os.getcwd(), 'soft')
+    # setup install area
+#    print "Clean-up %s" % path
+#    try:
+#        cmd = 'rm -rf %s' % path
+#        retcode = subprocess.call(cmd, shell=True)
+#        if  retcode < 0:
+#            print >> sys.stderr, "Child was terminated by signal", -retcode
+#    except OSError, err:
+#        print >> sys.stderr, "Execution failed:", err
+    sysver = sys.version_info
+    py_ver = '%s.%s' % (sysver[0], sysver[1])
+    install_dir = '%s/install/lib/python%s/site-packages' % (path, py_ver)
+    os.environ['PYTHONPATH'] = install_dir
+    try:
+        os.makedirs(install_dir)
+    except:
+        pass
+
     print "Installing Globus"
-    url_src = 'http://www.globus.org/ftppub/gt5/5.0/5.0.4/installers/src/gt5.0.4-all-source-installer.tar.bz2'
     parch = 'x86'
+    arch  = None
     if  platform == 'Linux':
         if  unsupported_linux:
             ver = 'deb_5.0'
@@ -152,118 +180,112 @@ def main():
     elif platform == 'Darwin':
         ver  = 'macos_10.4'
         if  not arch:
-            arch = 'osx106_amd64_gcc421'
+            arch = 'osx106_amd64_gcc461'
     else:
         print 'Unsupported OS "%s"' % platform
         sys.exit(1)
-#    url = 'http://vdt.cs.wisc.edu/software/globus/4.0.8_VDT2.0.0/vdt_globus_essentials-VDT2.0.0-%s_%s.tar.gz' % (parch, ver)
+    if  not arch:
+        print "Unsupported architecture"
+        sys.exit(1)
+
     url = 'http://vdt.cs.wisc.edu/software/globus/4.0.8_VDT2.0.0gt4nbs/vdt_globus_essentials-VDT2.0.0-3-%s_%s.tar.gz' % (parch, ver)
     get_file(url, 'globus.tar.gz', path, debug)
 
     print "Installing Myproxy"
-    os.chdir(path)
     url = 'http://vdt.cs.wisc.edu/software/myproxy/5.3_VDT-2.0.0/myproxy_client-5.3-%s_%s.tar.gz' % (parch, ver)
     get_file(url, 'myproxy_client.tar.gz', path, debug)
-    os.chdir(path)
     url = 'http://vdt.cs.wisc.edu/software/myproxy/5.3_VDT-2.0.0/myproxy_essentials-5.3-%s_%s.tar.gz' % (parch, ver)
     get_file(url, 'myproxy_essentials.tar.gz', path, debug)
 
     print "Installing VOMS"
-    # http://www.nikhef.nl/pub/projects/grid/gridwiki/index.php/Using_voms-proxy-init_on_an_OSX_(10.4_or_higher)_system
-    # https://twiki.grid.iu.edu/bin/view/ReleaseDocumentation/VomsInstallGuide
-    os.chdir(path)
-    url = 'http://vdt.cs.wisc.edu/software//voms/1.8.8-2p1/voms-client-1.8.8-2p1-%s_%s.tar.gz' % (parch, ver)
+    url = 'http://vdt.cs.wisc.edu/software/voms/1.8.8-2p1/voms-client-1.8.8-2p1-%s_%s.tar.gz' % (parch, ver)
     get_file(url, 'voms-client.tar.gz', path, debug)
-    url = 'http://vdt.cs.wisc.edu/software//voms/1.8.8-2p1/voms-essentials-1.8.8-2p1-%s_%s.tar.gz' % (parch, ver)
+    url = 'http://vdt.cs.wisc.edu/software/voms/1.8.8-2p1/voms-essentials-1.8.8-2p1-%s_%s.tar.gz' % (parch, ver)
     get_file(url, 'voms-essentials.tar.gz', path, debug)
 
     print "Installing expat"
-    os.chdir(path)
     ver = '2.0.1'
     url = 'http://sourceforge.net/projects/expat/files/expat/2.0.1/expat-%s.tar.gz/download?use_mirror=iweb' % ver
     get_file(url, 'expat-%s.tar.gz' % ver, path, debug)
-    if platform == 'Darwin':
-        cmd = 'CFLAGS=-m32 ./configure --prefix=%s/install; make; make install' % path
-    else:
-        cmd = './configure --prefix=%s/install; make; make install' % path
-    os.chdir(os.path.join(path, 'expat-%s' % ver))
-    exe_cmd(os.path.join(path, 'expat-%s' % ver), cmd, debug)
+    if  not is_installed(url, path):
+        if platform == 'Darwin':
+            cmd = 'CFLAGS=-m32 ./configure --prefix=%s/install; make; make install' % path
+        else:
+            cmd = './configure --prefix=%s/install; make; make install' % path
+        os.chdir(os.path.join(path, 'expat-%s' % ver))
+        exe_cmd(os.path.join(path, 'expat-%s' % ver), cmd, debug)
 
     print "Installing PythonUtilities"
-    os.chdir(path)
     url = "http://cmssw.cvs.cern.ch/cgi-bin/cmssw.cgi/CMSSW/FWCore/PythonUtilities.tar.gz?view=tar"
     get_file(url, 'PythonUtilities.tar.gz', path, debug)
-    cmd = 'touch __init__.py; mv python/*.py .'
-    exe_cmd(os.path.join(path, 'PythonUtilities'), cmd, debug)
-    os.chdir(path)
-    cmd = 'mkdir FWCore; touch FWCore/__init__.py; mv PythonUtilities FWCore'
-    exe_cmd(path, cmd, debug)
+    if  not is_installed(url, path):
+        cmd = 'touch __init__.py; mv python/*.py .'
+        exe_cmd(os.path.join(path, 'PythonUtilities'), cmd, debug)
+        os.chdir(path)
+        cmd = 'mkdir FWCore; touch FWCore/__init__.py; mv PythonUtilities FWCore'
+        exe_cmd(path, cmd, debug)
 
     print "Installing CRAB3"
-    os.chdir(path)
     ver = '3.0.6a'
     url = 'http://cmsrep.cern.ch/cmssw/comp/SOURCES/slc5_amd64_gcc461/cms/crab-client3/%s/crabclient3.tar.gz' % ver
     get_file(url, 'crabclient3.tar.gz', path, debug)
 
     print "Installing WMCore"
-    os.chdir(path)
     ver = '0.8.21'
     url = 'http://cmsrep.cern.ch/cmssw/comp/SOURCES/slc5_amd64_gcc461/cms/wmcore/%s/WMCORE.tar.gz' % ver
     get_file(url, 'wmcore.tar.gz', path, debug)
 
     print "Installing LCG info"
-    os.chdir(path)
-    lcg_infosites = 'http://vdt.cs.wisc.edu/software/lcg-infosites//2.6-2/lcg-infosites-2.6-2.tar.gz'
-    get_file(lcg_infosites, 'lcg-infosites.tar.gz', path, debug)
-    os.chdir(path)
-    lcg_info = 'http://vdt.cs.wisc.edu/software/lcg-info//1.11.4-1/lcg-info-1.11.4-1.tar.gz'
-    get_file(lcg_info, 'lcg-info.tar.gz', path, debug)
+    url = 'http://vdt.cs.wisc.edu/software/lcg-infosites//2.6-2/lcg-infosites-2.6-2.tar.gz'
+    get_file(url, 'lcg-infosites.tar.gz', path, debug)
+    url = 'http://vdt.cs.wisc.edu/software/lcg-info//1.11.4-1/lcg-info-1.11.4-1.tar.gz'
+    get_file(url, 'lcg-info.tar.gz', path, debug)
 
     print "Installing certificates"
-    os.chdir(path)
     url = 'http://vdt.cs.wisc.edu/software/certificates/62/certificates-62-1.tar.gz'
     get_file(url, 'certificates.tar.gz', path, debug)
 
     print "Installing SRM client"
-    os.chdir(path)
     ver = '2.2.1.3.19'
     url = 'http://vdt.cs.wisc.edu/software/srm-client-lbnl/%s/srmclient2-%s.tar.gz' \
         % (ver, ver)
     get_file(url, 'srmclient.tar.gz', path, debug)
-    cmd  = './configure --with-java-home=$JAVA_HOME --enable-clientonly'
-    cmd += ' --with-globus-location=%s/globus' % path
-    cmd += ' --with-cacert-path=%s/certificates' % path
-    exe_cmd(os.path.join(path, 'srmclient2/setup'), cmd, debug)
+    if  not is_installed(url, path):
+        cmd  = './configure --with-java-home=$JAVA_HOME --enable-clientonly'
+        cmd += ' --with-globus-location=%s/globus' % path
+        cmd += ' --with-cacert-path=%s/certificates' % path
+        exe_cmd(os.path.join(path, 'srmclient2/setup'), cmd, debug)
 
     print "Installing IPython"
-    os.chdir(path)
     ver = '0.12'
     url = 'http://archive.ipython.org/release/%s/ipython-%s.tar.gz' % (ver, ver)
     get_file(url, 'ipython.tar.gz', path, debug)
-    cmd = 'python setup.py install --prefix=%s/install' % path
-    exe_cmd(os.path.join(path, 'ipython-%s' % ver), cmd, debug)
+    if  not is_installed(url, path):
+        cmd = 'python setup.py install --prefix=%s/install' % path
+        exe_cmd(os.path.join(path, 'ipython-%s' % ver), cmd, debug)
 
     print "Installing Routes"
     os.chdir(path)
     ver = '1.12.3'
     url = 'http://peak.telecommunity.com/dist/ez_setup.py'
-    with open('ez_setup.py', 'w') as ez_setup:
-         ez_setup.write(getdata(url, {}, debug))
+    if  not is_installed(url, path):
+        with open('ez_setup.py', 'w') as ez_setup:
+             ez_setup.write(getdata(url, {}, debug))
     url = 'http://pypi.python.org/packages/source/R/Routes/Routes-%s.tar.gz' % ver
     get_file(url, 'routes.tar.gz', path, debug)
-    cmd = 'cp ../ez_setup.py .; python setup.py install --prefix=%s/install' % path
-    exe_cmd(os.path.join(path, 'Routes-%s' % ver), cmd, debug)
+    if  not is_installed(url, path):
+        cmd = 'cp ../ez_setup.py .; python setup.py install --prefix=%s/install' % path
+        exe_cmd(os.path.join(path, 'Routes-%s' % ver), cmd, debug)
     
     print "Installing cmssh"
-    os.chdir(path)
     url = 'http://github.com/vkuznet/cmssh/tarball/master/'
     get_file(url, 'cmssh.tar.gz', path, debug)
-    cmd = 'mv vkuznet-cmssh* %s/cmssh' % path
-    exe_cmd(path, cmd, debug)
+    if  not is_installed(url, path):
+        cmd = 'mv vkuznet-cmssh* %s/cmssh' % path
+        exe_cmd(path, cmd, debug)
 
     if  not opts.no_cmssw:
         print "Installing root"
-        os.chdir(path)
         if  platform == 'Linux':
             url = 'ftp://root.cern.ch/root/root_v5.30.03.Linux-slc5-gcc4.3.tar.gz'
         elif platform == 'Darwin':
@@ -281,19 +303,21 @@ def main():
             pass
         os.chdir(sdir)
         url  = 'http://cmsrep.cern.ch/cmssw/cms/bootstrap.sh'
-        with open('bootstrap.sh', 'w') as bootstrap:
-             bootstrap.write(getdata(url, {}, debug))
-        os.chmod('bootstrap.sh', 0755)
-        os.environ['VO_CMS_SW_DIR'] = sdir
-        os.environ['SCRAM_ARCH'] = arch
-        os.environ['LANG'] = 'C'
-        cmd  = 'sh -x $VO_CMS_SW_DIR/bootstrap.sh setup -path $VO_CMS_SW_DIR -arch $SCRAM_ARCH'
-        if  unsupported_linux:
-            cmd += ' -unsupported_distribution_hack'
-        cmd += ';source $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt/*/profile.d/init.sh;'
-        cmd += 'apt-get install external+fakesystem+1.0;'
-        cmd += 'apt-get update'
-        exe_cmd(sdir, cmd, debug)
+        if  not is_installed(url, path):
+            with open('bootstrap.sh', 'w') as bootstrap:
+                 bootstrap.write(getdata(url, {}, debug))
+            os.chmod('bootstrap.sh', 0755)
+            os.environ['VO_CMS_SW_DIR'] = sdir
+            os.environ['SCRAM_ARCH'] = arch
+            os.environ['LANG'] = 'C'
+            cmd  = 'sh -x $VO_CMS_SW_DIR/bootstrap.sh setup -path $VO_CMS_SW_DIR -arch $SCRAM_ARCH'
+            if  unsupported_linux:
+                cmd += ' -unsupported_distribution_hack'
+            exe_cmd(sdir, cmd, debug)
+            cmd  = 'source `find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt -name init.sh`;'
+            cmd += 'apt-get install external+fakesystem+1.0;'
+            cmd += 'apt-get update'
+            exe_cmd(sdir, cmd, debug)
     
 #    print "Installing CRAB"
 #    os.chdir(path)
@@ -315,7 +339,6 @@ def main():
         msg += 'export PATH=%s/glite/bin:$PATH\n' % path
         msg += 'export PATH=%s/srmclient2/bin:$PATH\n' % path
         msg += 'export PATH=%s/install/bin:$PATH\n' % path
-        msg += 'export PATH=%s/root/bin:$PATH\n' % path
         msg += 'export PATH=%s/bin:$PATH\n' % path
         msg += 'export PATH=%s/lcg/bin:$PATH\n' % path
         msg += 'export PATH=$PATH:%s/CRABClient/bin\n' % path
@@ -332,6 +355,7 @@ def main():
             msg += 'if [ -f $VO_CMS_SW_DIR/cmsset_default.sh ]; then\n'
             msg += '   source $VO_CMS_SW_DIR/cmsset_default.sh\nfi\n'
             msg += 'source $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt/*/etc/profile.d/init.sh\n'
+        msg += 'export DEFAULT_ROOT=%s/root\n' % path
         msg += 'export LCG_GFAL_INFOSYS=lcg-bdii.cern.ch:2170\n'
         msg += 'export VOMS_USERCONF=%s/glite/etc/vomses\n' % path
         msg += 'export VOMS_LOCATION=%s/glite\n' % path
