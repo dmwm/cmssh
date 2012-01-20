@@ -168,13 +168,15 @@ def main():
     except:
         pass
 
+    # setup platform and unsupported flag
+    platform = os.uname()[0]
+    unsupported_linux = False
+    if  os.uname()[3].find('Ubuntu') != -1 or opts.unsupported:
+        unsupported_linux = True
+
     print "Installing Globus"
     parch = 'x86'
     arch  = None
-    platform = os.uname()[0]
-    unsupported_linux = False
-    if  os.uname()[3].find('Ubuntu') != -1 or unsupported:
-        unsupported_linux = True
     if  platform == 'Linux':
         if  unsupported_linux:
             ver = 'deb_5.0'
