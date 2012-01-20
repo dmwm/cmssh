@@ -84,6 +84,11 @@ def is_installed(url, path):
                     return True
     return False
 
+def add_url2packages(url, path):
+    "Add url to packages file"
+    with open(os.path.join(path, '.packages'), 'a') as packages:
+        packages.write(url + '\n')
+
 def get_file(url, fname, path, debug):
     """Fetch tarball from given url and store it as fname, untar it into given path"""
     os.chdir(path)
@@ -94,9 +99,7 @@ def get_file(url, fname, path, debug):
     tar = tarfile.open(fname, 'r:gz')
     tar.extractall(path)
     tar.close()
-    # add url into list of installed packages
-    with open(os.path.join(path, '.packages'), 'a') as packages:
-        packages.write(url + '\n')
+    add_url2packages(url, path)
 
 def exe_cmd(idir, cmd, debug):
     """Execute given command in a given dir"""
@@ -325,6 +328,7 @@ def main():
             cmd += 'apt-get install external+fakesystem+1.0;'
             cmd += 'apt-get update'
             exe_cmd(sdir, cmd, debug)
+            add_url2packages(url, path)
     
 #    print "Installing CRAB"
 #    os.chdir(path)
@@ -381,7 +385,10 @@ def main():
     vomses = os.path.join(path, 'glite')
     print "Create vomses area"
     vdir = os.path.join(vomses, 'etc')
-    os.makedirs(vdir)
+    try:
+        os.makedirs(vdir)
+    except:
+        pass
     fname = os.path.join(vdir, 'vomses')
     with open(fname, 'w') as fds:
         msg = '"cms" "voms.fnal.gov" "15015" "/DC=org/DC=doegrids/OU=Services/CN=http/voms.fnal.gov" "cms"'
