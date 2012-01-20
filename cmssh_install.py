@@ -96,7 +96,7 @@ def get_file(url, fname, path, debug):
     tar.close()
     # add url into list of installed packages
     with open(os.path.join(path, '.packages'), 'a') as packages:
-        packages.write(url)
+        packages.write(url + '\n')
 
 def exe_cmd(idir, cmd, debug):
     """Execute given command in a given dir"""
