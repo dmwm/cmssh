@@ -77,10 +77,11 @@ def getdata(url, params, verbose=0):
 def is_installed(url, path):
     "Check if already installed a package for given URL"
     fname = os.path.join(path, '.packages')
-    with open(fname, 'r') as packages:
-        for line in packages.readlines():
-            if  url == line.replace('\n', ''):
-                return True
+    if  os.path.isfile(fname):
+        with open(fname, 'r') as packages:
+            for line in packages.readlines():
+                if  url == line.replace('\n', ''):
+                    return True
     return False
 
 def get_file(url, fname, path, debug):
