@@ -172,6 +172,9 @@ def main():
     parch = 'x86'
     arch  = None
     platform = os.uname()[0]
+    unsupported_linux = False
+    if  os.uname()[3].find('Ubuntu') != -1 or unsupported:
+        unsupported_linux = True
     if  platform == 'Linux':
         if  unsupported_linux:
             ver = 'deb_5.0'
