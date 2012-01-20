@@ -97,6 +97,14 @@ def get_file(url, fname, path, debug):
     with open(fname, 'w') as tar_file:
          tar_file.write(getdata(url, {}, debug))
     tar = tarfile.open(fname, 'r:gz')
+    top_names = set([r.split('/')[0] for r in tar.getnames()])
+    if  len(top_names) == 1:
+        dir_name = top_names.pop()
+        if  os.path.isdir(dir_name):
+            try:
+                os.removedirs(dir_name)
+            except:
+                pass
     tar.extractall(path)
     tar.close()
     add_url2packages(url, path)
@@ -399,7 +407,10 @@ def main():
         fds.write(msg + '\n')
 
     print "Create cmssh"
-    os.makedirs(os.path.join(path, 'bin'))
+    try:
+        os.makedirs(os.path.join(path, 'bin'))
+    except:
+        pass
     with open(os.path.join(path, 'bin/cmssh'), 'w') as cmssh:
         msg  = '#!/bin/bash\n'
         msg += 'source %s/setup.sh\n' % path
