@@ -170,6 +170,7 @@ def main():
     print "Installing Globus"
     parch = 'x86'
     arch  = None
+    platform = os.uname()[0]
     if  platform == 'Linux':
         if  unsupported_linux:
             ver = 'deb_5.0'
