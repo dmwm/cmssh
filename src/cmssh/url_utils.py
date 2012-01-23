@@ -36,10 +36,13 @@ class HTTPSClientAuthHandler(urllib2.HTTPSHandler):
                                                 cert_file=self.cert)
         return httplib.HTTPSConnection(host)
 
-def get_data(url, method, kwargs, verbose=None):
+def get_data(url, method, kwargs, headers=None, verbose=None):
     """Retrieve data"""
     if  url.find('https') != -1:
         ckey, cert = get_key_cert()
+    else:
+        ckey = None
+        cert = None
     url = os.path.join(url, method)
     if  kwargs:
         params = kwargs
@@ -48,12 +51,14 @@ def get_data(url, method, kwargs, verbose=None):
     if  method == 'datasets':
         params.update({'dataset_access_type':'PRODUCTION', 'detail':'True'})
     url = url + '?' + urllib.urlencode(params, doseq=True)
-#    print "\n### URL", url, ckey, cert
+    if  verbose:
+        print "Request:", url, headers, ckey, cert
     req = urllib2.Request(url)
-    headers = {'Accept':'application/json;text/json'}
     if  headers:
         for key, val in headers.items():
             req.add_header(key, val)
+    else:
+        headers = {'Accept':'application/json;text/json'}
     if  ckey and cert:
         handler = HTTPSClientAuthHandler(ckey, cert)
         opener  = urllib2.build_opener(handler)

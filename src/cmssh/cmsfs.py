@@ -20,6 +20,7 @@ from   cmssh.url_utils import get_data
 from   cmssh.cms_objects import Run, File, Block, Dataset, Site, User
 from   cmssh.filemover import get_pfns, resolve_user_srm_path
 from   cmssh.cms_urls import phedex_url, dbs_url, conddb_url, sitedb_url
+from   cmssh import dbs2
 
 def rowdict(columns, row):
     """Convert given row list into dict with column keys"""
@@ -139,6 +140,8 @@ class CMSFS(object):
         pat = kwargs['dataset']
         if  pat[0] == '*':
             pat = '/' + pat
+        if  url.find('cmsdbsprod') != -1: # DBS2
+            return dbs2.list_dataset(pat)
         params = {'dataset':pat}
         data = get_data(url, method, params)
         plist = [Dataset(d) for d in data]
@@ -161,6 +164,8 @@ class CMSFS(object):
         """
 #        print "list_files kwargs", kwargs
         url = dbs_url()
+        if  url.find('cmsdbsprod') != -1: # DBS2
+            return dbs2.list_files(kwargs['dataset'])
         method = 'files'
         params = {'dataset': kwargs['dataset'], 'detail': 'True'}
         data = get_data(url, method, params)
@@ -265,6 +270,8 @@ class CMSFS(object):
 def dataset_info(dataset, verbose=None):
     """Return dataset info"""
     url = dbs_url('')
+    if  url.find('cmsdbsprod') != -1: # DBS2
+        return dbs2.dataset_info(dataset)
     params = {'dataset': dataset, 'detail':'True'}
     result = get_data(url, 'datasets', params, verbose)
     res = [Dataset(r) for r in result]
@@ -281,6 +288,8 @@ def dataset_info(dataset, verbose=None):
 def block_info(block, verbose=None):
     """Return block info"""
     url = dbs_url()
+    if  url.find('cmsdbsprod') != -1: # DBS2
+        return dbs2.block_info(block)
     params = {'block_name': block, 'detail':'True'}
     result = get_data(url, 'blocks', params, verbose)
     res = [Block(r) for r in result][0]
@@ -297,6 +306,8 @@ def block_info(block, verbose=None):
 def file_info(lfn, verbose=None):
     """Return file info"""
     url = dbs_url()
+    if  url.find('cmsdbsprod') != -1: # DBS2
+        return dbs2.file_info(lfn)
     params = {'logical_file_name': lfn, 'detail':'True'}
     result = get_data(url, 'files', params, verbose)
     res = [File(r) for r in result]

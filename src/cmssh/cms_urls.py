@@ -11,7 +11,10 @@ def phedex_url(api=''):
 
 def dbs_url(inst='global', api=''):
     """Return DBS URL for given API name"""
-    url = 'https://cmsweb.cern.ch/dbs/prod/%s/DBSReader/%s' % (inst, api)
+    # DBS2 settings
+    url = 'http://cmsdbsprod.cern.ch/cms_dbs_prod_global/servlet/DBSServlet'
+    # DBS3 settings
+#    url = 'https://cmsweb.cern.ch/dbs/prod/%s/DBSReader/%s' % (inst, api)
     if  os.environ.has_key('DBS_INSTANCE'):
         url.replace('global', os.environ['DBS_INSTANCE'])
     return url

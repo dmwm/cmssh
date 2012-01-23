@@ -45,9 +45,6 @@ class MyOptionParser:
         self.parser.add_option("--arch", action="store",
             type="string", default=None, dest="arch",
             help="CMSSW architecture")
-#        self.parser.add_option("--update", action="store",
-#            type="string", default=None, dest="update",
-#            help="Update cmssh to newest version, including all dependencies")
         self.parser.add_option("--unsupported", action="store_true",
             dest="unsupported",
             help="enforce installation on unsupported Linux platforms, e.g. Ubuntu")
@@ -374,6 +371,7 @@ def main():
             msg += 'if [ -f $VO_CMS_SW_DIR/cmsset_default.sh ]; then\n'
             msg += '   source $VO_CMS_SW_DIR/cmsset_default.sh\nfi\n'
             msg += 'source $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt/*/etc/profile.d/init.sh\n'
+        msg += 'export DBS_INSTANCE=cms_dbs_prod_global\n'
         msg += 'export DEFAULT_ROOT=%s/root\n' % path
         msg += 'export LCG_GFAL_INFOSYS=lcg-bdii.cern.ch:2170\n'
         msg += 'export VOMS_USERCONF=%s/glite/etc/vomses\n' % path
