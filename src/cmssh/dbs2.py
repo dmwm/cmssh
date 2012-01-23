@@ -130,7 +130,12 @@ def list_files(dataset):
     params = {"api":"executeQuery", "apiversion": "DBS_2_0_9", "query":query}
     data   = urllib2.urlopen(URL, urllib.urlencode(params))
     gen    = qlxml_parser(data, 'file')
-    plist  = [File(f['file']) for f in gen]
+    files  = []
+    for rec in gen:
+        rec['logical_file_name'] = rec['file']['file']
+        del rec['file']
+        files.append(rec)
+    plist  = [File(f) for f in files]
     return plist
 
 def dataset_info(dataset):
@@ -168,10 +173,10 @@ def file_info(lfn):
 def main():
     "Main function"
 #    res = list_datasets("*Zee*")
-#    res = list_files("/RelValFastSimZEE/CMSSW_1_8_3-RelVal-1206666978/GEN-SIM-DIGI-RECO")
+    res = list_files("/Cosmics/CRUZET3-v1/RAW")
 #    res = dataset_info("/EG/Run2010A-Dec4ReReco_v1/AOD")
 #    res = block_info("/EG/Run2010A-Dec4ReReco_v1/AOD#f15ed71e-6491-4f73-a0e3-ac4248a6367d")
-    res = file_info('/store/relval/2008/3/28/RelVal-RelValFastSimZEE-1206666978/0000/4A6711A7-6FFC-DC11-B87F-001617C3B782.root')
+#    res = file_info('/store/relval/2008/3/28/RelVal-RelValFastSimZEE-1206666978/0000/4A6711A7-6FFC-DC11-B87F-001617C3B782.root')
     print "res", repr(res)
 
 if __name__ == '__main__':

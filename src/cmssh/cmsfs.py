@@ -46,12 +46,20 @@ def sitedb_parser(data):
 def find_sites(url, method, params):
     """Find sites"""
     data = get_data(url, method, params)
-    sites = []
+    sites = {}
     for files in data['phedex']['block']:
         for fdict in files['file']:
-            for replica in fdict['replica']:
-                sites.append(Site(replica))
-    return sites
+            replicas = fdict['replica']
+            for replica in replicas:
+                node = replica.get('node', None)
+                se = replica.get('se', None)
+                if  sites.has_key(node):
+                    if  se not in sites[node]:
+                        sites[node] += [se]
+                else:
+                    sites[node] = [se]
+    for key, val in sites.iteritems():
+        yield Site({'node': key, 'se': val})
 
 def apply_filter(flt, gen):
     """Apply given filter to a given set of results"""
@@ -141,7 +149,7 @@ class CMSFS(object):
         if  pat[0] == '*':
             pat = '/' + pat
         if  url.find('cmsdbsprod') != -1: # DBS2
-            return dbs2.list_dataset(pat)
+            return dbs2.list_datasets(pat)
         params = {'dataset':pat}
         data = get_data(url, method, params)
         plist = [Dataset(d) for d in data]
