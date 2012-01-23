@@ -86,10 +86,10 @@ def add_url2packages(url, path):
     with open(os.path.join(path, '.packages'), 'a') as packages:
         packages.write(url + '\n')
 
-def get_file(url, fname, path, debug):
+def get_file(url, fname, path, debug, check=True):
     """Fetch tarball from given url and store it as fname, untar it into given path"""
     os.chdir(path)
-    if  is_installed(url, path):
+    if  check and is_installed(url, path):
         return
     with open(fname, 'w') as tar_file:
          tar_file.write(getdata(url, {}, debug))
@@ -293,11 +293,16 @@ def main():
         exe_cmd(os.path.join(path, 'Routes-%s' % ver), cmd, debug)
     
     print "Installing cmssh"
-    url = 'http://github.com/vkuznet/cmssh/tarball/master/'
-    get_file(url, 'cmssh.tar.gz', path, debug)
-    if  not is_installed(url, path):
-        cmd = 'mv vkuznet-cmssh* %s/cmssh' % path
+    os.chdir(path)
+    try:
+        cmd = 'rm -rf vkuznet-cmssh*; rm -rf cmssh'
         exe_cmd(path, cmd, debug)
+    except:
+        pass
+    url = 'http://github.com/vkuznet/cmssh/tarball/master/'
+    get_file(url, 'cmssh.tar.gz', path, debug, check=False)
+    cmd = 'mv vkuznet-cmssh* %s/cmssh' % path
+    exe_cmd(path, cmd, debug)
 
     if  not opts.no_cmssw:
         print "Installing root"
