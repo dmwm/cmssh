@@ -89,8 +89,6 @@ def add_url2packages(url, path):
 def get_file(url, fname, path, debug, check=True):
     """Fetch tarball from given url and store it as fname, untar it into given path"""
     os.chdir(path)
-    if  check and is_installed(url, path):
-        return
     with open(fname, 'w') as tar_file:
          tar_file.write(getdata(url, {}, debug))
     tar = tarfile.open(fname, 'r:gz')
@@ -204,25 +202,30 @@ def main():
         sys.exit(1)
 
     url = 'http://vdt.cs.wisc.edu/software/globus/4.0.8_VDT2.0.0gt4nbs/vdt_globus_essentials-VDT2.0.0-3-%s_%s.tar.gz' % (parch, ver)
-    get_file(url, 'globus.tar.gz', path, debug)
+    if  not is_installed(url, path):
+        get_file(url, 'globus.tar.gz', path, debug)
 
     print "Installing Myproxy"
     url = 'http://vdt.cs.wisc.edu/software/myproxy/5.3_VDT-2.0.0/myproxy_client-5.3-%s_%s.tar.gz' % (parch, ver)
-    get_file(url, 'myproxy_client.tar.gz', path, debug)
+    if  not is_installed(url, path):
+        get_file(url, 'myproxy_client.tar.gz', path, debug)
     url = 'http://vdt.cs.wisc.edu/software/myproxy/5.3_VDT-2.0.0/myproxy_essentials-5.3-%s_%s.tar.gz' % (parch, ver)
-    get_file(url, 'myproxy_essentials.tar.gz', path, debug)
+    if  not is_installed(url, path):
+        get_file(url, 'myproxy_essentials.tar.gz', path, debug)
 
     print "Installing VOMS"
     url = 'http://vdt.cs.wisc.edu/software/voms/1.8.8-2p1/voms-client-1.8.8-2p1-%s_%s.tar.gz' % (parch, ver)
-    get_file(url, 'voms-client.tar.gz', path, debug)
+    if  not is_installed(url, path):
+        get_file(url, 'voms-client.tar.gz', path, debug)
     url = 'http://vdt.cs.wisc.edu/software/voms/1.8.8-2p1/voms-essentials-1.8.8-2p1-%s_%s.tar.gz' % (parch, ver)
-    get_file(url, 'voms-essentials.tar.gz', path, debug)
+    if  not is_installed(url, path):
+        get_file(url, 'voms-essentials.tar.gz', path, debug)
 
     print "Installing expat"
     ver = '2.0.1'
     url = 'http://sourceforge.net/projects/expat/files/expat/2.0.1/expat-%s.tar.gz/download?use_mirror=iweb' % ver
-    get_file(url, 'expat-%s.tar.gz' % ver, path, debug)
     if  not is_installed(url, path):
+        get_file(url, 'expat-%s.tar.gz' % ver, path, debug)
         if platform == 'Darwin':
             cmd = 'CFLAGS=-m32 ./configure --prefix=%s/install; make; make install' % path
         else:
@@ -232,8 +235,8 @@ def main():
 
     print "Installing PythonUtilities"
     url = "http://cmssw.cvs.cern.ch/cgi-bin/cmssw.cgi/CMSSW/FWCore/PythonUtilities.tar.gz?view=tar"
-    get_file(url, 'PythonUtilities.tar.gz', path, debug)
     if  not is_installed(url, path):
+        get_file(url, 'PythonUtilities.tar.gz', path, debug)
         cmd = 'touch __init__.py; mv python/*.py .'
         exe_cmd(os.path.join(path, 'PythonUtilities'), cmd, debug)
         os.chdir(path)
@@ -243,29 +246,34 @@ def main():
     print "Installing CRAB3"
     ver = '3.0.6a'
     url = 'http://cmsrep.cern.ch/cmssw/comp/SOURCES/slc5_amd64_gcc461/cms/crab-client3/%s/crabclient3.tar.gz' % ver
-    get_file(url, 'crabclient3.tar.gz', path, debug)
+    if  not is_installed(url, path):
+        get_file(url, 'crabclient3.tar.gz', path, debug)
 
     print "Installing WMCore"
     ver = '0.8.21'
     url = 'http://cmsrep.cern.ch/cmssw/comp/SOURCES/slc5_amd64_gcc461/cms/wmcore/%s/WMCORE.tar.gz' % ver
-    get_file(url, 'wmcore.tar.gz', path, debug)
+    if  not is_installed(url, path):
+        get_file(url, 'wmcore.tar.gz', path, debug)
 
     print "Installing LCG info"
     url = 'http://vdt.cs.wisc.edu/software/lcg-infosites//2.6-2/lcg-infosites-2.6-2.tar.gz'
-    get_file(url, 'lcg-infosites.tar.gz', path, debug)
+    if  not is_installed(url, path):
+        get_file(url, 'lcg-infosites.tar.gz', path, debug)
     url = 'http://vdt.cs.wisc.edu/software/lcg-info//1.11.4-1/lcg-info-1.11.4-1.tar.gz'
-    get_file(url, 'lcg-info.tar.gz', path, debug)
+    if  not is_installed(url, path):
+        get_file(url, 'lcg-info.tar.gz', path, debug)
 
     print "Installing certificates"
     url = 'http://vdt.cs.wisc.edu/software/certificates/62/certificates-62-1.tar.gz'
-    get_file(url, 'certificates.tar.gz', path, debug)
+    if  not is_installed(url, path):
+        get_file(url, 'certificates.tar.gz', path, debug)
 
     print "Installing SRM client"
     ver = '2.2.1.3.19'
     url = 'http://vdt.cs.wisc.edu/software/srm-client-lbnl/%s/srmclient2-%s.tar.gz' \
         % (ver, ver)
-    get_file(url, 'srmclient.tar.gz', path, debug)
     if  not is_installed(url, path):
+        get_file(url, 'srmclient.tar.gz', path, debug)
         cmd  = './configure --with-java-home=$JAVA_HOME --enable-clientonly'
         cmd += ' --with-globus-location=%s/globus' % path
         cmd += ' --with-cacert-path=%s/certificates' % path
@@ -274,8 +282,8 @@ def main():
     print "Installing IPython"
     ver = '0.12'
     url = 'http://archive.ipython.org/release/%s/ipython-%s.tar.gz' % (ver, ver)
-    get_file(url, 'ipython.tar.gz', path, debug)
     if  not is_installed(url, path):
+        get_file(url, 'ipython.tar.gz', path, debug)
         cmd = 'python setup.py install --prefix=%s/install' % path
         exe_cmd(os.path.join(path, 'ipython-%s' % ver), cmd, debug)
 
@@ -287,8 +295,8 @@ def main():
         with open('ez_setup.py', 'w') as ez_setup:
              ez_setup.write(getdata(url, {}, debug))
     url = 'http://pypi.python.org/packages/source/R/Routes/Routes-%s.tar.gz' % ver
-    get_file(url, 'routes.tar.gz', path, debug)
     if  not is_installed(url, path):
+        get_file(url, 'routes.tar.gz', path, debug)
         cmd = 'cp ../ez_setup.py .; python setup.py install --prefix=%s/install' % path
         exe_cmd(os.path.join(path, 'Routes-%s' % ver), cmd, debug)
     
@@ -313,7 +321,8 @@ def main():
         else:
             print 'Unsupported OS "%s"' % platform
             sys.exit(1)
-        get_file(url, 'root.tar.gz', path, debug)
+        if  not is_installed(url, path):
+            get_file(url, 'root.tar.gz', path, debug)
 
         print "Bootstrap CMSSW"
         sdir = '%s/CMSSW' % path
