@@ -214,10 +214,10 @@ def main():
         get_file(url, 'myproxy_essentials.tar.gz', path, debug)
 
     print "Installing VOMS"
-    url = 'http://vdt.cs.wisc.edu/software/voms/1.8.8-2p1/voms-client-1.8.8-2p1-%s_%s.tar.gz' % (parch, ver)
+    url = 'http://vdt.cs.wisc.edu/software/voms/1.8.8-2p1-1/voms-client-1.8.8-2p1-%s_%s.tar.gz' % (parch, ver)
     if  not is_installed(url, path):
         get_file(url, 'voms-client.tar.gz', path, debug)
-    url = 'http://vdt.cs.wisc.edu/software/voms/1.8.8-2p1/voms-essentials-1.8.8-2p1-%s_%s.tar.gz' % (parch, ver)
+    url = 'http://vdt.cs.wisc.edu/software/voms/1.8.8-2p1-1/voms-essentials-1.8.8-2p1-%s_%s.tar.gz' % (parch, ver)
     if  not is_installed(url, path):
         get_file(url, 'voms-essentials.tar.gz', path, debug)
 

@@ -61,13 +61,11 @@ def register(prompt, name, funcList=[]):
 
 def set_prompt(in1):
     """Define shell prompt"""
-    if  in1 == "cms-sh":
-        unregister()
-    if  in1.find('|\#>') != -1:
-        in1 = in1.replace('|\#>', '').strip()
     ip = get_ipython()
-    ip.prompt_manager.in_template = \
-        '%s|\#> ' % in1
+    prompt = '%s|\#> ' % in1
+    ip.prompt_manager.width = len(prompt)-1
+    ip.prompt_manager.in_template = prompt
+
 
 #
 # load managers
