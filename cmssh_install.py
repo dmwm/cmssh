@@ -375,7 +375,7 @@ def main():
             msg += 'export CMSSW_RELEASES=%s/Releases\n' % path
             msg += 'if [ -f $VO_CMS_SW_DIR/cmsset_default.sh ]; then\n'
             msg += '   source $VO_CMS_SW_DIR/cmsset_default.sh\nfi\n'
-            msg += 'source $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt/*/etc/profile.d/init.sh\n'
+            msg += 'source `find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt -name init.sh`\n'
         msg += 'export DBS_INSTANCE=cms_dbs_prod_global\n'
         msg += 'export DEFAULT_ROOT=%s/root\n' % path
         msg += 'export LCG_GFAL_INFOSYS=lcg-bdii.cern.ch:2170\n'
