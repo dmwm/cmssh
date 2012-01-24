@@ -11,7 +11,7 @@ import traceback
 import subprocess
 
 # cmssh modules
-from cmssh.iprint import print_red, print_blue, msg_red, msg_blue, PrintManager
+from cmssh.iprint import print_red, print_blue, msg_red, msg_green, PrintManager
 from cmssh.filemover import copy_lfn, rm_lfn, mkdir, rmdir, list_se
 from cmssh.utils import list_results
 from cmssh.cmsfs import dataset_info, block_info, file_info, site_info
@@ -149,8 +149,8 @@ def cmsrel(rel):
     rel_dir = '%s/cms/cmssw' % os.environ['SCRAM_ARCH']
     if  os.path.isdir(os.path.join(os.environ['VO_CMS_SW_DIR'], rel_dir)):
         msg  = msg_red('Release %s is not yet installed on your system.\n' % rel)
-        msg += 'Use ' + msg_blue('releases') + ' command to list available releases.\n'
-        msg += 'Use ' + msg_red('install %s' % rel) + ' command to install given release.\n'
+        msg += 'Use ' + msg_green('releases') + ' command to list available releases.\n'
+        msg += 'Use ' + msg_green('install %s' % rel) + ' command to install given release.'
         print msg
         return
     cmssw_dir = os.environ.get('CMSSW_RELEASES', os.getcwd())
