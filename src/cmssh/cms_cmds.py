@@ -148,8 +148,9 @@ def cmsrel(rel):
     # check if given release name is installed on user system
     rel_dir = '%s/cms/cmssw' % os.environ['SCRAM_ARCH']
     if  os.path.isdir(os.path.join(os.environ['VO_CMS_SW_DIR'], rel_dir)):
-        msg  = msg_red('Release %s is not yet installed on your system' % rel)
-        msg += msg_blue(' use install %s' % rel)
+        msg  = msg_red('Release %s is not yet installed on your system.\n' % rel)
+        msg += 'Use ' + msg_blue('releases') + ' command to list available releases.\n'
+        msg += 'Use ' + msg_red('install %s' % rel) + ' command to install given release.\n'
         print msg
         return
     cmssw_dir = os.environ.get('CMSSW_RELEASES', os.getcwd())
