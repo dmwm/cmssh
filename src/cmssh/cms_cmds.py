@@ -53,11 +53,17 @@ class Magic(object):
     def execute(self, args=''):
         "Execute given command and its args in a shell"
         execute(self.cmd, args)
+
 def releases(_arg):
     """releases shell command"""
+    print "\nAvailable CMS releases:"
     cmd  = "apt-cache search CMSSW | grep CMSSW | grep -v -i fwlite"
     cmd += "| awk '{print $1}' | sed -e 's/cms+cmssw+//g' -e 's/cms+cmssw-patch+//g'"
     subprocess.call(cmd, shell=True)
+    print "\nInstalled releases:"
+    dirs = os.listdir(os.path.join(os.environ['CMSSH_ROOT'], 'Releases'))
+    for rel in dirs:
+        print rel
 
 def cmssw_install(arg):
     """CMSSW install shell command"""
@@ -134,7 +140,10 @@ def cmsrel(rel):
     rel = rel.strip()
     if  not rel:
         print_red('Please specify release name')
-        # TODO: I need to add what are available releases
+        print "\nInstalled releases:"
+        dirs = os.listdir(os.path.join(os.environ['CMSSH_ROOT'], 'Releases'))
+        for rel in dirs:
+            print rel
         return
     cmssw_dir = os.environ.get('CMSSW_RELEASES', os.getcwd())
     if  not os.path.isdir(cmssw_dir):
@@ -212,7 +221,7 @@ def cms_help_msg():
         + ' install CMSSW release, e.g. install CMSSW_5_0_0\n'
     msg += '\nAvailable CMSSW commands (once you install any CMSSW release):\n'
     msg += PM.msg_green('scram   ') + ' CMSSW scram command\n'
-    msg += PM.msg_green('cmsrel  ') + ' setup CMSSW release environment\n'
+    msg += PM.msg_green('cmsrel  ') + ' switch to given CMSSW release and setup its environment\n'
     msg += PM.msg_green('cmsRun  ') \
         + ' cmsRun command for release in question\n'
     msg += '\nAvailable GRID commands:\n'
