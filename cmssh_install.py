@@ -314,6 +314,11 @@ def main():
         exe_cmd(path, cmd, debug)
     except:
         pass
+    try:
+        cmd = 'rm -rf .ipython'
+        exe_cmd(path, cmd, debug)
+    except:
+        pass
     url = 'http://github.com/vkuznet/cmssh/tarball/master/'
     get_file(url, 'cmssh.tar.gz', path, debug, check=False)
     cmd = 'mv vkuznet-cmssh* %s/cmssh' % path
