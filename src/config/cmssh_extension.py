@@ -85,6 +85,7 @@ cmsMagicList = [ \
     ('git', Magic('git').execute),
     ('echo', Magic('echo').execute),
     ('grep', Magic('grep').execute),
+    ('tail', Magic('tail').execute),
     ('chmod', Magic('chmod').execute),
     ('apt-get', Magic('apt-get').execute),
     ('apt-cache', Magic('apt-cache').execute),

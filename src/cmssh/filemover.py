@@ -476,7 +476,8 @@ class FileMover(object):
         cmd = 'srm-ls'
         dst = [r for r in resolve_user_srm_path(node, ldir)][0]
         cmd = "srm-ls %s" % dst
-        print cmd
+        if  verbose:
+            print cmd
         stdout, stderr = execmd(cmd)
         if  stderr:
             print_red(stderr)

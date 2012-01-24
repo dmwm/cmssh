@@ -61,9 +61,10 @@ def releases(_arg):
     cmd += "| awk '{print $1}' | sed -e 's/cms+cmssw+//g' -e 's/cms+cmssw-patch+//g'"
     subprocess.call(cmd, shell=True)
     print "\nInstalled releases:"
-    dirs = os.listdir(os.path.join(os.environ['CMSSH_ROOT'], 'Releases'))
-    for rel in dirs:
-        print rel
+    rdir = os.path.join(os.environ['CMSSH_ROOT'], 'Releases')
+    if  os.path.isdir(rdir):
+        for rel in os.listdir(rdir):
+            print rel
 
 def cmssw_install(arg):
     """CMSSW install shell command"""
@@ -146,8 +147,8 @@ def cmsrel(rel):
             print rel
         return
     # check if given release name is installed on user system
-    rel_dir = '%s/cms/cmssw' % os.environ['SCRAM_ARCH']
-    if  os.path.isdir(os.path.join(os.environ['VO_CMS_SW_DIR'], rel_dir)):
+    rel_dir = '%s/cms/cmssw/%s' % (os.environ['SCRAM_ARCH'], rel)
+    if  not os.path.isdir(os.path.join(os.environ['VO_CMS_SW_DIR'], rel_dir)):
         msg  = msg_red('Release %s is not yet installed on your system.\n' % rel)
         msg += 'Use ' + msg_green('releases') + ' command to list available releases.\n'
         msg += 'Use ' + msg_green('install %s' % rel) + ' command to install given release.'

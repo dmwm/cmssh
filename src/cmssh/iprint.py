@@ -345,7 +345,7 @@ def format_dict(data):
             wkey = key + ' '*(length-len(key))
         else:
             wkey = key
-        msg += PM_SINGLETON.msg_blue('%s:' % wkey) + ' ' + str(val) + '\n'
+        msg += wkey + ': ' + str(val) + '\n'
     return msg
 
 if __name__ == "__main__":
