@@ -47,12 +47,24 @@ def execute(cmd, args=''):
     if  dyld:
         os.environ['DYLD_LIBRARY_PATH'] = dyld
 
+def execute_within_env(cmd, args=''):
+    "Execute given command and its args in a shell"
+    if  args.find("|") != -1:
+        cmd_opts = '%s %s' % (cmd, args.strip())
+        subprocess.call(cmd_opts, shell=True)
+    else:
+        cmd_opts = [cmd] + args.strip().split()
+        subprocess.call(cmd_opts)
+
 class Magic(object):
     def __init__(self, cmd):
         self.cmd = cmd
     def execute(self, args=''):
         "Execute given command and its args in a shell"
         execute(self.cmd, args)
+    def execute_within_env(self, args=''):
+        "Execute given command and its args in a shell"
+        execute_within_env(self.cmd, args)
 
 def releases(_arg):
     """releases shell command"""
