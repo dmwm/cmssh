@@ -327,6 +327,12 @@ def print_blue(msg):
 def msg_blue(msg):
     """convert input message into blue color"""
     return PM_SINGLETON.msg_blue(msg)
+def print_green(msg):
+    """print input message in green color"""
+    PM_SINGLETON.print_green(msg)
+def msg_green(msg):
+    """convert input message into green color"""
+    return PM_SINGLETON.msg_green(msg)
 
 def format_dict(data):
     msg = ''
