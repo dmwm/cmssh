@@ -11,7 +11,7 @@ import traceback
 import subprocess
 
 # cmssh modules
-from cmssh.iprint import print_red, print_blue, PrintManager
+from cmssh.iprint import print_red, print_blue, msg_red, msg_blue, PrintManager
 from cmssh.filemover import copy_lfn, rm_lfn, mkdir, rmdir, list_se
 from cmssh.utils import list_results
 from cmssh.cmsfs import dataset_info, block_info, file_info, site_info
@@ -145,6 +145,13 @@ def cmsrel(rel):
         for rel in dirs:
             print rel
         return
+    # check if given release name is installed on user system
+    rel_dir = '%s/cms/cmssw' % os.environ['SCRAM_ARCH']
+    if  os.path.isdir(os.path.join(os.environ['VO_CMS_SW_DIR'], rel_dir)):
+        msg  = msg_red('Release %s is not yet installed on your system' % rel)
+        msg += msg_blue(' use install %s' % rel)
+        print msg
+        return
     cmssw_dir = os.environ.get('CMSSW_RELEASES', os.getcwd())
     if  not os.path.isdir(cmssw_dir):
         os.makedirs(cmssw_dir)
@@ -165,7 +172,7 @@ def cmsrel(rel):
     path = '%s/%s/cms/cmssw/%s/external/%s/lib:' % (vdir, arch, rel, arch)
     if  arch.find('osx') != -1:
         os.environ['DYLD_LIBRARY_PATH'] = path + os.environ['DYLD_LIBRARY_PATH']
-    print "Setup and switch to %s" % os.getcwd()
+    print "%s is ready, cwd: %s" % (rel, os.getcwd())
 
 def cmsrun(arg):
     """cmsRun CMSSW command"""
