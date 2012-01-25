@@ -457,11 +457,12 @@ class FileMover(object):
                             size = get_size('srm-ls %s' % ifile)
                             if  not size or size == 'null':
                                 print_progress('N/A', 'Download in progress ...')
+                                break
                             else:
                                 progress = float(size)*100/tot_size
                                 print_progress(progress)
-                            if  progress == 100:
-                                break
+                                if  progress == 100:
+                                    break
                             time.sleep(0.5)
                         print '' # to finish print_progress
                     else:
