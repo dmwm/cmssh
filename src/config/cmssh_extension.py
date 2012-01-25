@@ -86,6 +86,8 @@ cmsMagicList = [ \
     ('echo', Magic('echo').execute),
     ('grep', Magic('grep').execute),
     ('tail', Magic('tail').execute),
+    ('tar', Magic('tar').execute),
+    ('zip', Magic('zip').execute),
     ('chmod', Magic('chmod').execute),
     ('vim', Magic('vim').execute),
     ('python', Magic('python').execute),
@@ -94,8 +96,8 @@ cmsMagicList = [ \
     ('apt-get', Magic('apt-get').execute_within_env),
     ('apt-cache', Magic('apt-cache').execute_within_env),
     ('crab', Magic('crab').execute_within_env),
-    ('cmsenv', Magic('eval `scramv1 runtime -sh`').execute),
-    ('scram', Magic('scramv1').execute),
+    ('cmsenv', Magic('eval `scramv1 runtime -sh`').execute_within_env),
+    ('scram', Magic('scramv1').execute_within_env),
     # grid middleware commands
     ('gridinit', Magic('grid-proxy-init').execute_within_env),
     ('gridinfo', Magic('grid-proxy-info').execute_within_env),
@@ -118,7 +120,7 @@ cmsMagicList = [ \
     ('cmsrel', cmsrel),
     ('cmsRun', cmsrun),
     ('cmsrun', cmsrun),
-    ('cmsHelp', cms_help),
+    ('cmshelp', cms_help),
 ]
 
 def test_key_cert():
