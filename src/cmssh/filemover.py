@@ -248,7 +248,7 @@ def srmcp(srmcmd, lfn, dst, verbose=None):
     if  pat.match(dst):
         dst_split = dst.split(':')
         dst = dst_split[0]
-        if  len(dst_split) > 1:
+        if  len(dst_split) == 1: # copy to the node
             local_path = dst_split[1]
             for srm_path, lfn_match in resolve_srm_path(dst, verbose):
                 lfn_pat = re.compile(lfn_match)
@@ -265,41 +265,49 @@ def srmcp(srmcmd, lfn, dst, verbose=None):
         if  not dst.find('file:///') != -1:
             dst = 'file:///%s' % dst
     pfnlist   = []
-    params    = {'se':'*', 'lfn':lfn}
-    url       = phedex_url('fileReplicas')
-    data      = urllib2.urlopen(url, urllib.urlencode(params, doseq=True))
-    json_dict = json.load(data)
-    ddict     = DotDict(json_dict)
-    if  verbose:
-        print "Look-up LFN:"
-        print lfn
-    if  not json_dict['phedex']['block']:
-        msg  = "LFN: %s\n" % lfn
-        msg += 'No replicas found\n'
-        msg += str(json_dict)
-        raise Exception(msg)
-    for fname in ddict.get('phedex.block.file'):
-        for replica in fname['replica']:
-            cmsname = replica['node']
-            se      = replica['se']
-            if  verbose:
-                print "found LFN on node=%s, se=%s" % (cmsname, se)
-            if  cmsname.count('T0', 0, 2) == 1:
-                continue # skip T0's
-            # query Phedex for PFN
-            url    = phedex_url('lfn2pfn')
-            params = {'protocol':'srmv2', 'lfn':lfn, 'node':cmsname}
-            data   = urllib2.urlopen(url, urllib.urlencode(params, doseq=True))
-            result = json.load(data)
-            try:
-                for item in result['phedex']['mapping']:
-                    pfn = item['pfn']
-                    if  pfn not in pfnlist:
-                        pfnlist.append(pfn)
-            except:
-                msg = "Fail to look-up PFNs in Phedex\n" + str(result)
-                print msg
-                continue
+    if  os.path.isfile(lfn) or lfn.find('file:///') != -1: # local file
+        pfn = lfn.replace('file:///', '')
+        if  pfn[0] != '/':
+            pfn = 'file:///%s' % os.path.join(os.getcwd(), pfn)
+        else:
+            pfn = 'file:///%s' % pfn
+        pfnlist   = [pfn]
+    else:
+        params    = {'se':'*', 'lfn':lfn}
+        url       = phedex_url('fileReplicas')
+        data      = urllib2.urlopen(url, urllib.urlencode(params, doseq=True))
+        json_dict = json.load(data)
+        ddict     = DotDict(json_dict)
+        if  verbose:
+            print "Look-up LFN:"
+            print lfn
+        if  not json_dict['phedex']['block']:
+            msg  = "LFN: %s\n" % lfn
+            msg += 'No replicas found\n'
+            msg += str(json_dict)
+            raise Exception(msg)
+        for fname in ddict.get('phedex.block.file'):
+            for replica in fname['replica']:
+                cmsname = replica['node']
+                se      = replica['se']
+                if  verbose:
+                    print "found LFN on node=%s, se=%s" % (cmsname, se)
+                if  cmsname.count('T0', 0, 2) == 1:
+                    continue # skip T0's
+                # query Phedex for PFN
+                url    = phedex_url('lfn2pfn')
+                params = {'protocol':'srmv2', 'lfn':lfn, 'node':cmsname}
+                data   = urllib2.urlopen(url, urllib.urlencode(params, doseq=True))
+                result = json.load(data)
+                try:
+                    for item in result['phedex']['mapping']:
+                        pfn = item['pfn']
+                        if  pfn not in pfnlist:
+                            pfnlist.append(pfn)
+                except:
+                    msg = "Fail to look-up PFNs in Phedex\n" + str(result)
+                    print msg
+                    continue
     if  verbose > 1:
         print "PFN list:"
         for pfn in pfnlist:
@@ -446,8 +454,12 @@ class FileMover(object):
                         print_progress(0)
                         thread.start_new_thread(execute, (cmd, lfn, verbose))
                         while True:
-                            progress = float(get_size('srm-ls %s' % ifile))*100/tot_size
-                            print_progress(progress)
+                            size = get_size('srm-ls %s' % ifile)
+                            if  not size or size == 'null':
+                                print_progress('N/A', 'Download in progress ...')
+                            else:
+                                progress = float(size)*100/tot_size
+                                print_progress(progress)
                             if  progress == 100:
                                 break
                             time.sleep(0.5)
@@ -506,11 +518,12 @@ class FileMover(object):
             raise Exception(msg)
         cmd = 'srm-rm'
         dst = [r for r in resolve_user_srm_path(node)][0]
-        dst = dst.replace('/store/user', '') # remove default path
-        if  dst[-1] == '/':
-            dst = dst[:-1]
+        dst = dst.split('=')[0]
+        if  dst[-1] != '=':
+            dst += '=' 
         cmd = "%s %s" % (cmd, dst+lfn)
-        print cmd
+        if  verbose:
+            print cmd
         stdout, stderr = execmd(cmd)
         if  stderr:
             print_red(stderr)

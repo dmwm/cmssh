@@ -17,7 +17,10 @@ from   cmssh.iprint import format_dict
 
 def print_progress(progress, msg='Download progress:'):
     "Print on stdout progress message"
-    sys.stdout.write("%s %d%%   \r" % (msg, progress) )
+    if  progress == 'N/A':
+        sys.stdout.write("%s   \r" % msg )
+    else:
+        sys.stdout.write("%s %d%%   \r" % (msg, progress) )
     sys.stdout.flush()
 
 def size_format(i):

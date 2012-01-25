@@ -370,7 +370,8 @@ def cms_cp(arg):
         verbose = 0
     if  not arg:
         print_red("Usage: cp <options> source_file target_{file,directory}")
-    if  os.path.exists(src):
+    pat = re.compile('T[0-3].*:/.*')
+    if  os.path.exists(src) and not pat.match(dst):
         prc = subprocess.Popen("cp %s %s" % (src, dst), shell=True)
         sts = os.waitpid(prc.pid, 0)[1]
     else:
