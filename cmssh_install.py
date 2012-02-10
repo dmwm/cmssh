@@ -15,6 +15,7 @@ https://twiki.grid.iu.edu/bin/view/ReleaseDocumentation/VomsInstallGuide
 # system modules
 import os
 import sys
+import stat
 import time
 import urllib
 import urllib2
@@ -430,6 +431,7 @@ def main():
         fds.write(msg + '\n')
         msg = '"cms" "lcg-voms.cern.ch" "15002" "/DC=ch/DC=cern/OU=computers/CN=lcg-voms.cern.ch" "cms"'
         fds.write(msg + '\n')
+    os.chmod(fname, stat.S_IRUSR)
 
     print "Create cmssh"
     try:
