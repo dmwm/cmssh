@@ -9,10 +9,10 @@ import sys
 import json
 import stat
 import time
-import thread
 import urllib
 import urllib2
 import datetime
+from multiprocessing import Process
 
 # for DBS2 XML parsing
 import xml.etree.ElementTree as ET
@@ -451,18 +451,21 @@ class FileMover(object):
                     ifile = arr[2] # targetURL
                     tot_size = float(get_size('srm-ls %s' % pfn))
                     if  tot_size:
-                        print_progress(0)
-                        thread.start_new_thread(execute, (cmd, lfn, verbose))
+                        print_progress('N/A', 'Download in progress: ...')
+                        proc = Process(target=execute, args=(cmd, lfn, verbose))
+                        proc.start()
                         while True:
-                            size = get_size('srm-ls %s' % ifile)
-                            if  not size or size == 'null':
-                                print_progress('N/A', 'Download in progress ...')
-                                break
+                            if  proc.is_alive():
+                                size = get_size('srm-ls %s' % ifile)
+                                if  not size or size == 'null':
+                                    print_progress('N/A', 'Download in progress: ...')
+                                else:
+                                    progress = float(size)*100/tot_size
+                                    print_progress(progress)
+                                    if  progress == 100:
+                                        break
                             else:
-                                progress = float(size)*100/tot_size
-                                print_progress(progress)
-                                if  progress == 100:
-                                    break
+                                break
                             time.sleep(0.5)
                         print '' # to finish print_progress
                     else:
