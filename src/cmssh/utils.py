@@ -15,7 +15,7 @@ from   types import GeneratorType
 
 from   cmssh.iprint import format_dict
 
-def print_progress(progress, msg='Download progress:'):
+def print_progress(progress, msg='Download in progress:'):
     "Print on stdout progress message"
     if  progress == 'N/A':
         sys.stdout.write("%s   \r" % msg )
