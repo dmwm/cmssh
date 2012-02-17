@@ -7,12 +7,13 @@ Set of UNIX commands, e.g. ls, cp, supported in cmssh.
 # system modules
 import os
 import re
+import glob
 import traceback
 import subprocess
 
 # cmssh modules
 from cmssh.iprint import print_red, print_blue, msg_red, msg_green, PrintManager
-from cmssh.filemover import copy_lfn, rm_lfn, mkdir, rmdir, list_se
+from cmssh.filemover import copy_lfn, rm_lfn, mkdir, rmdir, list_se, dqueue
 from cmssh.utils import list_results
 from cmssh.cmsfs import dataset_info, block_info, file_info, site_info
 from cmssh.cmsfs import CMSFS, apply_filter, validate_dbs_instance
@@ -233,14 +234,16 @@ def cms_help_msg():
         + ' remove file/LFN, e.g. rm local.file or rm T3_US_Cornell:/store/user/file.root\n'
     msg += PM.msg_green('cp      ') \
         + ' copy file/LFN, e.g. cp local.file or cp /store/user/file.root .\n'
+    msg += PM.msg_green('dqueue  ') \
+        + ' status of download queue, list files which are in progress.\n'
     msg += PM.msg_green('root    ') + ' invoke ROOT\n'
     msg += PM.msg_green('du      ') \
         + ' display disk usage for given site, e.g. du T3_US_Cornell\n'
+    msg += '\nAvailable CMSSW commands (once you install any CMSSW release):\n'
     msg += PM.msg_green('releases') \
         + ' list available CMSSW releases\n'
     msg += PM.msg_green('install ') \
         + ' install CMSSW release, e.g. install CMSSW_5_0_0\n'
-    msg += '\nAvailable CMSSW commands (once you install any CMSSW release):\n'
     msg += PM.msg_green('scram   ') + ' CMSSW scram command\n'
     msg += PM.msg_green('cmsrel  ') + ' switch to given CMSSW release and setup its environment\n'
     msg += PM.msg_green('cmsRun  ') \
@@ -269,7 +272,8 @@ def cms_rm(arg):
         verbose = 0
     if  not arg:
         print_red("Usage: rm <options> source_file")
-    if  os.path.exists(arg.split()[-1]):
+    dst = arg.split()[-1]
+    if  os.path.exists(dst) or len(glob.glob(dst)):
         prc = subprocess.Popen("rm " + arg, shell=True)
         sts = os.waitpid(prc.pid, 0)[1]
     else:
@@ -358,7 +362,12 @@ def cms_cp(arg):
     """CMS cp command"""
     arg = arg.strip()
     try:
-        src, dst = arg.split()
+        src, dst = arg.split(' ', 1)
+        if  dst.find('&') != -1:
+            background = True
+            dst = dst.replace('&', '').strip()
+        else:
+            background = False
         if  dst == '.':
             dst = os.getcwd()
     except:
@@ -376,14 +385,15 @@ def cms_cp(arg):
         sts = os.waitpid(prc.pid, 0)[1]
     else:
         try:
-            src, dst = arg.split()
-            if  dst == '.':
-                dst = os.getcwd()
-            status = copy_lfn(src, dst, verbose=verbose)
+            status = copy_lfn(src, dst, verbose, background)
             print_blue("Status %s" % status)
         except:
             traceback.print_exc()
             print_red("Wrong argument '%s'" % arg)
+
+def download_queue(arg=None):
+    "status of download queue"
+    dqueue()
 
 def results():
     """Return RESMGR"""
