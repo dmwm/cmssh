@@ -412,6 +412,7 @@ class FileMover(object):
     def __init__(self):
         self.instance = "Instance at %d" % self.__hash__()
         check_proxy()
+        self.queue = {} # download queue
 
     def copy_via_xrdcp(self, lfn, dst, verbose=0):
         "Copy LFN to given destination via xrdcp command"
@@ -426,13 +427,18 @@ class FileMover(object):
             return 'fail'
         return 'success'
 
-    def copy(self, lfn, dst, verbose=0):
+    def copy(self, lfn, dst, verbose=0, background=False):
         """Copy LFN to given destination"""
         err = 'Unable to identify total size of the file,'
         err += ' GRID middleware fails.'
         for cmd in srmcp("srm-copy", lfn, dst, verbose):
             if  cmd:
-                if  verbose:
+                if  background:
+                    proc = Process(target=execute, args=(cmd, lfn, 0))
+                    proc.start()
+                    self.queue[lfn] = proc
+                    return 'accepted'
+                elif verbose:
                     status = execute(cmd, lfn, verbose)
                     if  status:
                         dst, dst_size = status
@@ -577,13 +583,33 @@ class FileMover(object):
             print stdout
 
 FM_SINGLETON = FileMover()
-def copy_lfn(lfn, dst, verbose=0):
+def copy_lfn(lfn, dst, verbose=0, background=False):
     """Copy lfn to destination"""
-    status = FM_SINGLETON.copy(lfn, dst, verbose)
+    status = FM_SINGLETON.copy(lfn, dst, verbose, background)
     if  status == 'fail':
         print_blue('Fallback to xrdcp method')
         FM_SINGLETON.copy_via_xrdcp(lfn, dst, verbose)
     return status
+
+def dqueue():
+    """Return download queue"""
+    download_queue = FM_SINGLETON.queue
+    alive = []
+    ended = []
+    for lfn, proc in download_queue.items():
+        if  proc.is_alive():
+            alive.append(lfn)
+        else:
+            ended.append((lfn, proc.exitcode))
+            del download_queue[lfn]
+    if  len(alive):
+        print "\nIn progress:"
+        for lfn in alive:
+            print lfn
+    if  len(ended):
+        print "\nFinished:"
+        for lfn, code in ended:
+            print "%s, exit code %s" % (lfn, code)
 
 def list_lfn(lfn, verbose=0):
     """List lfn info"""
