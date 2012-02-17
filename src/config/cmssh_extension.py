@@ -19,7 +19,7 @@ import cmssh
 from   cmssh.iprint import PrintManager
 from   cmssh.debug import DebugManager
 from   cmssh.cms_cmds import dbs_instance, Magic
-from   cmssh.cms_cmds import lookup, cms_ls, cms_cp, verbose
+from   cmssh.cms_cmds import lookup, cms_ls, cms_cp, verbose, download_queue
 from   cmssh.cms_cmds import cms_rm, cms_rmdir, cms_mkdir, cms_root, cms_xrdcp
 from   cmssh.cms_cmds import cmssw_install, releases
 from   cmssh.cms_cmds import cmsrel, cmsrun, cms_help
@@ -113,6 +113,7 @@ cmsMagicList = [ \
     ('mkdir', cms_mkdir),
     ('rmdir', cms_rmdir),
     ('cp', cms_cp),
+    ('dqueue', download_queue),
     ('verbose', verbose),
     ('install', cmssw_install),
     ('releases', releases),
