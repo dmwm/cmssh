@@ -1,0 +1,22 @@
+find dataset=*CRUZET3*RAW
+for r in results(): print r, type(r)
+find file dataset=/Cosmics/CRUZET3-v1/RAW
+find site dataset=/Cosmics/CRUZET3-v1/RAW
+ls /store/data/CRUZET3/Cosmics/RAW/v1/000/050/832/186585EC-024D-DD11-B747-000423D94AA8.root
+cp /store/data/CRUZET3/Cosmics/RAW/v1/000/050/832/186585EC-024D-DD11-B747-000423D94AA8.root .
+ls -l
+du T3_US_Cornell
+ls T3_US_Cornell
+ls T3_US_Cornell:/store/user/valya
+mkdir T3_US_Cornell:/store/user/valya/foo
+rmdir T3_US_Cornell:/store/user/valya/foo
+cp 186585EC-024D-DD11-B747-000423D94AA8.root T3_US_Cornell:/store/user/valya
+ls T3_US_Cornell:/store/user/valya
+rm T3_US_Cornell:/xrootdfs/cms/store/user/valya/186585EC-024D-DD11-B747-000423D94AA8.root
+cp /store/data/CRUZET3/Cosmics/RAW/v1/000/050/832/186585EC-024D-DD11-B747-000423D94AA8.root T3_US_Cornell:/store/user/valya
+ls T3_US_Cornell:/store/user/valya
+rm T3_US_Cornell:/xrootdfs/cms/store/user/valya/186585EC-024D-DD11-B747-000423D94AA8.root
+releases
+cmsrel CMSSW_5_2_0_pre1
+cmsRun runevt_cfg.py
+crab -h
