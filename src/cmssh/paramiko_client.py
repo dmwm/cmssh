@@ -144,7 +144,8 @@ def execute(cmd, username, hostname='lxplus.cern.ch'):
 
 def test():
     "test function"
-    result = execute('ls', 'valya')
+    username = raw_input('username: ')
+    result = execute('ls', username)
     print result, type(result)
 
 if  __name__ == '__main__':
