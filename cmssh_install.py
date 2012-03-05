@@ -300,6 +300,7 @@ def main():
         get_file(url, 'routes.tar.gz', path, debug)
         cmd = 'cp ../ez_setup.py .; python setup.py install --prefix=%s/install' % path
         exe_cmd(os.path.join(path, 'Routes-%s' % ver), cmd, debug)
+
     print "Installing httplib2"
     ver = '0.7.2'
     url = 'http://httplib2.googlecode.com/files/httplib2-%s.tar.gz' % ver
@@ -307,7 +308,15 @@ def main():
         get_file(url, 'httplib2.tar.gz', path, debug)
         cmd = 'python setup.py install --prefix=%s/install' % path
         exe_cmd(os.path.join(path, 'httplib2-%s' % ver), cmd, debug)
-    
+
+    print "Installing paramiko"
+    ver = '1.7.7.1'
+    url = 'http://www.lag.net/paramiko/download/paramiko-%s.tar.gz' % ver
+    if  not is_installed(url, path):
+        get_file(url, 'paramiko-%s.tar.gz' % ver, path, debug)
+        cmd = 'python setup.py install --prefix=%s/install' % path
+        exe_cmd(os.path.join(path, 'paramiko-%s' % ver), cmd, debug)
+
     print "Installing cmssh"
     os.chdir(path)
     try:
