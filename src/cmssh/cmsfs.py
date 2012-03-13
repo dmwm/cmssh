@@ -17,9 +17,10 @@ from   types import GeneratorType
 # cmssh modules
 from   cmssh.iprint import format_dict
 from   cmssh.url_utils import get_data
-from   cmssh.cms_objects import Run, File, Block, Dataset, Site, User
+from   cmssh.cms_objects import Run, File, Block, Dataset, Site, User, Job
 from   cmssh.filemover import get_pfns, resolve_user_srm_path
 from   cmssh.cms_urls import phedex_url, dbs_url, conddb_url, sitedb_url
+from   cmssh.cms_urls import dashboard_url
 from   cmssh import dbs2
 
 def rowdict(columns, row):
@@ -121,6 +122,9 @@ class CMSFS(object):
         rmp.connect('block site={sitename:T[0-3].*?}', \
                controller='list_block4site')
         rmp.connect('user={username:.*?}', controller='list_user')
+        rmp.connect('job user={user:.*?}', controller='list_jobs')
+        rmp.connect('job site={site:T[0-3].*?}', controller='list_jobs')
+        rmp.connect('job', controller='list_jobs')
         return rmp
 
     def lookup(self, obj):
@@ -279,6 +283,31 @@ class CMSFS(object):
 #                yield dict(user=row)
                 users.append(row)
         return [User(u) for u in users]
+
+    def list_jobs(self, **kwargs):
+        "Controller for jobs info"
+#        print "list_jobs kwargs", kwargs
+        url = dashboard_url()
+        method = 'jobsummary-plot-or-table2' # JSON API (number 2 :)
+        params = {
+            'user': kwargs.get('user', ''),
+            'site': kwargs.get('site', ''),
+            'ce': '',
+            'submissiontool': '',
+            'dataset': kwargs.get('dataset', ''),
+            'application': '',
+            'rb': '',
+            'activity': '',
+            'grid': '',
+            'date1': '',
+            'date2': '',
+            'jobtype': '',
+            'tier': '',
+            'check': 'submitted',
+        }
+        data = get_data(url, method, params)
+        plist = [Job(r) for r in data['summaries']]
+        return plist
 
 def dataset_info(dataset, verbose=None):
     """Return dataset info"""

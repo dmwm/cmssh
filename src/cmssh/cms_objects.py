@@ -80,3 +80,11 @@ class User(CMSObj):
         """User string representation"""
         return self.data['username']
 
+class Job(CMSObj):
+    """docstring for User"""
+    def __init__(self, data):
+        CMSObj.__init__(self, data)
+    def __str__(self):
+        """User string representation"""
+        return self.data['name']
+

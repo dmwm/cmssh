@@ -36,7 +36,7 @@ class HTTPSClientAuthHandler(urllib2.HTTPSHandler):
                                                 cert_file=self.cert)
         return httplib.HTTPSConnection(host)
 
-def get_data(url, method, kwargs, headers=None, verbose=None):
+def get_data(url, method, kwargs, headers=None, verbose=None, decoder='json'):
     """Retrieve data"""
     if  url.find('https') != -1:
         ckey, cert = get_key_cert()
@@ -64,7 +64,10 @@ def get_data(url, method, kwargs, headers=None, verbose=None):
         opener  = urllib2.build_opener(handler)
         urllib2.install_opener(opener)
     res  = urllib2.urlopen(req)
-    data = json.load(res)
+    if  decoder == 'json':
+        data = json.load(res)
+    else:
+        data = res.read()
     return data
 
 def get_key_cert():

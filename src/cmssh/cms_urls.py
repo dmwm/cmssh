@@ -26,3 +26,8 @@ def conddb_url(api=''):
 def sitedb_url(api=''):
     """Return SiteDB URL for given API name"""
     return 'https://cmsweb.cern.ch/sitedb/data/prod/%s' % api
+
+def dashboard_url(api=''):
+    "Return Dashboard URL for given API name"
+    url = 'http://dashb-cms-job.cern.ch/dashboard/request.py/%s' % api
+    return url
