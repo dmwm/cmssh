@@ -22,6 +22,7 @@ from   cmssh.filemover import get_pfns, resolve_user_srm_path
 from   cmssh.cms_urls import phedex_url, dbs_url, conddb_url, sitedb_url
 from   cmssh.cms_urls import dashboard_url
 from   cmssh import dbs2
+from   cmssh.runsum import runsum
 
 def rowdict(columns, row):
     """Convert given row list into dict with column keys"""
@@ -167,9 +168,18 @@ class CMSFS(object):
         """
         url = conddb_url()
         method = 'getLumi'
-        params = {'Runs':kwargs.get('run'), 'lumiType':'delivered'}
+        run = kwargs.get('run')
+        params = {'Runs':run, 'lumiType':'delivered'}
         data = get_data(url, method, params)
-        plist = [Run(d) for d in data]
+        runinfo = [r for r in runsum(run)]
+        runlumi = [r for r in data]
+        plist = []
+        for run in runinfo:
+            for rec in runlumi:
+                if  run['run'] == rec['Run']:
+                    run.update(rec)
+            plist.append(Run(run))
+#        plist = [Run(d) for d in data]
         return plist
 
     def list_files(self, **kwargs):
