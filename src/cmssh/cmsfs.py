@@ -109,6 +109,8 @@ class CMSFS(object):
         rmp = routes.Mapper()
         rmp.connect('run={run:\d+}', controller='list_runs')
         rmp.connect('dataset={dataset:.*?}', controller='list_datasets')
+        rmp.connect('file run={run:[0-9]+} dataset={dataset:/.*?}', controller='list_files')
+        rmp.connect('file dataset={dataset:/.*?} run={run:[0-9]+}', controller='list_files')
         rmp.connect('file dataset={dataset:/.*?}', controller='list_files')
         rmp.connect('site dataset={dataset:/.*?}', \
                controller='list_sites4dataset')
@@ -170,12 +172,15 @@ class CMSFS(object):
         """
         Controller to get files
         """
-#        print "list_files kwargs", kwargs
         url = dbs_url()
+        run = kwargs.get('run', None)
+        dataset = kwargs.get('dataset')
         if  url.find('cmsdbsprod') != -1: # DBS2
-            return dbs2.list_files(kwargs['dataset'])
+            return dbs2.list_files(dataset, run)
         method = 'files'
-        params = {'dataset': kwargs['dataset'], 'detail': 'True'}
+        params = {'dataset': dataset, 'detail': 'True'}
+        if  run:
+            params.update({'run_num': run})
         data = get_data(url, method, params)
         plist = [File(f) for f in data]
         return plist

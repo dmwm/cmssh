@@ -125,8 +125,10 @@ def list_datasets(pattern):
     plist  = [Dataset(d['dataset']) for d in gen]
     return plist
 
-def list_files(dataset):
+def list_files(dataset, run=None):
     query  = 'find file where dataset=%s' % dataset
+    if  run:
+        query += ' and run=%s' % run
     params = {"api":"executeQuery", "apiversion": "DBS_2_0_9", "query":query}
     data   = urllib2.urlopen(URL, urllib.urlencode(params))
     gen    = qlxml_parser(data, 'file')
