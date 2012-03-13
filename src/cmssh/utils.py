@@ -3,6 +3,8 @@
 """
 Common utilities
 """
+
+# system modules
 import os
 import re
 import sys
@@ -11,9 +13,16 @@ import types
 import readline
 import traceback
 import subprocess
-from   types import GeneratorType
+from   types import GeneratorType, InstanceType
+import xml.etree.cElementTree as ET
 
+# cmssh modules
 from   cmssh.iprint import format_dict
+
+float_number_pattern = \
+    re.compile(r'(^[-]?\d+\.\d*$|^\d*\.{1,1}\d+$)')
+int_number_pattern = \
+    re.compile(r'(^[0-9-]$|^[0-9-][0-9]*$)')
 
 def print_progress(progress, msg='Download in progress:'):
     "Print on stdout progress message"
@@ -94,4 +103,138 @@ def execmd(cmd):
     stdout = child_stdout.read()
     stderr = child_stderr.read()
     return stdout, stderr
+
+def adjust_value(value):
+    """
+    Change null value to None.
+    """
+    pat_float   = float_number_pattern
+    pat_integer = int_number_pattern
+    if  isinstance(value, basestring):
+        value = value.strip()
+        if  value == 'null' or value == '(null)':
+            return None
+        elif pat_float.match(value):
+            return float(value)
+        elif pat_integer.match(value):
+            return int(value)
+        else:
+            return value
+    else:
+        return value
+
+def dict_helper(idict, notations):
+    """
+    Create new dict for provided notations/dict. Perform implicit conversion
+    of data types, e.g. if we got '123', convert it to integer. The conversion
+    is done based on adjust_value function.
+    """
+    child_dict = {}
+    for kkk, vvv in idict.iteritems():
+        child_dict[notations.get(kkk, kkk)] = adjust_value(vvv)
+    return child_dict
+
+def xml_parser(source, prim_key, tags=None):
+    """
+    XML parser based on ElementTree module. To reduce memory footprint for
+    large XML documents we use iterparse method to walk through provided
+    source descriptor (a .read()/close()-supporting file-like object 
+    containig XML source).
+
+    The provided prim_key defines a tag to capture, while supplementary
+    *tags* list defines additional tags which can be added to outgoing
+    result. For instance, file object shipped from PhEDEx is enclosed
+    into block one, so we want to capture block.name together with
+    file object.
+    """
+    notations = {}
+    sup       = {}
+    try:
+        context = ET.iterparse(source, events=("start", "end"))
+    except IOError as exc: # given source is not parseable
+        # try different data format, it can be an HTTP error
+        try:
+            if  isinstance(source, str):
+                data = json.loads(source)
+                yield data
+        except:
+            pass
+        msg = 'XML parser, data stream is not parseable: %s' % str(exc)
+        print_exc(msg)
+        context = []
+    root      = None
+    for item in context:
+        event, elem = item
+        if  event == "start" and root is None:
+            root = elem # the first element is root
+        row = {}
+        if  tags and not sup:
+            for tag in tags:
+                if  tag.find(".") != -1:
+                    atag, attr = tag.split(".")
+                    if  elem.tag == atag and elem.attrib.has_key(attr):
+                        att_value = elem.attrib[attr]
+                        if  isinstance(att_value, dict):
+                            att_value = \
+                                dict_helper(elem.attrib[attr], notations)
+                        if  isinstance(att_value, str):
+                            att_value = adjust_value(att_value)
+                        sup[atag] = {attr:att_value}
+                else:
+                    if  elem.tag == tag:
+                        sup[tag] = elem.attrib
+        key = elem.tag
+        if  key != prim_key:
+            continue
+        row[key] = dict_helper(elem.attrib, notations)
+        row[key].update(sup)
+        get_children(elem, event, row, key, notations)
+        if  event == 'end':
+            elem.clear()
+            yield row
+    if  root:
+        root.clear()
+    if  isinstance(source, InstanceType) or isinstance(source, file):
+        source.close()
+
+def get_children(elem, event, row, key, notations):
+    """
+    xml_parser helper function. It gets recursively information about
+    children for given element tag. Information is stored into provided
+    row for given key. The change of notations can be applied during
+    parsing step by using provided notations dictionary.
+    """
+    for child in elem.getchildren():
+        child_key  = child.tag
+        child_data = child.attrib
+        if  not child_data:
+            child_dict = adjust_value(child.text)
+        else:
+            child_dict = dict_helper(child_data, notations)
+
+        if  isinstance(row[key], dict) and row[key].has_key(child_key):
+            val = row[key][child_key]
+            if  isinstance(val, list):
+                val.append(child_dict)
+                row[key][child_key] = val
+            else:
+                row[key][child_key] = [val] + [child_dict]
+        else:
+            if  child.getchildren(): # we got grand-children
+                if  child_dict:
+                    row[key][child_key] = child_dict
+                else:
+                    row[key][child_key] = {}
+                if  isinstance(child_dict, dict):
+                    newdict = {child_key: child_dict}
+                else:
+                    newdict = {child_key: {}}
+                get_children(child, event, newdict, child_key, notations) 
+                row[key][child_key] = newdict[child_key]
+            else:
+                if  not isinstance(row[key], dict):
+                    row[key] = {}
+                row[key][child_key] = child_dict
+        if  event == 'end':
+            child.clear()
 
