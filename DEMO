@@ -2,6 +2,8 @@ find dataset=*CRUZET3*RAW
 for r in results(): print r, type(r)
 find file dataset=/Cosmics/CRUZET3-v1/RAW
 find site dataset=/Cosmics/CRUZET3-v1/RAW
+find run=160915
+for r in results(): print r.initLumi, type(r.initLumi), r.DeliveredLumi, type(r.DeliveredLumi)
 ls /store/data/CRUZET3/Cosmics/RAW/v1/000/050/832/186585EC-024D-DD11-B747-000423D94AA8.root
 cp /store/data/CRUZET3/Cosmics/RAW/v1/000/050/832/186585EC-024D-DD11-B747-000423D94AA8.root .
 ls -l
