@@ -340,7 +340,12 @@ def format_dict(data):
     for key in data.keys():
         if  length < len(key):
             length = len(key)
-    for key, val in data.items():
+    keys = data.keys()
+    keys.sort()
+    for key in keys:
+        val = data[key]
+        if  isinstance(val, list):
+            val = ', '.join(val)
         if  len(key) < length:
             wkey = key + ' '*(length-len(key))
         else:

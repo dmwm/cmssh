@@ -1,5 +1,6 @@
 find dataset=*CRUZET3*RAW
 for r in results(): print r, type(r)
+ls /Cosmics/CRUZET3-v1/RAW
 find file dataset=/Cosmics/CRUZET3-v1/RAW
 find site dataset=/Cosmics/CRUZET3-v1/RAW
 find run=160915

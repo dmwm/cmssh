@@ -9,6 +9,7 @@ Description:
 # system modules
 import os
 import sys
+import time
 import urllib
 import urllib2
 
@@ -18,6 +19,7 @@ import xml.etree.cElementTree as ET
 # cmssh modules
 from   cmssh.url_utils import get_data
 from   cmssh.cms_objects import File, Block, Dataset
+from   cmssh.filemover import get_pfns, resolve_user_srm_path
 
 URL = 'http://cmsdbsprod.cern.ch/cms_dbs_prod_global/servlet/DBSServlet'
 
@@ -116,9 +118,20 @@ def qlxml_parser(source, prim_key):
         root.clear()
     source.close()
 
-def list_datasets(pattern):
+def list_datasets(kwargs):
     """Find sites"""
-    query  = 'find dataset where dataset=%s' % pattern
+    dataset = kwargs.pop('dataset')
+#    query  = 'find dataset, dataset.createdate, dataset.createby, dataset.moddate, dataset.modby, datatype, dataset.status where dataset=%s' % dataset
+    query  = 'find dataset where dataset=%s' % dataset
+    if  kwargs.has_key('status'):
+        kwargs['dataset.status'] = kwargs['status']
+        del kwargs['status']
+    else:
+        kwargs['dataset.status'] = 'VALID'
+    cond   = ''
+    for key, val in kwargs.items():
+        cond += ' and %s=%s' % (key, val)
+    query += cond
     params = {"api":"executeQuery", "apiversion": "DBS_2_0_9", "query":query}
     data   = urllib2.urlopen(URL, urllib.urlencode(params))
     gen    = qlxml_parser(data, 'dataset')
@@ -141,7 +154,7 @@ def list_files(dataset, run=None):
     return plist
 
 def dataset_info(dataset):
-    query  = 'find dataset.name, sum(block.size), count(block), sum(block.numfiles), sum(block.numevents), dataset.createdate where dataset=%s' % dataset
+    query  = 'find dataset.name, datatype, dataset.status, dataset.createdate, dataset.createby, dataset.moddate, dataset.modby, sum(block.size), count(block), sum(block.numfiles), sum(block.numevents) where dataset=%s' % dataset
     params = {"api":"executeQuery", "apiversion": "DBS_2_0_9", "query":query}
     data   = urllib2.urlopen(URL, urllib.urlencode(params))
     rec    = [d for d in qlxml_parser(data, 'dataset')][0]
@@ -149,28 +162,50 @@ def dataset_info(dataset):
     rec['nblocks'] = rec['dataset']['count_block']
     rec['nfiles'] = rec['dataset']['sum_block.numfiles']
     rec['nevents'] = rec['dataset']['sum_block.numevents']
+    rec['created'] = time.strftime("%Y-%m-%d %H:%M:%S GMT", time.gmtime(rec['dataset']['dataset.createdate']))
+    rec['createdby'] = rec['dataset']['dataset.createby']
+    rec['modified'] = time.strftime("%Y-%m-%d %H:%M:%S GMT", time.gmtime(rec['dataset']['dataset.moddate']))
+    rec['modifiedby'] = rec['dataset']['dataset.modby']
+    rec['status'] = rec['dataset']['dataset.status']
+    rec['datatype'] = rec['dataset']['datatype']
     rec['dataset'] = rec['dataset']['dataset.name']
     return Dataset(rec)
 
 def block_info(block):
-    query  = 'find block.name, block.size where block=%s' % block
+    query  = 'find block.name, block.sizei, block.createdate, block.createby, block.moddate, block.modby where block=%s' % block
     params = {"api":"executeQuery", "apiversion": "DBS_2_0_9", "query":query}
     data   = urllib2.urlopen(URL, urllib.urlencode(params))
     blk    = [b for b in qlxml_parser(data, 'block')][0]
     blk['block_name'] = blk['block']['block.name']
     blk['size'] = blk['block']['block.size']
+    blk['created'] = time.strftime("%Y-%m-%d %H:%M:%S GMT", time.gmtime(blk['block']['block.createdate']))
+    blk['createdby'] = blk['block']['block.createby']
+    blk['modified'] = time.strftime("%Y-%m-%d %H:%M:%S GMT", time.gmtime(blk['block']['block.moddate']))
+    blk['modifiedby'] = blk['block']['block.modby']
     del blk['block']
     return Block(blk)
 
-def file_info(lfn):
-    query  = 'find file.name, file.size where file=%s' % lfn
+def file_info(lfn, verbose=None):
+    query  = 'find file.name, file.size, file.createdate, file.createby, file.moddate, file.modby where file=%s' % lfn
     params = {"api":"executeQuery", "apiversion": "DBS_2_0_9", "query":query}
     data   = urllib2.urlopen(URL, urllib.urlencode(params))
-    lfn    = [f for f in qlxml_parser(data, 'file')][0]
-    lfn['logical_file_name'] = lfn['file']['file.name']
-    lfn['size'] = lfn['file']['file.size']
-    del lfn['file']
-    return File(lfn)
+    rec    = [f for f in qlxml_parser(data, 'file')][0]
+    rec['logical_file_name'] = rec['file']['file.name']
+    rec['size'] = rec['file']['file.size']
+    rec['created'] = time.strftime("%Y-%m-%d %H:%M:%S GMT", time.gmtime(rec['file']['file.createdate']))
+    rec['createdby'] = rec['file']['file.createby']
+    rec['modified'] = time.strftime("%Y-%m-%d %H:%M:%S GMT", time.gmtime(rec['file']['file.moddate']))
+    rec['modifiedby'] = rec['file']['file.modby']
+    del rec['file']
+    lfnobj = File(rec)
+    try:
+        pfnlist, selist = get_pfns(lfn, verbose)
+        lfnobj.assign('pfn', pfnlist)
+        lfnobj.assign('se', selist)
+    except:
+        lfnobj.assign('pfn', [])
+        lfnobj.assign('se', [])
+    return lfnobj
 
 def main():
     "Main function"

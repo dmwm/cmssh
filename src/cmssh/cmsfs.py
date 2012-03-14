@@ -110,6 +110,7 @@ class CMSFS(object):
     def make_map(self):
         rmp = routes.Mapper()
         rmp.connect('run={run:\d+}', controller='list_runs')
+        rmp.connect('dataset={dataset:.*?} status={status:.*?}', controller='list_datasets')
         rmp.connect('dataset={dataset:.*?}', controller='list_datasets')
         rmp.connect('file run={run:[0-9]+} dataset={dataset:/.*?}', controller='list_files')
         rmp.connect('file dataset={dataset:/.*?} run={run:[0-9]+}', controller='list_files')
@@ -152,13 +153,12 @@ class CMSFS(object):
         """
         url = dbs_url()
         method = 'datasets'
-        pat = kwargs['dataset']
-        if  pat[0] == '*':
-            pat = '/' + pat
         if  url.find('cmsdbsprod') != -1: # DBS2
-            return dbs2.list_datasets(pat)
+            return dbs2.list_datasets(kwargs)
         params = {'dataset':pat}
-        data = get_data(url, method, params)
+        if  kwargs['dataset'][0] == '*':
+            kwargs['dataset'] = '/' + kwargs['dataset']
+        data = get_data(url, method, kwargs)
         plist = [Dataset(d) for d in data]
         return plist
 
@@ -350,7 +350,7 @@ def block_info(block, verbose=None):
         raise Exception(msg)
     if  verbose:
         result = get_data(url, 'files', params, verbose)
-        print "Dataset %s has the following files:"
+        print "Block %s has the following files:"
         for row in result:
             print row
     return res[0]

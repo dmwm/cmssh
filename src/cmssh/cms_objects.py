@@ -5,13 +5,22 @@
 """
 CMS objects
 """
-from   cmssh.iprint import format_dict
+from cmssh.iprint import format_dict
+from cmssh.utils import size_format
 
 class CMSObj(object):
     """CMS object"""
     def __init__(self, data):
         super(CMSObj, self).__init__()
         self.data = data
+        for key, val in self.data.items():
+            if  key == 'size':
+                self.data['bytes'] = val
+                self.data[key] = size_format(val)
+            if  key == 'file_size':
+                self.data['bytes'] = val
+                self.data['size'] = size_format(val)
+                del self.data[key]
     def __repr__(self):
         """CMSObj representation"""
         return format_dict(self.data)
