@@ -15,7 +15,7 @@ import subprocess
 from cmssh.iprint import print_red, print_blue, msg_red, msg_green, PrintManager
 from cmssh.filemover import copy_lfn, rm_lfn, mkdir, rmdir, list_se, dqueue
 from cmssh.utils import list_results
-from cmssh.cmsfs import dataset_info, block_info, file_info, site_info
+from cmssh.cmsfs import dataset_info, block_info, file_info, site_info, run_info
 from cmssh.cmsfs import CMSFS, apply_filter, validate_dbs_instance
 from cmssh.cms_urls import dbs_url
 from cmssh.results import ResultManager
@@ -67,8 +67,8 @@ class Magic(object):
         "Execute given command and its args in a shell"
         execute_within_env(self.cmd, args)
 
-def releases(_arg):
-    """releases shell command"""
+def cms_releases(_arg):
+    """List available CMS releases"""
     print "\nAvailable CMS releases:"
     cmd  = "apt-cache search CMSSW | grep CMSSW | grep -v -i fwlite"
     cmd += "| awk '{print $1}' | sed -e 's/cms+cmssw+//g' -e 's/cms+cmssw-patch+//g'"
@@ -79,8 +79,10 @@ def releases(_arg):
         for rel in os.listdir(rdir):
             print rel
 
-def cmssw_install(arg):
-    """CMSSW install shell command"""
+def cms_install(arg):
+    """
+    Install given CMSSW release
+    """
     arg = arg.strip()
     print "Searching for %s" % arg
     subprocess.call('apt-cache search %s | grep -v -i fwlite' % arg, shell=True)
@@ -92,7 +94,9 @@ def cmssw_install(arg):
         execute('apt-get', 'install cms+cmssw+%s' % arg)
 
 def cms_root(arg):
-    "Run ROOT command"
+    """
+    Run ROOT command
+    """
     dyld_path = os.environ.get('DYLD_LIBRARY_PATH', None)
     root_path = os.environ['DEFAULT_ROOT']
     if  dyld_path:
@@ -103,7 +107,9 @@ def cms_root(arg):
         os.environ['DYLD_LIBRARY_PATH'] = dyld_path
 
 def cms_xrdcp(arg):
-    "Run ROOT command"
+    """
+    Run ROOT xrdcp command
+    """
     dyld_path = os.environ.get('DYLD_LIBRARY_PATH', None)
     root_path = os.environ['DEFAULT_ROOT']
     if  dyld_path:
@@ -114,7 +120,9 @@ def cms_xrdcp(arg):
         os.environ['DYLD_LIBRARY_PATH'] = dyld_path
 
 def debug(arg):
-    """debug shell command"""
+    """
+    debug shell command
+    """
     arg = arg.strip()
     if  arg:
         PM.print_blue("Set debug level to %s" % arg)
@@ -122,8 +130,22 @@ def debug(arg):
     else:
         PM.print_blue("Debug level is %s" % DEBUG.level)
 
+def cms_find(arg):
+    """
+    Perform lookup of given query in CMS data-services.
+    """
+    lookup(arg)
+
+def cms_du(arg):
+    """
+    Disk utility cmssh command. Provides information about given CMS storage element.
+    """
+    lookup(arg)
+
 def lookup(arg):
-    """Perform CMSFS lookup for provided query"""
+    """
+    Perform lookup of given query in CMS data-services.
+    """
     arg = arg.strip()
     debug = get_ipython().debug
     args  = arg.split('|')
@@ -137,7 +159,9 @@ def lookup(arg):
     list_results(res, debug)
 
 def verbose(arg):
-    """Set/get verbosity level"""
+    """
+    Set/get verbosity level
+    """
     arg = arg.strip()
     ip = get_ipython()
     if  arg == '':
@@ -150,7 +174,9 @@ def verbose(arg):
 
 # CMSSW commands
 def cmsrel(rel):
-    """switch to given CMSSW release"""
+    """
+    Switch to given CMSSW release
+    """
     rel = rel.strip()
     if  not rel:
         print_red('Please specify release name')
@@ -190,7 +216,9 @@ def cmsrel(rel):
     print "%s is ready, cwd: %s" % (rel, os.getcwd())
 
 def cmsrun(arg):
-    """cmsRun CMSSW command"""
+    """
+    Execute CMSSW cmsRun command
+    """
     vdir = os.environ.get('VO_CMS_SW_DIR', None)
     arch = os.environ.get('SCRAM_ARCH', None)
     base = os.environ.get('CMSSW_RELEASE_BASE', None)
@@ -204,7 +232,9 @@ def cmsrun(arg):
     execute("cmsRun", arg)
 
 def dbs_instance(arg=None):
-    """set dbs instance"""
+    """
+    Set dbs instance
+    """
     arg = arg.strip()
     if  arg:
         if  validate_dbs_instance(arg):
@@ -220,39 +250,40 @@ def dbs_instance(arg=None):
 def cms_help_msg():
     """cmsHelp message"""
     msg  = '\nAvailable cmssh commands:\n'
-    msg += PM.msg_green('find    ') \
+    msg += PM.msg_green('find        ') \
         + ' search CMS meta-data (query DBS/Phedex/SiteDB)\n'
     msg += PM.msg_green('dbs_instance') \
         + ' show/set DBS instance, default is global\n'
-    msg += PM.msg_green('mkdir   ') \
-        + ' mkdir command, e.g. mkdir /path/foo or mkdir T3_US_Cornell:/store/user/foo\n'
-    msg += PM.msg_green('rmdir   ') \
-        + ' rmdir command, e.g. rmdir /path/foo or rmdir T3_US_Cornell:/store/user/foo\n'
-    msg += PM.msg_green('ls      ') \
+    msg += PM.msg_green('mkdir/rmdir ') \
+        + ' mkdir/rmdir command, e.g. mkdir /path/foo or rmdir T3_US_Cornell:/store/user/foo\n'
+    msg += PM.msg_green('ls          ') \
         + ' list file/LFN, e.g. ls local.file or ls /store/user/file.root\n'
-    msg += PM.msg_green('rm      ') \
+    msg += PM.msg_green('rm          ') \
         + ' remove file/LFN, e.g. rm local.file or rm T3_US_Cornell:/store/user/file.root\n'
-    msg += PM.msg_green('cp      ') \
+    msg += PM.msg_green('cp          ') \
         + ' copy file/LFN, e.g. cp local.file or cp /store/user/file.root .\n'
-    msg += PM.msg_green('dqueue  ') \
+    msg += PM.msg_green('info        ') \
+        + ' provides detailed info about given CMS entity, e.g. info run=160915\n'
+    msg += PM.msg_green('dqueue      ') \
         + ' status of download queue, list files which are in progress.\n'
-    msg += PM.msg_green('root    ') + ' invoke ROOT\n'
-    msg += PM.msg_green('du      ') \
+    msg += PM.msg_green('root        ') + ' invoke ROOT\n'
+    msg += PM.msg_green('du          ') \
         + ' display disk usage for given site, e.g. du T3_US_Cornell\n'
     msg += '\nAvailable CMSSW commands (once you install any CMSSW release):\n'
-    msg += PM.msg_green('releases') \
+    msg += PM.msg_green('releases    ') \
         + ' list available CMSSW releases\n'
-    msg += PM.msg_green('install ') \
+    msg += PM.msg_green('install     ') \
         + ' install CMSSW release, e.g. install CMSSW_5_0_0\n'
-    msg += PM.msg_green('scram   ') + ' CMSSW scram command\n'
-    msg += PM.msg_green('cmsrel  ') + ' switch to given CMSSW release and setup its environment\n'
-    msg += PM.msg_green('cmsRun  ') \
+    msg += PM.msg_green('scram       ') + ' CMSSW scram command\n'
+    msg += PM.msg_green('cmsrel      ') \
+        + ' switch to given CMSSW release and setup its environment\n'
+    msg += PM.msg_green('cmsRun      ') \
         + ' cmsRun command for release in question\n'
     msg += '\nAvailable GRID commands:\n'
-    msg += PM.msg_green('gridinit') + ' setup your proxy (aka grid-proxy-init)\n'
-    msg += PM.msg_green('gridinfo') + ' show your proxy info (aka grid-proxy-info)\n'
-    msg += PM.msg_green('vomsinit') + ' setup your VOMS proxy (aka voms-proxy-init)\n'
-    msg += PM.msg_green('vomsinfo') + ' show your VOMS proxy info (aka voms-proxy-info)\n'
+    msg += PM.msg_green('gridinit    ') + ' setup your proxy (aka grid-proxy-init)\n'
+    msg += PM.msg_green('gridinfo    ') + ' show your proxy info (aka grid-proxy-info)\n'
+    msg += PM.msg_green('vomsinit    ') + ' setup your VOMS proxy (aka voms-proxy-init)\n'
+    msg += PM.msg_green('vomsinfo    ') + ' show your VOMS proxy info (aka voms-proxy-info)\n'
     msg += '\nQuery results are accessible via %s function:\n' % PM.msg_blue('results()')
     msg += '   find dataset=/*Zee*\n'
     msg += '   for r in results(): print r, type(r)\n'
@@ -260,11 +291,31 @@ def cms_help_msg():
     return msg
 
 def cms_help(arg=None):
-    """cmsHelp command"""
-    print cms_help_msg()
+    """
+    cmshelp command
+    """
+    if  arg:
+        ipython = get_ipython()
+        if  arg in ipython.lsmagic():
+            doc = getattr(ipython, 'magic_%s' % arg).func_doc
+        elif 'cms_%s' % arg in ipython.lsmagic():
+            doc = getattr(ipython, 'magic_cms_%s' % arg).func_doc
+        elif 'cms%s' % arg in ipython.lsmagic():
+            doc = getattr(ipython, 'magic_cms%s' % arg).func_doc
+        else:
+            doc = 'Documentation is not available'
+    else:
+        doc = cms_help_msg()
+    print doc
 
 def cms_rm(arg):
-    """CMS rm command"""
+    """
+    CMS rm command works with local files/dirs and CMS storate elements.
+    Examples:
+        cmssh# rm local_file
+        cmssh# rm -rf local_dir
+        cmssh# rm T3_US_Cornell:/xrootdfs/cms/store/user/user_name/file.root
+    """
     arg = arg.strip()
     try:
         verbose = get_ipython().debug
@@ -285,7 +336,12 @@ def cms_rm(arg):
             raise Exception('Not implemented yet')
 
 def cms_rmdir(arg):
-    """CMS rmdir command"""
+    """
+    cmssh rmdir command removes directory from local file system or CMS storage element.
+    Examples:
+        cmssh# rmdir foo
+        cmssh# rmdir T3_US_Cornell:/store/user/user_name/foo
+    """
     arg = arg.strip()
     try:
         verbose = get_ipython().debug
@@ -304,7 +360,12 @@ def cms_rmdir(arg):
             traceback.print_exc()
 
 def cms_mkdir(arg):
-    """CMS mkdir command"""
+    """
+    cmssh mkdir command creates directory on local filesystem or remove CMS storage element.
+    Examples:
+        cmssh# mkdir foo
+        cmssh# mkdir T3_US_Cornell:/store/user/user_name/foo
+    """
     arg = arg.strip()
     try:
         verbose = get_ipython().debug
@@ -323,7 +384,13 @@ def cms_mkdir(arg):
             traceback.print_exc()
 
 def cms_ls(arg):
-    """CMS ls command"""
+    """
+    cmssh ls command lists local files/dirs or CMS storate elements.
+    Examples:
+        cmssh# ls local_file
+        cmssh# ls -l local_file
+        cmssh# rm T3_US_Cornell:/store/user/valya
+    """
     arg = arg.strip()
     try:
         verbose = get_ipython().debug
@@ -338,28 +405,55 @@ def cms_ls(arg):
         prc = subprocess.Popen("ls " + " " + ''.join(opts) + " " + arg, shell=True)
         sts = os.waitpid(prc.pid, 0)[1]
     else:
-        pat_site = re.compile('^T[0-9]_[A-Z]+(_)[A-Z]+')
-        pat_dataset = re.compile('^/.*/.*/.*')
-        pat_block = re.compile('^/.*/.*/.*#.*')
-        pat_lfn = re.compile('^/.*\.root$')
-        pat_se = re.compile('^T[0-3]_.*:/.*')
+        pat_site = re.compile('^(site=)?T[0-9]_[A-Z]+(_)[A-Z]+')
+        pat_dataset = re.compile('^(dataset=)?/.*/.*/.*')
+        pat_block = re.compile('^(block=)?/.*/.*/.*#.*')
+        pat_lfn = re.compile('^(file=)?/.*\.root$')
+        pat_run = re.compile('^(run=)?[1-9][0-9]{5,8}$')
+        pat_se = re.compile('^(site=)?T[0-3]_.*:/.*')
         if  pat_se.match(arg):
+            arg = arg.replace('site=', '')
             res = list_se(arg, verbose)
         elif  pat_site.match(arg):
+            arg = arg.replace('site=', '')
             res = site_info(arg, verbose)
         elif pat_lfn.match(arg):
+            arg = arg.replace('file=', '')
             res = file_info(arg, verbose)
         elif pat_block.match(arg):
+            arg = arg.replace('block=', '')
             res = block_info(arg, verbose)
         elif pat_dataset.match(arg):
+            arg = arg.replace('dataset=', '')
             res = dataset_info(arg, verbose)
+        elif pat_run.match(arg):
+            arg = arg.replace('run=', '')
+            res = run_info(arg, verbose)
         else:
             raise Exception('Unsupported input')
         RESMGR.assign(res)
         list_results(res, debug=True)
 
+def cms_info(arg):
+    """
+    cmssh info command provides information for given meta-data entity, e.g.
+    dataset, block, file, run.
+    Examples:
+        cmssh# info dataset=/a/b/c
+        cmssh# info /a/b/c
+        cmssh# info run=160915
+    """
+    cms_ls(arg)
+
 def cms_cp(arg):
-    """CMS cp command"""
+    """
+    cmssh cp command copies local files/dirs to/from local files/dirs or CMS storate elements.
+    Examples:
+        cmssh# cp file1 file2
+        cmssh# cp file.root T3_US_Cornell:/store/user/name
+        cmssh# cp /store/mc/file.root T3_US_Cornell:/store/user/name
+        cmssh# cp T3_US_Cornell:/store/user/name/file.root T3_US_Omaha
+    """
     arg = arg.strip()
     try:
         src, dst = arg.split(' ', 1)
@@ -391,10 +485,10 @@ def cms_cp(arg):
             traceback.print_exc()
             print_red("Wrong argument '%s'" % arg)
 
-def download_queue(arg=None):
-    "status of download queue"
+def cms_dqueue(arg=None):
+    "Return status of LFN in transfer (the download queue)"
     dqueue()
 
 def results():
-    """Return RESMGR"""
+    """Return results from recent query"""
     return RESMGR
