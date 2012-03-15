@@ -18,10 +18,10 @@ from   IPython import release
 import cmssh
 from   cmssh.iprint import PrintManager
 from   cmssh.debug import DebugManager
-from   cmssh.cms_cmds import dbs_instance, Magic
-from   cmssh.cms_cmds import lookup, cms_ls, cms_cp, verbose, download_queue
+from   cmssh.cms_cmds import dbs_instance, Magic, cms_find, cms_du
+from   cmssh.cms_cmds import cms_ls, cms_cp, verbose, cms_dqueue
 from   cmssh.cms_cmds import cms_rm, cms_rmdir, cms_mkdir, cms_root, cms_xrdcp
-from   cmssh.cms_cmds import cmssw_install, releases
+from   cmssh.cms_cmds import cms_install, cms_releases, cms_info
 from   cmssh.cms_cmds import cmsrel, cmsrun, cms_help
 from   cmssh.cms_cmds import cms_help_msg, results
 
@@ -106,17 +106,18 @@ cmsMagicList = [ \
     # specific commands whose execution depends on conditions
     ('xrdcp', cms_xrdcp),
     ('root', cms_root),
-    ('find', lookup),
-    ('du', lookup),
+    ('find', cms_find),
+    ('du', cms_du),
     ('ls', cms_ls),
+    ('info', cms_info),
     ('rm', cms_rm),
     ('mkdir', cms_mkdir),
     ('rmdir', cms_rmdir),
     ('cp', cms_cp),
-    ('dqueue', download_queue),
+    ('dqueue', cms_dqueue),
     ('verbose', verbose),
-    ('install', cmssw_install),
-    ('releases', releases),
+    ('install', cms_install),
+    ('releases', cms_releases),
     ('dbs_instance', dbs_instance),
     ('cmsrel', cmsrel),
     ('cmsRun', cmsrun),
