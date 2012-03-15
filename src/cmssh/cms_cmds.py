@@ -287,7 +287,7 @@ def cms_help_msg():
     msg += '\nQuery results are accessible via %s function:\n' % PM.msg_blue('results()')
     msg += '   find dataset=/*Zee*\n'
     msg += '   for r in results(): print r, type(r)\n'
-    msg += '\nHelp is accessible via ' + PM.msg_blue('cmshelp') + ' command'
+    msg += '\nHelp is accessible via ' + PM.msg_blue('cmshelp <command>')
     return msg
 
 def cms_help(arg=None):
