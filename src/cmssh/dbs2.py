@@ -153,7 +153,7 @@ def list_files(dataset, run=None):
     plist  = [File(f) for f in files]
     return plist
 
-def dataset_info(dataset):
+def dataset_info(dataset, verbose=None):
     query  = 'find dataset.name, datatype, dataset.status, dataset.createdate, dataset.createby, dataset.moddate, dataset.modby, sum(block.size), count(block), sum(block.numfiles), sum(block.numevents) where dataset=%s' % dataset
     params = {"api":"executeQuery", "apiversion": "DBS_2_0_9", "query":query}
     data   = urllib2.urlopen(URL, urllib.urlencode(params))
@@ -171,7 +171,7 @@ def dataset_info(dataset):
     rec['dataset'] = rec['dataset']['dataset.name']
     return Dataset(rec)
 
-def block_info(block):
+def block_info(block, verbose=None):
     query  = 'find block.name, block.sizei, block.createdate, block.createby, block.moddate, block.modby where block=%s' % block
     params = {"api":"executeQuery", "apiversion": "DBS_2_0_9", "query":query}
     data   = urllib2.urlopen(URL, urllib.urlencode(params))
