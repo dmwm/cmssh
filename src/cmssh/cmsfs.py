@@ -171,15 +171,7 @@ class CMSFS(object):
         run = kwargs.get('run')
         params = {'Runs':run, 'lumiType':'delivered'}
         data = get_data(url, method, params)
-        runinfo = [r for r in runsum(run)]
-        runlumi = [r for r in data]
-        plist = []
-        for run in runinfo:
-            for rec in runlumi:
-                if  run['run'] == rec['Run']:
-                    run.update(rec)
-            plist.append(Run(run))
-#        plist = [Run(d) for d in data]
+        plist = [Run(d) for d in data]
         return plist
 
     def list_files(self, **kwargs):
@@ -323,55 +315,39 @@ def dataset_info(dataset, verbose=None):
     """Return dataset info"""
     url = dbs_url('')
     if  url.find('cmsdbsprod') != -1: # DBS2
-        return dbs2.dataset_info(dataset)
+        return dbs2.dataset_info(dataset, verbose)
     params = {'dataset': dataset, 'detail':'True'}
     result = get_data(url, 'datasets', params, verbose)
     res = [Dataset(r) for r in result]
     if  len(res) != 1:
         msg  = 'The %s dataset yield %s results' % (dataset, len(res))
         raise Exception(msg)
-    if  verbose:
-        result = get_data(url, 'files', params, verbose)
-        print "Dataset %s contains the following files:"
-        for row in result:
-            print row
     return res[0]
 
 def block_info(block, verbose=None):
     """Return block info"""
     url = dbs_url()
     if  url.find('cmsdbsprod') != -1: # DBS2
-        return dbs2.block_info(block)
+        return dbs2.block_info(block, verbose)
     params = {'block_name': block, 'detail':'True'}
     result = get_data(url, 'blocks', params, verbose)
     res = [Block(r) for r in result][0]
     if  len(res) != 1:
         msg  = 'The %s block yield %s results' % (block, len(res))
         raise Exception(msg)
-    if  verbose:
-        result = get_data(url, 'files', params, verbose)
-        print "Block %s has the following files:"
-        for row in result:
-            print row
     return res[0]
 
 def file_info(lfn, verbose=None):
     """Return file info"""
     url = dbs_url()
     if  url.find('cmsdbsprod') != -1: # DBS2
-        return dbs2.file_info(lfn)
+        return dbs2.file_info(lfn, verbose)
     params = {'logical_file_name': lfn, 'detail':'True'}
     result = get_data(url, 'files', params, verbose)
     res = [File(r) for r in result]
     if  len(res) != 1:
         msg  = 'The %s LFN yield %s results' % (lfn, len(res))
         raise Exception(msg)
-    if  verbose:
-        params = {'logical_file_name': lfn}
-        result = get_data(url, 'filelumis', params, verbose)
-        print "File %s has the following file/lumis:" % lfn
-        for row in result:
-            print format_dict(row)
     lfnobj = res[0]
     try:
         pfnlist, selist = get_pfns(lfn, verbose)
@@ -415,3 +391,19 @@ def site_info(dst, verbose=None):
         print "Total number of files :", totfiles
         return res
     return res
+
+def run_info(run, verbose=None):
+    """Return run info"""
+    url = conddb_url()
+    method = 'getLumi'
+    params = {'Runs':run, 'lumiType':'delivered'}
+    data = get_data(url, method, params)
+    runinfo = [r for r in runsum(run)]
+    runlumi = [r for r in data]
+    plist = []
+    for run in runinfo:
+        for rec in runlumi:
+            if  run['run'] == rec['Run']:
+                run.update(rec)
+        plist.append(Run(run))
+    return plist
