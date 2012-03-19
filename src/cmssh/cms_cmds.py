@@ -17,7 +17,6 @@ from cmssh.filemover import copy_lfn, rm_lfn, mkdir, rmdir, list_se, dqueue
 from cmssh.utils import list_results
 from cmssh.cmsfs import dataset_info, block_info, file_info, site_info, run_info
 from cmssh.cmsfs import CMSFS, apply_filter, validate_dbs_instance
-from cmssh.cms_urls import dbs_url
 from cmssh.results import ResultManager
 
 # global scope
@@ -253,7 +252,7 @@ def cms_help_msg():
     msg += PM.msg_green('find        ') \
         + ' search CMS meta-data (query DBS/Phedex/SiteDB)\n'
     msg += PM.msg_green('dbs_instance') \
-        + ' show/set DBS instance, default is global\n'
+        + ' show/set DBS instance, default is DBS global instance\n'
     msg += PM.msg_green('mkdir/rmdir ') \
         + ' mkdir/rmdir command, e.g. mkdir /path/foo or rmdir T3_US_Cornell:/store/user/foo\n'
     msg += PM.msg_green('ls          ') \
