@@ -330,7 +330,7 @@ def main():
     except:
         pass
 #    url = 'http://github.com/vkuznet/cmssh/tarball/master/'
-    url = 'http://github.com/vkuznet/cmssh/tarball/v0.6/'
+    url = 'http://github.com/vkuznet/cmssh/tarball/v0.7/'
     get_file(url, 'cmssh.tar.gz', path, debug, check=False)
     cmd = 'mv vkuznet-cmssh* %s/cmssh' % path
     exe_cmd(path, cmd, debug)
