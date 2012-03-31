@@ -273,20 +273,42 @@ def srmcp(srmcmd, lfn, dst, verbose=None):
             pfn = 'file:///%s' % pfn
         pfnlist   = [pfn]
     else:
-        params    = {'se':'*', 'lfn':lfn}
-        url       = phedex_url('fileReplicas')
+        if  lfn.find(':') != -1:
+            node, lfn = lfn.split(':')
+            params    = {'node':node, 'lfn':lfn, 'protocol':'srmv2'}
+            url       = phedex_url('lfn2pfn')
+        else:
+            params    = {'se':'*', 'lfn':lfn}
+            url       = phedex_url('fileReplicas')
         data      = urllib2.urlopen(url, urllib.urlencode(params, doseq=True))
         json_dict = json.load(data)
         ddict     = DotDict(json_dict)
         if  verbose:
             print "Look-up LFN:"
             print lfn
-        if  not json_dict['phedex']['block']:
+        phedex = json_dict['phedex']
+        if  phedex.has_key('mapping'):
+            if  not phedex['mapping']:
+                msg  = "LFN: %s\n" % lfn
+                msg += 'No replicas found\n'
+                msg += str(json_dict)
+                raise Exception(msg)
+            filelist = ddict.get('phedex.mapping.pfn')
+            if  not filelist:
+                filelist = []
+            if  isinstance(filelist, basestring):
+                filelist = [filelist]
+            for fname in filelist:
+                pfnlist.append(fname)
+        elif  phedex.has_key('block') and not phedex['block']:
             msg  = "LFN: %s\n" % lfn
             msg += 'No replicas found\n'
             msg += str(json_dict)
             raise Exception(msg)
-        for fname in ddict.get('phedex.block.file'):
+        filelist = ddict.get('phedex.block.file')
+        if  not filelist:
+            filelist = []
+        for fname in filelist:
             for replica in fname['replica']:
                 cmsname = replica['node']
                 se      = replica['se']
