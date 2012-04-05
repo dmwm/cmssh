@@ -24,7 +24,8 @@ def dbs_url(inst='global', api=''):
     # DBS3 settings
     url = 'https://cmsweb.cern.ch/dbs/prod/%s/DBSReader/%s' % (inst, api)
     # DBS2 settings
-    url = 'http://cmsdbsprod.cern.ch/cms_dbs_prod_global/servlet/DBSServlet'
+    if  inst.find('cms_dbs') != -1:
+        url = 'http://cmsdbsprod.cern.ch/%s/servlet/DBSServlet' % inst
     if  os.environ.has_key('DBS_INSTANCE'):
         url.replace('global', os.environ['DBS_INSTANCE'])
     return url
