@@ -94,7 +94,11 @@ def apply_filter(flt, gen):
 def validate_dbs_instance(inst):
     "Validate DBS url"
     try:
-        data = get_data(dbs_url(inst), 'serverinfo', {})
+        if  inst.find('cms_dbs') != -1: # DBS2
+            url = dbs_url(inst).replace('/DBSServlet', '')
+            data = get_data(url, 'DBSServlet', {}, decoder=None)
+        else: # DBS3
+            data = get_data(dbs_url(inst), 'serverinfo', {})
         plist = [d for d in data]
     except:
         return False
