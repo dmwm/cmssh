@@ -20,8 +20,7 @@ import xml.etree.cElementTree as ET
 from   cmssh.url_utils import get_data
 from   cmssh.cms_objects import File, Block, Dataset
 from   cmssh.filemover import get_pfns, resolve_user_srm_path
-
-URL = 'http://cmsdbsprod.cern.ch/cms_dbs_prod_global/servlet/DBSServlet'
+from   cmssh.cms_urls import dbs_url
 
 def adjust_value(value):
     """
@@ -133,7 +132,7 @@ def list_datasets(kwargs):
         cond += ' and %s=%s' % (key, val)
     query += cond
     params = {"api":"executeQuery", "apiversion": "DBS_2_0_9", "query":query}
-    data   = urllib2.urlopen(URL, urllib.urlencode(params))
+    data   = urllib2.urlopen(dbs_url(), urllib.urlencode(params))
     gen    = qlxml_parser(data, 'dataset')
     plist  = [Dataset(d['dataset']) for d in gen]
     return plist
@@ -143,7 +142,7 @@ def list_files(dataset, run=None):
     if  run:
         query += ' and run=%s' % run
     params = {"api":"executeQuery", "apiversion": "DBS_2_0_9", "query":query}
-    data   = urllib2.urlopen(URL, urllib.urlencode(params))
+    data   = urllib2.urlopen(dbs_url(), urllib.urlencode(params))
     gen    = qlxml_parser(data, 'file')
     files  = []
     for rec in gen:
@@ -156,7 +155,7 @@ def list_files(dataset, run=None):
 def dataset_info(dataset, verbose=None):
     query  = 'find dataset.name, datatype, dataset.status, dataset.createdate, dataset.createby, dataset.moddate, dataset.modby, sum(block.size), count(block), sum(block.numfiles), sum(block.numevents) where dataset=%s' % dataset
     params = {"api":"executeQuery", "apiversion": "DBS_2_0_9", "query":query}
-    data   = urllib2.urlopen(URL, urllib.urlencode(params))
+    data   = urllib2.urlopen(dbs_url(), urllib.urlencode(params))
     rec    = [d for d in qlxml_parser(data, 'dataset')][0]
     rec['size'] = rec['dataset']['sum_block.size']
     rec['nblocks'] = rec['dataset']['count_block']
@@ -174,7 +173,7 @@ def dataset_info(dataset, verbose=None):
 def block_info(block, verbose=None):
     query  = 'find block.name, block.sizei, block.createdate, block.createby, block.moddate, block.modby where block=%s' % block
     params = {"api":"executeQuery", "apiversion": "DBS_2_0_9", "query":query}
-    data   = urllib2.urlopen(URL, urllib.urlencode(params))
+    data   = urllib2.urlopen(dbs_url(), urllib.urlencode(params))
     blk    = [b for b in qlxml_parser(data, 'block')][0]
     blk['block_name'] = blk['block']['block.name']
     blk['size'] = blk['block']['block.size']
@@ -188,7 +187,7 @@ def block_info(block, verbose=None):
 def file_info(lfn, verbose=None):
     query  = 'find file.name, file.size, file.createdate, file.createby, file.moddate, file.modby where file=%s' % lfn
     params = {"api":"executeQuery", "apiversion": "DBS_2_0_9", "query":query}
-    data   = urllib2.urlopen(URL, urllib.urlencode(params))
+    data   = urllib2.urlopen(dbs_url(), urllib.urlencode(params))
     rec    = [f for f in qlxml_parser(data, 'file')][0]
     rec['logical_file_name'] = rec['file']['file.name']
     rec['size'] = rec['file']['file.size']
