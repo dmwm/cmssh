@@ -20,7 +20,7 @@ from   cmssh.url_utils import get_data
 from   cmssh.cms_objects import Run, File, Block, Dataset, Site, User, Job
 from   cmssh.filemover import get_pfns, resolve_user_srm_path
 from   cmssh.cms_urls import phedex_url, dbs_url, conddb_url, sitedb_url
-from   cmssh.cms_urls import dashboard_url
+from   cmssh.cms_urls import dashboard_url, dbs_instances
 from   cmssh import dbs2
 from   cmssh.runsum import runsum
 
@@ -93,16 +93,9 @@ def apply_filter(flt, gen):
 
 def validate_dbs_instance(inst):
     "Validate DBS url"
-    try:
-        if  inst.find('cms_dbs') != -1: # DBS2
-            url = dbs_url(inst).replace('/DBSServlet', '')
-            data = get_data(url, 'DBSServlet', {}, decoder=None)
-        else: # DBS3
-            data = get_data(dbs_url(inst), 'serverinfo', {})
-        plist = [d for d in data]
-    except:
-        return False
-    return True
+    if  inst in dbs_instances():
+        return True
+    return False
 
 class CMSFS(object):
     """CMS filesystem on top of CMS data-services"""
@@ -159,7 +152,7 @@ class CMSFS(object):
         method = 'datasets'
         if  url.find('cmsdbsprod') != -1: # DBS2
             return dbs2.list_datasets(kwargs)
-        params = {'dataset':pat}
+        params = {'dataset':kwargs['dataset']}
         if  kwargs['dataset'][0] == '*':
             kwargs['dataset'] = '/' + kwargs['dataset']
         data = get_data(url, method, kwargs)
