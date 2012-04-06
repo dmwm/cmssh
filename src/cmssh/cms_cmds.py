@@ -17,6 +17,7 @@ from cmssh.filemover import copy_lfn, rm_lfn, mkdir, rmdir, list_se, dqueue
 from cmssh.utils import list_results
 from cmssh.cmsfs import dataset_info, block_info, file_info, site_info, run_info
 from cmssh.cmsfs import CMSFS, apply_filter, validate_dbs_instance
+from cmssh.cms_urls import dbs_instances
 from cmssh.results import ResultManager
 
 # global scope
@@ -96,14 +97,16 @@ def cms_root(arg):
     """
     Run ROOT command
     """
-    dyld_path = os.environ.get('DYLD_LIBRARY_PATH', None)
-    root_path = os.environ['DEFAULT_ROOT']
-    if  dyld_path:
-        os.environ['DYLD_LIBRARY_PATH'] = os.path.join(root_path, 'lib')
-    cmd_opts = '%s/root -l %s' % (os.path.join(root_path, 'bin'), arg.strip())
+#    dyld_path = os.environ.get('DYLD_LIBRARY_PATH', None)
+#    root_path = os.environ['DEFAULT_ROOT']
+#    if  dyld_path:
+#        os.environ['DYLD_LIBRARY_PATH'] = os.path.join(root_path, 'lib')
+#    cmd_opts = '%s/root -l %s' % (os.path.join(root_path, 'bin'), arg.strip())
+#    subprocess.call(cmd_opts, shell=True)
+#    if  dyld_path:
+#        os.environ['DYLD_LIBRARY_PATH'] = dyld_path
+    cmd_opts = 'root -l %s' % arg.strip()
     subprocess.call(cmd_opts, shell=True)
-    if  dyld_path:
-        os.environ['DYLD_LIBRARY_PATH'] = dyld_path
 
 def cms_xrdcp(arg):
     """
@@ -242,9 +245,12 @@ def dbs_instance(arg=None):
         else:
             print "Invalid DBS instance"
     else:
-        msg  = "DBS3 instance is set to: %s" \
+        msg  = "DBS instance is set to: %s" \
                 % os.environ.get('DBS_INSTANCE', 'global')
         print msg
+    print '\nAvailable DBS instances:'
+    for inst in dbs_instances():
+        print inst
 
 def cms_help_msg():
     """cmsHelp message"""
