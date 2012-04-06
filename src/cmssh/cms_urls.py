@@ -29,8 +29,9 @@ def get_dbs_instance(url):
         msg = 'Unsupported DBS url=%s' % url
         raise Exception(msg)
 
-def dbs_url(inst='global', api=''):
+def dbs_url(api=''):
     """Return DBS URL for given API name"""
+    inst = os.environ.get('DBS_INSTANCE')
     # DBS3 settings
     url = 'https://cmsweb.cern.ch/dbs/prod/%s/DBSReader/%s' % (inst, api)
     # DBS2 settings
