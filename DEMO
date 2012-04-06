@@ -1,25 +1,69 @@
+# search for some data
 find dataset=*CRUZET3*RAW
 for r in results(): print r, type(r)
+
+# info about file/dataset/run
 ls /Cosmics/CRUZET3-v1/RAW
+info /Cosmics/CRUZET3-v1/RAW
+
 find file dataset=/Cosmics/CRUZET3-v1/RAW
 find site dataset=/Cosmics/CRUZET3-v1/RAW
 find run=160915
+info run=160915
 for r in results(): print r.initLumi, type(r.initLumi), r.DeliveredLumi, type(r.DeliveredLumi)
+
+# list/copy LFN to local disk
 ls /store/data/CRUZET3/Cosmics/RAW/v1/000/050/832/186585EC-024D-DD11-B747-000423D94AA8.root
 cp /store/data/CRUZET3/Cosmics/RAW/v1/000/050/832/186585EC-024D-DD11-B747-000423D94AA8.root .
 ls -l
+
+# SE operations, e.g. list its content, create/delete directory, etc.
 du T3_US_Cornell
 ls T3_US_Cornell
 ls T3_US_Cornell:/store/user/valya
 mkdir T3_US_Cornell:/store/user/valya/foo
+ls T3_US_Cornell:/store/user/valya
 rmdir T3_US_Cornell:/store/user/valya/foo
+ls T3_US_Cornell:/store/user/valya
+
+# copy local file to SE
 cp 186585EC-024D-DD11-B747-000423D94AA8.root T3_US_Cornell:/store/user/valya
 ls T3_US_Cornell:/store/user/valya
+ls -l
+rm 186585EC-024D-DD11-B747-000423D94AA8.root
+
+# copy LFN from SE to local disk
+cp T3_US_Cornell:/store/user/valya/186585EC-024D-DD11-B747-000423D94AA8.root .
+ls -l
+
+# delete file on SE
 rm T3_US_Cornell:/xrootdfs/cms/store/user/valya/186585EC-024D-DD11-B747-000423D94AA8.root
+ls T3_US_Cornell:/store/user/valya
+
+# copy LFN to SE area
 cp /store/data/CRUZET3/Cosmics/RAW/v1/000/050/832/186585EC-024D-DD11-B747-000423D94AA8.root T3_US_Cornell:/store/user/valya
 ls T3_US_Cornell:/store/user/valya
 rm T3_US_Cornell:/xrootdfs/cms/store/user/valya/186585EC-024D-DD11-B747-000423D94AA8.root
+ls T3_US_Cornell:/store/user/valya
+
+# copy multiple files
+cp /store/data/CRUZET3/Cosmics/RAW/v1/000/050/832/186585EC-024D-DD11-B747-000423D94AA8.root . &
+cp /store/data/CRUZET3/Cosmics/RAW/v1/000/050/796/4E1D3610-E64C-DD11-8629-001D09F251FE.root . &
+dqueue
+
+# copy user file from T1 tier
+cp T1_US_FNAL_Buffer:/store/user/neggert/TT_TuneZ2_7TeV-mcatnlo/MCTSusy_Skim_Mar2012/7b5af1bfe3424f60f0db5b5f14cf327a/MCTSusySkimMar2012_591_1_cSX.root .
+
+# look-up available releases
 releases
 cmsrel CMSSW_5_2_0_pre1
 cmsRun runevt_cfg.py
-crab -h
+#crab -h
+
+# usage of magic functions
+# show how to access docstrings
+edit test.py
+
+ip = get_ipython()
+ip.magic_find("dataset=*Zee_M20*")
+for r in results(): print r, type(r)
