@@ -9,6 +9,16 @@ def phedex_url(api=''):
     """Return Phedex URL for given API name"""
     return 'https://cmsweb.cern.ch/phedex/datasvc/json/prod/%s' % api
 
+def dbs_instances(dbs='DBS2'):
+    "Return list of availabel DBS instances"
+    if  dbs == 'DBS2':
+        return ['cms_dbs_prod_global', 'cms_dbs_caf_analysis_01',
+                'cms_dbs_ph_analysis_01', 'cms_dbs_ph_analysis_02']
+    elif dbs == 'DBS3':
+        return ['global', 'prod']
+    else:
+        return []
+
 def get_dbs_instance(url):
     "Get DBS instance from DBS URL"
     if  url.find('cmsweb') != -1: # DBS3
