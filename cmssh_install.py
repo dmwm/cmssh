@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 #-*- coding: ISO-8859-1 -*-
 """
-File: cmssh_install.py
-Author: Valentin Kuznetsov [ vkuznet AT gmail DOT com ]
+File       : cmssh_install.py
+Author     : Valentin Kuznetsov [ vkuznet AT gmail DOT com ]
 Description: cmssh installation script
 
 Some useful URLs
@@ -14,6 +14,7 @@ https://twiki.grid.iu.edu/bin/view/ReleaseDocumentation/VomsInstallGuide
 
 # system modules
 import os
+import re
 import sys
 import stat
 import time
@@ -31,6 +32,53 @@ from optparse import OptionParser
 if sys.version_info < (2, 6):
     raise Exception("cmssh requires python 2.6 or higher")
 
+if  os.uname()[0] == 'Darwin':
+    DEF_SCRAM_ARCH = 'osx106_amd64_gcc421'
+elif os.uname()[0] == 'Linux':
+    DEF_SCRAM_ARCH = 'slc5_ia32_gcc434'
+else:
+    print 'Unsupported platform'
+    sys.exit(1)
+
+# The 2.6.4 version of CMSSW python has bug in OpenSSL
+# see https://hypernews.cern.ch/HyperNews/CMS/get/sw-develtools/1667/1.html
+# We need to avoid it, otherwise usage of HTTPS will be broken
+# So, the osx106_amd64_gcc462 has broken python 2.6.4
+# the osx106_amd64_gcc461 has correct python 2.6.4, but broken 2.6.4-cmsX
+# the osx106_amd64_gcc421 has corrent python 2.6.4, but it picks root 5.30.02
+# which does not have pyROOT library
+def find_root_package(apt, debug=None):
+    """
+    Find latest version of root package in CMSSW repository.
+    For time being I veto all -cms packages due to bug in python w/ SSL.
+    """
+#    cmd  = apt + 'apt-cache search root | grep "lcg+root" | grep -v toolfile '
+#    cmd += "| grep -v cms | tail -1 | awk '{print $1}'"
+#    if  debug:
+#        print cmd
+#    res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+#    root = res.stdout.read().replace('\n', '').strip()
+    # based on various bugs, let's take
+    root = 'lcg+root+5.30.02-cms4'
+    return root
+
+def available_architectures():
+    "Fetch CMSSW drivers"
+    arch = os.uname()[0]
+    pat1 = re.compile('.*-driver.txt</a>.*')
+    pat2 = re.compile('^[osx,slc].*') 
+    url  = 'http://cmsrep.cern.ch/cmssw/cms/'
+    data = urllib2.urlopen(url)
+    drivers = []
+    for line in data.readlines():
+        if  pat1.match(line):
+            line = line.split('</a>')[0].split('">')[-1]
+            if  pat2.match(line):
+                if  arch == 'Linux' and line[:3] == 'slc':
+                    yield line.replace('-driver.txt', '')
+                elif arch == 'Darwin' and line[:3] == 'osx':
+                    yield line.replace('-driver.txt', '')
+
 class MyOptionParser:
     """option parser"""
     def __init__(self):
@@ -43,16 +91,17 @@ class MyOptionParser:
             dest="install_dir", help="install directory")
         self.parser.add_option("-i", "--install", action="store_true",
             dest="install", help="install command")
+        drivers = ', '.join(available_architectures())
         self.parser.add_option("--arch", action="store",
             type="string", default=None, dest="arch",
-            help="CMSSW architecture")
+            help="CMSSW architectures:\n%s, default %s" % (drivers, DEF_SCRAM_ARCH))
         self.parser.add_option("--unsupported", action="store_true",
             dest="unsupported",
-            help="enforce installation on unsupported Linux platforms, e.g. Ubuntu")
+            help="enforce installation on unsupported platforms, e.g. Ubuntu")
         self.parser.add_option("--no_cmssw", action="store_true",
             dest="no_cmssw",
             help="do not bootstrap CMSSW area")
-    def getOpt(self):
+    def get_opt(self):
         """Returns parse list of options"""
         return self.parser.parse_args()
 
@@ -105,8 +154,10 @@ def get_file(url, fname, path, debug, check=True):
     tar.close()
     add_url2packages(url, path)
 
-def exe_cmd(idir, cmd, debug):
+def exe_cmd(idir, cmd, debug, msg=None):
     """Execute given command in a given dir"""
+    if  msg:
+        print msg
     os.chdir(idir)
     if  debug:
         print "cd %s\n%s" % (os.getcwd(), cmd)
@@ -124,6 +175,7 @@ def check_system(unsupported):
     if  not os.environ.has_key('JAVA_HOME'):
         print "JAVA_HOME environment is required to install GRID middleware tools"
         print "Please install Java and appropriately setup JAVA_HOME"
+        print "For example, export JAVA_HOME=/usr"
         sys.exit(1)
 
     # check Ubuntu default shell
@@ -141,7 +193,12 @@ def check_system(unsupported):
 
 def main():
     mgr = MyOptionParser()
-    opts, args = mgr.getOpt()
+    opts, args = mgr.get_opt()
+
+    platform = os.uname()[0]
+    if  platform == 'Darwin':
+        if  not os.environ.has_key('JAVA_HOME'):
+            os.environ['JAVA_HOME'] = '/Library/Java/Home'
 
     if  not opts.install:
         print "Usage: cmssh_install.py --help"
@@ -158,14 +215,6 @@ def main():
     cwd    = os.getcwd()
     path   = os.path.join(os.getcwd(), 'soft')
     # setup install area
-#    print "Clean-up %s" % path
-#    try:
-#        cmd = 'rm -rf %s' % path
-#        retcode = subprocess.call(cmd, shell=True)
-#        if  retcode < 0:
-#            print >> sys.stderr, "Child was terminated by signal", -retcode
-#    except OSError, err:
-#        print >> sys.stderr, "Execution failed:", err
     sysver = sys.version_info
     py_ver = '%s.%s' % (sysver[0], sysver[1])
     install_dir = '%s/install/lib/python%s/site-packages' % (path, py_ver)
@@ -176,12 +225,11 @@ def main():
         pass
 
     # setup platform and unsupported flag
-    platform = os.uname()[0]
     unsupported_linux = False
     if  os.uname()[3].find('Ubuntu') != -1 or opts.unsupported:
         unsupported_linux = True
 
-    print "Installing Globus"
+    # setup system architecture
     parch = 'x86'
     arch  = None
     if  platform == 'Linux':
@@ -190,11 +238,11 @@ def main():
         else:
             ver = 'rhap_5'
         if  not arch:
-            arch = 'slc5_ia32_gcc434'
+            arch = DEF_SCRAM_ARCH
     elif platform == 'Darwin':
         ver  = 'macos_10.4'
         if  not arch:
-            arch = 'osx106_amd64_gcc461'
+            arch = DEF_SCRAM_ARCH
     else:
         print 'Unsupported OS "%s"' % platform
         sys.exit(1)
@@ -202,6 +250,54 @@ def main():
         print "Unsupported architecture"
         sys.exit(1)
 
+    msg = "Bootstrap CMSSW"
+    os.chdir(path)
+    sdir = '%s/CMSSW' % path
+    try:
+        os.makedirs(sdir)
+    except:
+        pass
+    os.chdir(sdir)
+    os.environ['VO_CMS_SW_DIR'] = sdir
+    os.environ['SCRAM_ARCH'] = arch
+    os.environ['LANG'] = 'C'
+
+    url  = 'http://cmsrep.cern.ch/cmssw/cms/bootstrap.sh'
+    if  not is_installed(url, path):
+        with open('bootstrap.sh', 'w') as bootstrap:
+             bootstrap.write(getdata(url, {}, debug))
+        os.chmod('bootstrap.sh', 0755)
+        cmd  = 'sh -x $VO_CMS_SW_DIR/bootstrap.sh setup -path $VO_CMS_SW_DIR -arch $SCRAM_ARCH'
+        if  unsupported_linux:
+            cmd += ' -unsupported_distribution_hack'
+        exe_cmd(sdir, cmd, debug, 'Bootstrap CMSSW')
+        apt  = 'source `find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt -name init.sh | tail -1`; '
+        cmd  = apt
+        cmd += 'apt-get install external+fakesystem+1.0; '
+        cmd += 'apt-get update; '
+        exe_cmd(sdir, cmd, debug, 'Init CMSSW apt repository')
+        root = find_root_package(apt, debug)
+        cmd  = apt + 'echo "Y" | apt-get install %s' % root
+        exe_cmd(sdir, cmd, debug, 'Install %s' % root)
+        # I may need to install external+py2-matplotlib+1.0.1-cms3, external+libpng+1.2.10
+        cmd  = apt + 'echo "Y" | apt-get install external+libpng+1.2.10' 
+        exe_cmd(sdir, cmd, debug, 'Install %s' % root)
+        cmd  = apt + 'echo "Y" | apt-get install external+py2-matplotlib+1.0.1-cms3' 
+        exe_cmd(sdir, cmd, debug, 'Install %s' % root)
+        add_url2packages(url, path)
+
+    # command to setup CMSSW python
+    cms_env = 'source `find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/python -name init.sh | tail -1`;'
+    cmd = 'find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/python -name init.sh | tail -1'
+    res = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+    cms_python_env = res.stdout.read().replace('\n', '').strip()
+    pver = '.'.join(cms_python_env.split('/')[-4].split('.')[0:2])
+    if  debug:
+        print "CMSSW python:", cms_python_env
+        print "python version", pver
+
+    print "Installing Globus"
+    os.chdir(path)
     url = 'http://vdt.cs.wisc.edu/software/globus/4.0.8_VDT2.0.0gt4nbs/vdt_globus_essentials-VDT2.0.0-3-%s_%s.tar.gz' % (parch, ver)
     if  not is_installed(url, path):
         get_file(url, 'globus.tar.gz', path, debug)
@@ -244,11 +340,20 @@ def main():
         cmd = 'mkdir FWCore; touch FWCore/__init__.py; mv PythonUtilities FWCore'
         exe_cmd(path, cmd, debug)
 
-    print "Installing CRAB3"
-    ver = '3.0.6a'
-    url = 'http://cmsrep.cern.ch/cmssw/comp/SOURCES/slc5_amd64_gcc461/cms/crab-client3/%s/crabclient3.tar.gz' % ver
-    if  not is_installed(url, path):
-        get_file(url, 'crabclient3.tar.gz', path, debug)
+#    print "Installing CRAB3"
+#    ver = '3.0.6a'
+#    url = 'http://cmsrep.cern.ch/cmssw/comp/SOURCES/slc5_amd64_gcc461/cms/crab-client3/%s/crabclient3.tar.gz' % ver
+#    if  not is_installed(url, path):
+#        get_file(url, 'crabclient3.tar.gz', path, debug)
+
+#    print "Installing CRAB"
+#    os.chdir(path)
+#    crab_ver = 'CRAB_2_7_9'
+#    url = 'http://cmsdoc.cern.ch/cms/ccs/wm/www/Crab/Docs/%s.tgz' % crab_ver
+#    get_file(url, 'crab.tar.gz', path, debug)
+#    cmd = 'cd %s; ./configure' % crab_ver
+#    exe_cmd(path, cmd, debug)
+
 
     print "Installing WMCore"
     ver = '0.8.21'
@@ -257,7 +362,7 @@ def main():
         get_file(url, 'wmcore.tar.gz', path, debug)
 
     print "Installing LCG info"
-    url = 'http://vdt.cs.wisc.edu/software/lcg-infosites//2.6-2/lcg-infosites-2.6-2.tar.gz'
+    url = 'http://vdt.cs.wisc.edu/software/lcg-infosites/2.6-2/lcg-infosites-2.6-2.tar.gz'
     if  not is_installed(url, path):
         get_file(url, 'lcg-infosites.tar.gz', path, debug)
     url = 'http://vdt.cs.wisc.edu/software/lcg-info//1.11.4-1/lcg-info-1.11.4-1.tar.gz'
@@ -275,7 +380,7 @@ def main():
         % (ver, ver)
     if  not is_installed(url, path):
         get_file(url, 'srmclient.tar.gz', path, debug)
-        cmd  = './configure --with-java-home=$JAVA_HOME --enable-clientonly'
+        cmd  = cms_env + './configure --with-java-home=$JAVA_HOME --enable-clientonly'
         cmd += ' --with-globus-location=%s/globus' % path
         cmd += ' --with-cacert-path=%s/certificates' % path
         exe_cmd(os.path.join(path, 'srmclient2/setup'), cmd, debug)
@@ -285,7 +390,7 @@ def main():
     url = 'http://archive.ipython.org/release/%s/ipython-%s.tar.gz' % (ver, ver)
     if  not is_installed(url, path):
         get_file(url, 'ipython.tar.gz', path, debug)
-        cmd = 'python setup.py install --prefix=%s/install' % path
+        cmd = cms_env + 'python setup.py install --prefix=%s/install' % path
         exe_cmd(os.path.join(path, 'ipython-%s' % ver), cmd, debug)
 
     print "Installing Routes"
@@ -298,15 +403,43 @@ def main():
     url = 'http://pypi.python.org/packages/source/R/Routes/Routes-%s.tar.gz' % ver
     if  not is_installed(url, path):
         get_file(url, 'routes.tar.gz', path, debug)
-        cmd = 'cp ../ez_setup.py .; python setup.py install --prefix=%s/install' % path
+        cmd = cms_env + 'cp ../ez_setup.py .; python setup.py install --prefix=%s/install' % path
         exe_cmd(os.path.join(path, 'Routes-%s' % ver), cmd, debug)
+
+    print "Installing readline"
+    ver = '6.2.2'
+    url = 'http://pypi.python.org/packages/source/r/readline/readline-%s.tar.gz' % ver
+    if  platform == 'Darwin' and not is_installed(url, path):
+        get_file(url, 'readline.tar.gz', path, debug)
+        cmd = """#!/bin/bash
+export CMSSH_ROOT={path}
+export VO_CMS_SW_DIR=$CMSSH_ROOT/CMSSW
+export SCRAM_ARCH={arch}
+export LANG="C"
+source `find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/python -name init.sh | tail -1`
+idir={path}/install
+mkdir -p $idir/lib/python{pver}/site-packages
+export PYTHONPATH=$PYTHONPATH:$CMSSH_ROOT/install/lib/python{pver}/site-packages:$idir/lib/python{pver}/site-packages
+python setup.py install --prefix=$idir
+export CFLAGS='-arch x86_64'
+export LDFLAGS='-arch x86_64'
+cd readline
+./configure CPPFLAGS='-DNEED_EXTERN_PC -fPIC'
+make
+cd -
+python setup.py install --prefix=$idir
+""".format(path=path, arch=arch, pver=pver)
+#        rpath = '%s/install/lib/python2.6/site-packages' % path
+#        cmd  = cms_env + 'mkdir -p %s; export PYTHONPATH=$PYTHONPATH:%s;' % (rpath, rpath)
+#        cmd += 'python setup.py install --prefix=%s/install' % path
+        exe_cmd(os.path.join(path, 'readline-%s' % ver), cmd, debug)
 
     print "Installing httplib2"
     ver = '0.7.2'
     url = 'http://httplib2.googlecode.com/files/httplib2-%s.tar.gz' % ver
     if  not is_installed(url, path):
         get_file(url, 'httplib2.tar.gz', path, debug)
-        cmd = 'python setup.py install --prefix=%s/install' % path
+        cmd = cms_env + 'python setup.py install --prefix=%s/install' % path
         exe_cmd(os.path.join(path, 'httplib2-%s' % ver), cmd, debug)
 
     print "Installing paramiko"
@@ -314,7 +447,7 @@ def main():
     url = 'http://www.lag.net/paramiko/download/paramiko-%s.tar.gz' % ver
     if  not is_installed(url, path):
         get_file(url, 'paramiko-%s.tar.gz' % ver, path, debug)
-        cmd = 'python setup.py install --prefix=%s/install' % path
+        cmd = cms_env + 'python setup.py install --prefix=%s/install' % path
         exe_cmd(os.path.join(path, 'paramiko-%s' % ver), cmd, debug)
 
     print "Installing cmssh"
@@ -330,95 +463,62 @@ def main():
     except:
         pass
 #    url = 'http://github.com/vkuznet/cmssh/tarball/master/'
-    url = 'http://github.com/vkuznet/cmssh/tarball/v0.9/'
+    url = 'http://github.com/vkuznet/cmssh/tarball/v0.10/'
     get_file(url, 'cmssh.tar.gz', path, debug, check=False)
     cmd = 'mv vkuznet-cmssh* %s/cmssh' % path
     exe_cmd(path, cmd, debug)
-
-    if  not opts.no_cmssw:
-        print "Installing root"
-        if  platform == 'Linux':
-            url = 'ftp://root.cern.ch/root/root_v5.30.03.Linux-slc5-gcc4.3.tar.gz'
-        elif platform == 'Darwin':
-            url = 'ftp://root.cern.ch/root/root_v5.30.02.macosx106-x86_64-gcc-4.2.tar.gz'
-        else:
-            print 'Unsupported OS "%s"' % platform
-            sys.exit(1)
-        if  not is_installed(url, path):
-            get_file(url, 'root.tar.gz', path, debug)
-
-        print "Bootstrap CMSSW"
-        sdir = '%s/CMSSW' % path
-        try:
-            os.makedirs(sdir)
-        except:
-            pass
-        os.chdir(sdir)
-        url  = 'http://cmsrep.cern.ch/cmssw/cms/bootstrap.sh'
-        if  not is_installed(url, path):
-            with open('bootstrap.sh', 'w') as bootstrap:
-                 bootstrap.write(getdata(url, {}, debug))
-            os.chmod('bootstrap.sh', 0755)
-            os.environ['VO_CMS_SW_DIR'] = sdir
-            os.environ['SCRAM_ARCH'] = arch
-            os.environ['LANG'] = 'C'
-            cmd  = 'sh -x $VO_CMS_SW_DIR/bootstrap.sh setup -path $VO_CMS_SW_DIR -arch $SCRAM_ARCH'
-            if  unsupported_linux:
-                cmd += ' -unsupported_distribution_hack'
-            exe_cmd(sdir, cmd, debug)
-            cmd  = 'source `find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt -name init.sh`;'
-            cmd += 'apt-get install external+fakesystem+1.0;'
-            cmd += 'apt-get update'
-            exe_cmd(sdir, cmd, debug)
-            add_url2packages(url, path)
-    
-#    print "Installing CRAB"
-#    os.chdir(path)
-#    crab_ver = 'CRAB_2_7_9'
-#    url = 'http://cmsdoc.cern.ch/cms/ccs/wm/www/Crab/Docs/%s.tgz' % crab_ver
-#    get_file(url, 'crab.tar.gz', path, debug)
-#    cmd = 'cd %s; ./configure' % crab_ver
-#    exe_cmd(path, cmd, debug)
 
     print "Create configuration"
     os.chdir(path)
     with open('setup.sh', 'w') as setup:
         msg  = '#!/bin/bash\nexport CMSSH_ROOT=%s\n' % path
-        msg += 'export DYLD_LIBRARY_PATH=%s/globus/lib:%s/glite/lib:%s/install/lib\n' \
-                % (path, path, path)
-        msg += 'export LD_LIBRARY_PATH=%s/globus/lib:%s/glite/lib:%s/install/lib\n' \
-                % (path, path, path)
-        msg += 'export PATH=%s/globus/bin:$PATH\n' % path
-        msg += 'export PATH=%s/glite/bin:$PATH\n' % path
-        msg += 'export PATH=%s/srmclient2/bin:$PATH\n' % path
-        msg += 'export PATH=%s/install/bin:$PATH\n' % path
-        msg += 'export PATH=%s/bin:$PATH\n' % path
-        msg += 'export PATH=%s/lcg/bin:$PATH\n' % path
-        msg += 'export PATH=$PATH:%s/CRABClient/bin\n' % path
-        msg += 'export PYTHONPATH=%s/cmssh/src\n' % path
-        msg += 'export PYTHONPATH=$PYTHONPATH:%s\n' % path
-        msg += 'export PYTHONPATH=$PYTHONPATH:%s/CRABClient/src/python\n' % path
-        msg += 'export PYTHONPATH=$PYTHONPATH:%s/WMCore/src/python\n' % path
+        msg += 'export VO_CMS_SW_DIR=$CMSSH_ROOT/CMSSW\n'
+        msg += 'export SCRAM_ARCH=%s\n' % arch
+        msg += 'export LANG="C"\n'
+        msg += 'export CMSSW_RELEASES=$CMSSH_ROOT/Releases\n'
+        msg += 'if [ -f $VO_CMS_SW_DIR/cmsset_default.sh ]; then\n'
+        msg += '   source $VO_CMS_SW_DIR/cmsset_default.sh\nfi\n'
+        msg += 'export OLD_PATH=$PATH\n'
+        msg += 'apt_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt -name init.sh | tail -1`\n'
+        msg += 'pcre_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/pcre -name init.sh | tail -1`\n'
+        msg += 'xz_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/xz -name init.sh | tail -1`\n'
+        msg += 'root_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/lcg/root -name init.sh | tail -1`\n'
+        msg += 'png_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/libpng -name init.sh | tail -1`\n'
+        msg += 'lapack_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/lapack -name init.sh | tail -1`\n'
+        msg += 'numpy_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/py2-numpy -name init.sh | tail -1`\n'
+        msg += 'matplotlib_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/py2-matplotlib -name init.sh | tail -1`\n'
+        msg += 'export PATH=/usr/bin:/bin:/usr/sbin:/sbin\n'
+        msg += 'source $apt_init;\n'
+        msg += 'unset PYTHONPATH\n'
+        msg += 'source %s\n' % cms_python_env.replace(sdir, '$CMSSH_ROOT/CMSSW').replace(arch, '$SCRAM_ARCH')
+        msg += 'source $xz_init;source $pcre_init;source $root_init;\n'
+        msg += 'source $matplotlib_init;source $numpy_init;source $lapack_init;source $png_init\n'
+        msg += 'export DYLD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib\n'
+        msg += 'export LD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib\n'
+        msg += 'export PATH=$PATH:$CMSSH_ROOT/globus/bin\n'
+        msg += 'export PATH=$PATH:$CMSSH_ROOT/glite/bin\n'
+        msg += 'export PATH=$PATH:$CMSSH_ROOT/srmclient2/bin\n'
+        msg += 'export PATH=$PATH:$CMSSH_ROOT/install/bin\n'
+        msg += 'export PATH=$PATH:$CMSSH_ROOT/bin\n'
+        msg += 'export PATH=$PATH:$CMSSH_ROOT/lcg/bin\n'
+        msg += 'export PATH=$PATH:$CMSSH_ROOT/CRABClient/bin\n'
+        msg += 'export PYTHONPATH=$CMSSH_ROOT/cmssh/src:$PYTHONPATH\n'
+        msg += 'export PYTHONPATH=$ROOTSYS/lib:$PYTHONPATH\n'
+        msg += 'export PYTHONPATH=$PYTHONPATH:$CMSSH_ROOT\n'
+        msg += 'export PYTHONPATH=$PYTHONPATH:$CMSSH_ROOT/CRABClient/src/python\n'
+        msg += 'export PYTHONPATH=$PYTHONPATH:$CMSSH_ROOT/WMCore/src/python\n'
         msg += 'export PYTHONPATH=$PYTHONPATH:$PWD/soft/install/lib/python%s/site-packages\n' % py_ver
-        if  not opts.no_cmssw:
-            msg += 'export VO_CMS_SW_DIR=%s/CMSSW\n' % path
-            msg += 'export SCRAM_ARCH=%s\n' % arch
-            msg += 'export LANG="C"\n'
-            msg += 'export CMSSW_RELEASES=%s/Releases\n' % path
-            msg += 'if [ -f $VO_CMS_SW_DIR/cmsset_default.sh ]; then\n'
-            msg += '   source $VO_CMS_SW_DIR/cmsset_default.sh\nfi\n'
-            msg += 'source `find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt -name init.sh`\n'
         msg += 'export DBS_INSTANCE=cms_dbs_prod_global\n'
-        msg += 'export DEFAULT_ROOT=%s/root\n' % path
+#        msg += 'export DEFAULT_ROOT=$CMSSH_ROOT/root\n'
         msg += 'export LCG_GFAL_INFOSYS=lcg-bdii.cern.ch:2170\n'
-        msg += 'export VOMS_USERCONF=%s/glite/etc/vomses\n' % path
-        msg += 'export VOMS_LOCATION=%s/glite\n' % path
-        msg += 'export X509_CERT_DIR=%s/certificates\n' % path
+        msg += 'export VOMS_USERCONF=$CMSSH_ROOT/glite/etc/vomses\n'
+        msg += 'export VOMS_LOCATION=$CMSSH_ROOT/glite\n'
+        msg += 'export X509_CERT_DIR=$CMSSH_ROOT/certificates\n'
         msg += 'export GLOBUS_ERROR_VERBOSE=true\n'
         msg += 'export GLOBUS_OPTIONS=-Xmx512M\n'
         msg += 'export GLOBUS_TCP_PORT_RANGE=34000,35000\n'
-        msg += 'export GLOBUS_PATH=%s/globus\n' % path
-        msg += 'export GLOBUS_LOCATION=%s/globus\n' % path
+        msg += 'export GLOBUS_PATH=$CMSSH_ROOT/globus\n'
+        msg += 'export GLOBUS_LOCATION=$CMSSH_ROOT/globus\n'
         msg += 'export VOMS_PROXY_INFO_DONT_VERIFY_AC=anything_you_want\n'
         if  debug:
             print "+++ write setup.sh"
@@ -472,6 +572,10 @@ ipython --no-banner --ipython-dir=$ipdir --profile=cmssh
 """ % path
         cmssh.write(msg)
     os.chmod('bin/cmssh', 0755)
+
+    print "Clean-up ..."
+    os.chdir(path)
+    res = subprocess.call("rm *.tar.gz", shell=True)
 
     print "Congratulations, cmssh is available at %s/bin/cmssh" % path
 
