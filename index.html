@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="cmssh : Interactive shell for CMS experiment" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>cmssh</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/vkuznet/cmssh">Fork Me on GitHub</a>
+
+          <h1 id="project_title">cmssh</h1>
+          <h2 id="project_tagline">Interactive shell for CMS experiment</h2>
+
+          <section id="downloads">
+            <a class="zip_download_link" href="https://github.com/vkuznet/cmssh/zipball/master">Download this project as a .zip file</a>
+            <a class="tar_download_link" href="https://github.com/vkuznet/cmssh/tarball/master">Download this project as a tar.gz file</a>
+          </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>Welcome to cmssh project.</h1>
+
+<p>The cmssh (CMS shell) is a part of <a href="http://cms.cern.ch/">CMS</a> software initiative to simplify your daily activity in CMS environment. Think of it as combination of data discovery, file mover and release management tools in one user-friendly shell which runs on your favorite OS, Mac or Linux. The code is based on <a href="http://ipython.org/">IPython</a> and provides access to find your favorite data, to copy desired LFNs from/to storage elements and local disk, manage your CMS releases, etc. Plus it is based on python, therefore you can extended as you wish, e.g. you can write function and use it in a shell, etc.</p>
+
+<h1>How to set it up?</h1>
+
+<p>Download <a href="https://raw.github.com/vkuznet/cmssh/master/cmssh_install.py">cmssh_install.py</a> script and run it as following</p>
+
+<p><code>./cmssh_install.py --help</code><br><code>./cmssh_install.py --install --dir=your_install_dir</code></p>
+
+<h1>How to use it?</h1>
+
+<p>The usage of cmssh is very simple, in fact very similar to your shell. Here is a few basic commands you may find interesting:</p>
+
+<h3>search for some data</h3>
+
+<p><code>find dataset=*CRUZET3*RAW</code><br><code>for r in results(): print r, type(r)</code></p>
+
+<h3>ls/find/info command</h3>
+
+<p><code>ls /Cosmics/CRUZET3-v1/RAW</code><br><code>info /Cosmics/CRUZET3-v1/RAW</code><br><code>find file dataset=/Cosmics/CRUZET3-v1/RAW</code><br><code>find site dataset=/Cosmics/CRUZET3-v1/RAW</code><br><code>find run=160915</code><br><code>info run=160915</code></p>
+
+<p>Every time you run a command there is <strong>results()</strong> function which capture its output. For example, for last command I can simply invoke <strong>results()</strong>, iterate over its items and print out item data members
+<code>for r in results(): print r.initLumi, type(r.initLumi), r.DeliveredLumi, type(r.DeliveredLumi)</code></p>
+
+<h3>list/copy LFN to local disk</h3>
+
+<p><code>ls /store/data/CRUZET3/Cosmics/RAW/path/file.root</code><br><code>cp /store/data/CRUZET3/Cosmics/RAW/path/file.root .</code></p>
+
+<h3>SE operations, e.g. list its content, create/delete directory, etc.</h3>
+
+<p><code>du T3_US_Cornell</code><br><code>ls T3_US_Cornell</code><br><code>ls T3_US_Cornell:/store/user/me</code><br><code>mkdir T3_US_Cornell:/store/user/me/foo</code><br><code>rmdir T3_US_Cornell:/store/user/me/foo</code></p>
+
+<h3>copy local file to SE</h3>
+
+<p><code>cp file.root T3_US_Cornell:/store/user/me</code></p>
+
+<h3>copy LFN from SE to local disk</h3>
+
+<p><code>cp T3_US_Cornell:/store/user/me/file.root .</code></p>
+
+<h3>delete file on SE</h3>
+
+<p><code>rm T3_US_Cornell:/xrootdfs/cms/store/user/me/file.root</code></p>
+
+<h3>copy LFN to SE area</h3>
+
+<p><code>cp /store/data/CRUZET3/Cosmics/RAW/path/file.root T3_US_Cornell:/store/user/me</code></p>
+
+<h3>copy multiple files in background</h3>
+
+<p><code>cp /store/data/CRUZET3/Cosmics/RAW/path/file1.root . &amp;</code><br><code>cp /store/data/CRUZET3/Cosmics/RAW/path/file2.root . &amp;</code></p>
+
+<h3>look-up file status in background (data queue)</h3>
+
+<p><code>dqueue</code></p>
+
+<h3>look-up available releases</h3>
+
+<p><code>releases</code>  </p>
+
+<h3>install your favorite release</h3>
+
+<p><code>cmsrel CMSSW_5_2_0_pre1</code></p>
+
+<h3>run cms job</h3>
+
+<p><code>cmsRun runevt_cfg.py</code></p>
+
+<h1>Help and Support</h1>
+
+<p>You can find cmssh help by typing <strong>cmshelp</strong> in your shell. For more information please contact the <a href="mailto:vkuznet@gmail.com">author</a>. For bugs please use GitHub <a href="https://github.com/vkuznet/cmssh/issues">tracking system</a>.</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">cmssh maintained by <a href="https://github.com/vkuznet">vkuznet</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
