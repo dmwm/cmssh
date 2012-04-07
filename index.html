@@ -57,8 +57,9 @@
 
 <p><code>ls /Cosmics/CRUZET3-v1/RAW</code><br><code>info /Cosmics/CRUZET3-v1/RAW</code><br><code>find file dataset=/Cosmics/CRUZET3-v1/RAW</code><br><code>find site dataset=/Cosmics/CRUZET3-v1/RAW</code><br><code>find run=160915</code><br><code>info run=160915</code></p>
 
-<p>Every time you run a command there is <strong>results()</strong> function which capture its output. For example, for last command I can simply invoke <strong>results()</strong>, iterate over its items and print out item data members
-<code>for r in results(): print r.initLumi, type(r.initLumi), r.DeliveredLumi, type(r.DeliveredLumi)</code></p>
+<p>Every time you run a command there is <strong>results()</strong> function which capture its output. For example, for last command I can simply invoke <strong>results()</strong>, iterate over its items and print out item data members</p>
+
+<p><code>for r in results(): print r.initLumi, type(r.initLumi), r.DeliveredLumi, type(r.DeliveredLumi)</code></p>
 
 <h3>list/copy LFN to local disk</h3>
 
@@ -98,9 +99,11 @@
 
 <h3>install your favorite release</h3>
 
-<p><code>cmsrel CMSSW_5_2_0_pre1</code></p>
+<p><code>cmsrel CMSSW_5_X_Y</code></p>
 
 <h3>run cms job</h3>
+Once CMSSW release is installed in your shell, you can simply invoke your favorite
+cms run job
 
 <p><code>cmsRun runevt_cfg.py</code></p>
 
