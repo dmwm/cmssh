@@ -9,6 +9,7 @@ import sys
 import json
 import stat
 import time
+import thread
 import urllib
 import urllib2
 import datetime
@@ -429,12 +430,39 @@ def add_request(lfn, src, dst, verbose):
         print "add_request", url, args
     data = urllib2.urlopen(url, urllib.urlencode(args, doseq=True))
     return data.read()
-    
+
+def active_jobs(queue):
+    "Return number of active jobs in a queue"
+    njobs = 0
+    for _, (proc, _status) in queue.items():
+        if  proc.is_alive():
+            njobs += 1
+    return njobs
+
+def worker(queue, threshold):
+    """
+    Worker which start processes in a queue and monitor that number of
+    jobs does not exceed a given threshold
+    """
+    while True:
+        njobs = active_jobs(queue)
+        if  njobs < threshold:
+            # start process
+            for lfn, (proc, status) in queue.items():
+                if  active_jobs(queue) >= threshold:
+                    break
+                if  not status and not proc.is_alive():
+                    proc.start()
+                    queue[lfn] = (proc, 'started')
+        time.sleep(5)
+
 class FileMover(object):
     def __init__(self):
         self.instance = "Instance at %d" % self.__hash__()
         check_proxy()
         self.queue = {} # download queue
+        threshold = 3 # number of simulteneous downloads
+        thread.start_new_thread(worker, (self.queue, threshold))
 
     def copy_via_xrdcp(self, lfn, dst, verbose=0):
         "Copy LFN to given destination via xrdcp command"
@@ -457,8 +485,7 @@ class FileMover(object):
             if  cmd:
                 if  background:
                     proc = Process(target=execute, args=(cmd, lfn, 0))
-                    proc.start()
-                    self.queue[lfn] = proc
+                    self.queue[lfn] = (proc, None)
                     return 'accepted'
                 elif verbose:
                     status = execute(cmd, lfn, verbose)
@@ -616,10 +643,13 @@ def copy_lfn(lfn, dst, verbose=0, background=False):
 def dqueue():
     """Return download queue"""
     download_queue = FM_SINGLETON.queue
-    alive = []
-    ended = []
-    for lfn, proc in download_queue.items():
-        if  proc.is_alive():
+    alive   = []
+    waiting = []
+    ended   = []
+    for lfn, (proc, status) in download_queue.items():
+        if not status:
+            waiting.append(lfn)
+        elif  proc.is_alive():
             alive.append(lfn)
         else:
             ended.append((lfn, proc.exitcode))
@@ -627,6 +657,10 @@ def dqueue():
     if  len(alive):
         print "\nIn progress:"
         for lfn in alive:
+            print lfn
+    if  len(waiting):
+        print "\nWaiting:"
+        for lfn in waiting:
             print lfn
     if  len(ended):
         print "\nFinished:"
