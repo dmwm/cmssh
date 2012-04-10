@@ -16,6 +16,7 @@ examples:
 
     .. doctest::
 
+        from ddict import DotDict
         row = {'a':{'b':1, 'c':[1,2]}}
         rec = DotDict(row)
         print rec['a.c']
@@ -70,6 +71,17 @@ def yield_obj(rdict, ckey):
                 yield next_key, item
         else:
             yield next_key, obj
+
+def helper_loop(combo, vals):
+    "Helper function"
+    if  isinstance(vals, dict):
+        for kkk in DotDict(vals).get_keys():
+            yield '%s.%s' % (combo, kkk)
+    elif isinstance(vals, list):
+        for item in vals:
+            if  isinstance(item, dict):
+                for kkk in DotDict(item).get_keys():
+                    yield '%s.%s' % (combo, kkk)
 
 class DotDict(dict):
     """
@@ -140,21 +152,28 @@ class DotDict(dict):
         if  isinstance(doc, dict):
             for key in doc.keys():
                 if  ckey.rfind('%s.' % key) == -1:
-                    yield '%s.%s' % (ckey, key)
-                    for kkk in self.get_keys('%s.%s' % (ckey, key)):
+                    combo = '%s.%s' % (ckey, key)
+                    yield combo
+                    vals = [v for v in self.get_values(combo)]
+                    for kkk in helper_loop(combo, vals):
                         yield kkk
+                else:
+                    yield ckey
         elif isinstance(doc, list):
             for item in doc:
                 if  isinstance(item, dict):
                     for key in item.keys():
                         if  ckey.rfind('%s.' % key) == -1:
-                            yield '%s.%s' % (ckey, key)
-                            for kkk in self.get_keys('%s.%s' % (ckey, key)):
+                            combo = '%s.%s' % (ckey, key)
+                            yield combo
+                            vals = [v for v in self.get_values(combo)]
+                            for kkk in helper_loop(combo, vals):
                                 yield kkk
                 elif isinstance(item, list):
                     for elem in item:
                         if  isinstance(elem, dict):
-                            yield '%s.%s' % (ckey, elem)
+                            for kkk in elem.keys():
+                                yield '%s.%s' % (ckey, kkk)
                         else:
                             yield ckey
                 else: # basic type, so we reach the end
@@ -230,7 +249,7 @@ class DotDict(dict):
         if  ckey:
             keys = self._get_keys(ckey)
         else:
-            keys = []
+            keys = self.keys()
             for key in self.keys():
                 keys += [k for k in self._get_keys(key)]
         return list(set(keys))
