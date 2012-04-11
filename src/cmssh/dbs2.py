@@ -185,12 +185,13 @@ def block_info(block, verbose=None):
     return Block(blk)
 
 def file_info(lfn, verbose=None):
-    query  = 'find file.name, file.size, file.createdate, file.createby, file.moddate, file.modby where file=%s' % lfn
+    query  = 'find file.name, file.numevents, file.size, file.createdate, file.createby, file.moddate, file.modby where file=%s' % lfn
     params = {"api":"executeQuery", "apiversion": "DBS_2_0_9", "query":query}
     data   = urllib2.urlopen(dbs_url(), urllib.urlencode(params))
     rec    = [f for f in qlxml_parser(data, 'file')][0]
     rec['logical_file_name'] = rec['file']['file.name']
     rec['size'] = rec['file']['file.size']
+    rec['nevents'] = rec['file']['file.numevents']
     rec['created'] = time.strftime("%Y-%m-%d %H:%M:%S GMT", time.gmtime(rec['file']['file.createdate']))
     rec['createdby'] = rec['file']['file.createby']
     rec['modified'] = time.strftime("%Y-%m-%d %H:%M:%S GMT", time.gmtime(rec['file']['file.moddate']))
