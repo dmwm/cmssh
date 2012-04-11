@@ -36,7 +36,7 @@ class HTTPSClientAuthHandler(urllib2.HTTPSHandler):
                                                 cert_file=self.cert)
         return httplib.HTTPSConnection(host)
 
-def get_data(url, method, kwargs, headers=None, verbose=None, decoder='json'):
+def get_data(url, method, kwargs=None, headers=None, verbose=None, decoder='json'):
     """Retrieve data"""
     if  url.find('https') != -1:
         ckey, cert = get_key_cert()
