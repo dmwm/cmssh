@@ -568,8 +568,13 @@ fi
 export IPYTHON_DIR=$ipdir
 #grid-proxy-init
 voms-proxy-init -voms cms:/cms -valid 24:00
-ipython --no-banner --ipython-dir=$ipdir --profile=cmssh
 """ % path
+        if  platform == 'Darwin':
+            flags = '--pylab=osx'
+        else:
+            flags = '--pylab'
+        flags += ' --InteractiveShellApp.pylab_import_all=False --no-banner'
+        msg += 'ipython %s --ipython-dir=$ipdir --profile=cmssh' % flags
         cmssh.write(msg)
     os.chmod('bin/cmssh', 0755)
 
