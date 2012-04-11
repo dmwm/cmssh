@@ -5,6 +5,10 @@
 # system modules
 import os
 
+def tc_url(api=''):
+    """Return TagCollector URL for given API name"""
+    return 'https://cmssdt.cern.ch/tc/%s' % api
+
 def phedex_url(api=''):
     """Return Phedex URL for given API name"""
     return 'https://cmsweb.cern.ch/phedex/datasvc/json/prod/%s' % api
