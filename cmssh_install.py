@@ -385,26 +385,22 @@ def main():
         cmd += ' --with-cacert-path=%s/certificates' % path
         exe_cmd(os.path.join(path, 'srmclient2/setup'), cmd, debug)
 
-    print "Installing IPython"
-    ver = '0.12'
-    url = 'http://archive.ipython.org/release/%s/ipython-%s.tar.gz' % (ver, ver)
+    print "Installing pip"
+    os.chdir(path)
+    url = 'https://raw.github.com/pypa/virtualenv/master/virtualenv.py'
     if  not is_installed(url, path):
-        get_file(url, 'ipython.tar.gz', path, debug)
-        cmd = cms_env + 'python setup.py install --prefix=%s/install' % path
-        exe_cmd(os.path.join(path, 'ipython-%s' % ver), cmd, debug)
+        with open('virtualenv.py', 'w') as fname:
+            fname.write(getdata(url, {}, debug))
+        cmd = cms_env + 'python %s/virtualenv.py %s/install' % (path, path)
+        exe_cmd(path, cmd, debug)
+
+    print "Installing IPython"
+    cmd = '%s/install/bin/pip install --upgrade ipython' % path
+    exe_cmd(path, cmd, debug)
 
     print "Installing Routes"
-    os.chdir(path)
-    ver = '1.12.3'
-    url = 'http://peak.telecommunity.com/dist/ez_setup.py'
-    if  not is_installed(url, path):
-        with open('ez_setup.py', 'w') as ez_setup:
-             ez_setup.write(getdata(url, {}, debug))
-    url = 'http://pypi.python.org/packages/source/R/Routes/Routes-%s.tar.gz' % ver
-    if  not is_installed(url, path):
-        get_file(url, 'routes.tar.gz', path, debug)
-        cmd = cms_env + 'cp ../ez_setup.py .; python setup.py install --prefix=%s/install' % path
-        exe_cmd(os.path.join(path, 'Routes-%s' % ver), cmd, debug)
+    cmd = '%s/install/bin/pip install --upgrade Routes' % path
+    exe_cmd(path, cmd, debug)
 
     print "Installing readline"
     ver = '6.2.2'
@@ -435,20 +431,12 @@ python setup.py install --prefix=$idir
         exe_cmd(os.path.join(path, 'readline-%s' % ver), cmd, debug)
 
     print "Installing httplib2"
-    ver = '0.7.2'
-    url = 'http://httplib2.googlecode.com/files/httplib2-%s.tar.gz' % ver
-    if  not is_installed(url, path):
-        get_file(url, 'httplib2.tar.gz', path, debug)
-        cmd = cms_env + 'python setup.py install --prefix=%s/install' % path
-        exe_cmd(os.path.join(path, 'httplib2-%s' % ver), cmd, debug)
+    cmd = '%s/install/bin/pip install --upgrade httplib2' % path
+    exe_cmd(path, cmd, debug)
 
     print "Installing paramiko"
-    ver = '1.7.7.1'
-    url = 'http://www.lag.net/paramiko/download/paramiko-%s.tar.gz' % ver
-    if  not is_installed(url, path):
-        get_file(url, 'paramiko-%s.tar.gz' % ver, path, debug)
-        cmd = cms_env + 'python setup.py install --prefix=%s/install' % path
-        exe_cmd(os.path.join(path, 'paramiko-%s' % ver), cmd, debug)
+    cmd = '%s/install/bin/pip install --upgrade paramiko' % path
+    exe_cmd(path, cmd, debug)
 
     print "Installing cmssh"
     os.chdir(path)
@@ -507,7 +495,8 @@ python setup.py install --prefix=$idir
         msg += 'export PYTHONPATH=$PYTHONPATH:$CMSSH_ROOT\n'
         msg += 'export PYTHONPATH=$PYTHONPATH:$CMSSH_ROOT/CRABClient/src/python\n'
         msg += 'export PYTHONPATH=$PYTHONPATH:$CMSSH_ROOT/WMCore/src/python\n'
-        msg += 'export PYTHONPATH=$PYTHONPATH:$PWD/soft/install/lib/python%s/site-packages\n' % py_ver
+#        msg += 'export PYTHONPATH=$PYTHONPATH:$PWD/soft/install/lib/python%s/site-packages\n' % py_ver
+        msg += 'export PYTHONPATH=$PWD/soft/install/lib/python%s/site-packages:$PYTHONPATH\n' % py_ver
         msg += 'export DBS_INSTANCE=cms_dbs_prod_global\n'
 #        msg += 'export DEFAULT_ROOT=$CMSSH_ROOT/root\n'
         msg += 'export LCG_GFAL_INFOSYS=lcg-bdii.cern.ch:2170\n'
