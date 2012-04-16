@@ -317,15 +317,14 @@ def cms_help_msg():
         + ' switch to given CMSSW release and setup its environment\n'
     msg += PM.msg_green('cmsRun      ') \
         + ' cmsRun command for release in question\n'
-    msg += '\nAvailable GRID commands:\n'
-    msg += PM.msg_green('gridinit    ') + ' setup your proxy (aka grid-proxy-init)\n'
-    msg += PM.msg_green('gridinfo    ') + ' show your proxy info (aka grid-proxy-info)\n'
-    msg += PM.msg_green('vomsinit    ') + ' setup your VOMS proxy (aka voms-proxy-init)\n'
-    msg += PM.msg_green('vomsinfo    ') + ' show your VOMS proxy info (aka voms-proxy-info)\n'
+    msg += '\nAvailable GRID commands: <cmd> either grid or voms\n'
+    msg += PM.msg_green('<cmd>init    ') + ' setup your proxy (aka <cmd>-proxy-init)\n'
+    msg += PM.msg_green('<cmd>info    ') + ' show your proxy info (aka <cmd>-proxy-info)\n'
     msg += '\nQuery results are accessible via %s function:\n' % PM.msg_blue('results()')
     msg += '   find dataset=/*Zee*\n'
     msg += '   for r in results(): print r, type(r)\n'
-    msg += '\nHelp is accessible via ' + PM.msg_blue('cmshelp <command>')
+    msg += '\nHelp is accessible via ' + PM.msg_blue('cmshelp <command>\n')
+    msg += '\nTo install python software use pip <search|(un)install> <package>'
     return msg
 
 def cms_help(arg=None):
@@ -526,6 +525,28 @@ def cms_cp(arg):
 def cms_dqueue(arg=None):
     "Return status of LFN in transfer (the download queue)"
     dqueue()
+
+def cms_architectures():
+    "Return list of supported CMS architectures"
+    # TODO: I need to replace py_getReleaseArchitectures
+    # with new API which will return list of architectures
+    args  = {'release':'CMSSW_6_0_X'}
+    res   = get_data(tc_url(), 'py_getReleaseArchitectures', args)
+    archs = [r[0] for r in res]
+    return archs
+
+def cms_arch(arg=None):
+    "Show and set CMSSW architecture"
+    if  not arg:
+        print "CMSSW architecture SCRAM_ARCH=%s" % os.environ['SCRAM_ARCH']
+    else:
+        cms_archs = cms_architectures()
+        if  arg not in cms_archs:
+            msg  = 'Wrong architecture, please choose from the following list\n'
+            msg += ', '.join(cms_archs)
+            raise Exception(msg)
+        print "Switch to SCRAM_ARCH=%s" % arg
+        os.environ['SCRAM_ARCH'] = arg
 
 def results():
     """Return results from recent query"""
