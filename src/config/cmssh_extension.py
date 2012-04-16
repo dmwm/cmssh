@@ -22,7 +22,7 @@ from   cmssh.cms_cmds import dbs_instance, Magic, cms_find, cms_du
 from   cmssh.cms_cmds import cms_ls, cms_cp, verbose, cms_dqueue
 from   cmssh.cms_cmds import cms_rm, cms_rmdir, cms_mkdir, cms_root, cms_xrdcp
 from   cmssh.cms_cmds import cms_install, cms_releases, cms_info
-from   cmssh.cms_cmds import cmsrel, cmsrun, cms_help
+from   cmssh.cms_cmds import cmsrel, cmsrun, cms_help, cms_arch
 from   cmssh.cms_cmds import cms_help_msg, results
 
 class ShellName(object):
@@ -92,6 +92,7 @@ cmsMagicList = [ \
     ('vim', Magic('vim').execute),
     ('python', Magic('python').execute),
     ('env', Magic('env').execute),
+    ('pip', Magic('pip').execute),
     # CMS commands
     ('apt-get', Magic('apt-get').execute_within_env),
     ('apt-cache', Magic('apt-cache').execute_within_env),
@@ -123,6 +124,7 @@ cmsMagicList = [ \
     ('cmsRun', cmsrun),
     ('cmsrun', cmsrun),
     ('cmshelp', cms_help),
+    ('arch', cms_arch),
 ]
 
 def test_key_cert():
