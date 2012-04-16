@@ -21,14 +21,14 @@
           <h1 id="project_title">cmssh</h1>
           <h2 id="project_tagline">Interactive shell for CMS experiment</h2>
 
-          <section id="downloads">
-            <a class="zip_download_link" href="https://github.com/vkuznet/cmssh/zipball/v0.10">Download this project as a .zip file</a>
-            <a class="tar_download_link" href="https://github.com/vkuznet/cmssh/tarball/v0.10">Download this project as a tar.gz file</a>
 <!--
+          <section id="downloads">
+            <a class="zip_download_link" href="https://github.com/vkuznet/cmssh/zipball/v0.11">Download this project as a .zip file</a>
+            <a class="tar_download_link" href="https://github.com/vkuznet/cmssh/tarball/v0.11">Download this project as a tar.gz file</a>
             <a class="zip_download_link" href="https://github.com/vkuznet/cmssh/zipball/master">Download this project as a .zip file</a>
             <a class="tar_download_link" href="https://github.com/vkuznet/cmssh/tarball/master">Download this project as a tar.gz file</a>
--->
           </section>
+-->
         </header>
     </div>
 
@@ -39,13 +39,25 @@
 
 <p>The cmssh (CMS shell) is a part of <a href="http://cms.cern.ch/">CMS</a> software initiative to simplify your daily activity in CMS environment. Think of it as combination of data discovery, file mover and release management tools in one user-friendly shell which runs on your favorite OS, Mac or Linux. The code is based on <a href="http://ipython.org/">IPython</a> and provides access to find your favorite data, to copy desired LFNs from/to storage elements and local disk, manage your CMS releases, etc. Plus it is based on python, therefore you can extended as you wish, e.g. you can write function and use it in a shell, etc.</p>
 
-<h1>How to set it up?</h1>
+<h1>Installation</h1>
+To install cmssh you only need its installer script and python on your system.
+Simply download
+<a href="https://raw.github.com/vkuznet/cmssh/v0.12/cmssh_install.py">cmssh installer</a>
+and run it as
+<p>
+<code>
+python cmssh_install.py --help
+</code>
+</p>
+It will print out all options you can use during install procedure. Most of the time
+you'll run it as
+<p>
+<code>
+python cmssh_install.py --install --dir=$PWD
+</code>
+</p>
 
-<p>Download <a href="https://raw.github.com/vkuznet/cmssh/master/cmssh_install.py">cmssh_install.py</a> script and run it as following</p>
-
-<p><code>./cmssh_install.py --help</code><br><code>./cmssh_install.py --install --dir=your_install_dir</code></p>
-
-<h1>How to use it?</h1>
+<h1>Usage</h1>
 
 <p>The usage of cmssh is very simple, in fact very similar to your shell. Here is a few basic commands you may find interesting:</p>
 
