@@ -278,9 +278,9 @@ def main():
         exe_cmd(sdir, cmd, debug, 'Install %s' % root)
         # I may need to install external+py2-matplotlib+1.0.1-cms3, external+libpng+1.2.10
         cmd  = apt + 'echo "Y" | apt-get install external+libpng+1.2.10' 
-        exe_cmd(sdir, cmd, debug, 'Install %s' % root)
+        exe_cmd(sdir, cmd, debug, 'Install libpng')
         cmd  = apt + 'echo "Y" | apt-get install external+py2-matplotlib+1.0.1-cms3' 
-        exe_cmd(sdir, cmd, debug, 'Install %s' % root)
+        exe_cmd(sdir, cmd, debug, 'Install matplotlib')
         add_url2packages(url, path)
 
     # command to setup CMSSW python
