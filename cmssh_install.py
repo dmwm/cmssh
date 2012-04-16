@@ -451,7 +451,7 @@ python setup.py install --prefix=$idir
     except:
         pass
 #    url = 'http://github.com/vkuznet/cmssh/tarball/master/'
-    url = 'http://github.com/vkuznet/cmssh/tarball/v0.10/'
+    url = 'http://github.com/vkuznet/cmssh/tarball/v0.11/'
     get_file(url, 'cmssh.tar.gz', path, debug, check=False)
     cmd = 'mv vkuznet-cmssh* %s/cmssh' % path
     exe_cmd(path, cmd, debug)
