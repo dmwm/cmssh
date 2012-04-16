@@ -98,9 +98,6 @@ class MyOptionParser:
         self.parser.add_option("--unsupported", action="store_true",
             dest="unsupported",
             help="enforce installation on unsupported platforms, e.g. Ubuntu")
-        self.parser.add_option("--no_cmssw", action="store_true",
-            dest="no_cmssw",
-            help="do not bootstrap CMSSW area")
     def get_opt(self):
         """Returns parse list of options"""
         return self.parser.parse_args()
