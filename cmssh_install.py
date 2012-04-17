@@ -453,6 +453,13 @@ python setup.py install --prefix=$idir
     cmd = 'mv vkuznet-cmssh* %s/cmssh' % path
     exe_cmd(path, cmd, debug)
 
+    print "Create matplotlibrc"
+    os.chdir(path)
+    os.makedirs(os.getcwd(), 'install/lib/python%s/site-packages/matplotlib/mpl-data' % py_ver)
+    cmd  = 'cp %s/cmssh/src/config/matplotlibrc' % path
+    cmd += ' %s/install/lib/python%s/site-packages/matplotlib/mpl-data/' % (path, py_ver)
+    exe_cmd(path, cmd, debug)
+
     print "Create configuration"
     os.chdir(path)
     with open('setup.sh', 'w') as setup:
