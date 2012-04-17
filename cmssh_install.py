@@ -448,7 +448,7 @@ python setup.py install --prefix=$idir
     except:
         pass
 #    url = 'http://github.com/vkuznet/cmssh/tarball/master/'
-    url = 'http://github.com/vkuznet/cmssh/tarball/v0.13/'
+    url = 'http://github.com/vkuznet/cmssh/tarball/v0.14/'
     get_file(url, 'cmssh.tar.gz', path, debug, check=False)
     cmd = 'mv vkuznet-cmssh* %s/cmssh' % path
     exe_cmd(path, cmd, debug)
@@ -456,7 +456,10 @@ python setup.py install --prefix=$idir
     print "Create matplotlibrc"
     os.chdir(path)
     ndir = os.path.join(os.getcwd(), 'install/lib/python%s/site-packages/matplotlib/mpl-data' % py_ver)
-    os.makedirs(ndir)
+    try:
+        os.makedirs(ndir)
+    except:
+        pass
     cmd  = 'cp %s/cmssh/src/config/matplotlibrc' % path
     cmd += ' %s/install/lib/python%s/site-packages/matplotlib/mpl-data/' % (path, py_ver)
     exe_cmd(path, cmd, debug)
