@@ -35,7 +35,10 @@ if sys.version_info < (2, 6):
 if  os.uname()[0] == 'Darwin':
     DEF_SCRAM_ARCH = 'osx106_amd64_gcc421'
 elif os.uname()[0] == 'Linux':
-    DEF_SCRAM_ARCH = 'slc5_ia32_gcc434'
+    if  os.uname()[-1] == 'x86_64':
+        DEF_SCRAM_ARCH = 'slc5_amd64_gcc462'
+    else:
+        DEF_SCRAM_ARCH = 'slc5_ia32_gcc434'
 else:
     print 'Unsupported platform'
     sys.exit(1)
@@ -52,14 +55,42 @@ def find_root_package(apt, debug=None):
     Find latest version of root package in CMSSW repository.
     For time being I veto all -cms packages due to bug in python w/ SSL.
     """
-#    cmd  = apt + 'apt-cache search root | grep "lcg+root" | grep -v toolfile '
-#    cmd += "| grep -v cms | tail -1 | awk '{print $1}'"
-#    if  debug:
-#        print cmd
-#    res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-#    root = res.stdout.read().replace('\n', '').strip()
-    # based on various bugs, let's take
-    root = 'lcg+root+5.30.02-cms4'
+    cmd  = apt + 'apt-cache search root | grep "lcg+root" | grep -v toolfile '
+    cmd += "| grep -v cms | tail -1 | awk '{print $1}'"
+    if  debug:
+        print cmd
+    res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+    root = res.stdout.read().replace('\n', '').strip()
+    if  os.uname()[0] == 'Darwin': # OSX python has issues with SSL, will take fixed release
+        root = 'lcg+root+5.30.02-cms4'
+    return root
+
+def matplotlib_package(apt, debug=None):
+    """
+    Find latest version of matplotlib package in CMSSW repository.
+    """
+    cmd  = apt + 'apt-cache search matplotlib | grep "matplotlib" | grep -v toolfile '
+    cmd += "| grep -v cms | tail -1 | awk '{print $1}'"
+    if  debug:
+        print cmd
+    res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+    root = res.stdout.read().replace('\n', '').strip()
+    if  os.uname()[0] == 'Darwin': # stay in sync w/ lcg+root on OSX
+        root = 'external+py2-matplotlib+1.0.1-cms3'
+    return root
+
+def libpng_package(apt, debug=None):
+    """
+    Find latest version of libpng package in CMSSW repository.
+    """
+    cmd  = apt + 'apt-cache search matplotlib | grep "matplotlib" | grep -v toolfile '
+    cmd += "| grep -v cms | tail -1 | awk '{print $1}'"
+    if  debug:
+        print cmd
+    res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+    root = res.stdout.read().replace('\n', '').strip()
+    if  os.uname()[0] == 'Darwin': # stay in sync w/ lcg+root on OSX
+        root = 'external+libpng+1.2.10'
     return root
 
 def available_architectures():
@@ -276,10 +307,11 @@ def main():
         root = find_root_package(apt, debug)
         cmd  = apt + 'echo "Y" | apt-get install %s' % root
         exe_cmd(sdir, cmd, debug, 'Install %s' % root)
-        # I may need to install external+py2-matplotlib+1.0.1-cms3, external+libpng+1.2.10
-        cmd  = apt + 'echo "Y" | apt-get install external+libpng+1.2.10' 
+        root = libpng_package(apt, debug)
+        cmd  = apt + 'echo "Y" | apt-get install %s' % root 
         exe_cmd(sdir, cmd, debug, 'Install libpng')
-        cmd  = apt + 'echo "Y" | apt-get install external+py2-matplotlib+1.0.1-cms3' 
+        root = matplotlib_package(apt, debug)
+        cmd  = apt + 'echo "Y" | apt-get install %s' % root 
         exe_cmd(sdir, cmd, debug, 'Install matplotlib')
         add_url2packages(url, path)
 
