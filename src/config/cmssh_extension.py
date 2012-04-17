@@ -197,8 +197,8 @@ def main(ipython):
     pyver  = sys.version.split('\n')[0]
     ipyver = release.version
     ver    = "%s.%s" % (cmssh.__version__, cmssh.__revision__)
-    msg    = "Welcome to cmssh %s!\n[python %s, ipython %s]\n%s\n" \
-            % (ver, pyver, ipyver ,os.uname()[3])
+    msg    = "Welcome to cmssh:\n[python %s, ipython %s]\n%s\n" \
+            % (pyver, ipyver ,os.uname()[3])
     msg   += cms_help_msg()
     print msg
 
