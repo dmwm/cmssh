@@ -325,7 +325,7 @@ def cms_help_msg():
     msg += '   for r in results(): print r, type(r)\n'
     msg += '\nHelp is accessible via ' + PM.msg_blue('cmshelp <command>\n')
     msg += '\nTo install python software use ' + \
-                PM.msg.blue('pip <search|(un)install> <package>')
+                PM.msg_blue('pip <search|(un)install> <package>')
     return msg
 
 def cms_help(arg=None):
