@@ -640,7 +640,7 @@ def copy_lfn(lfn, dst, verbose=0, background=False):
         FM_SINGLETON.copy_via_xrdcp(lfn, dst, verbose)
     return status
 
-def dqueue():
+def dqueue(arg=None):
     """Return download queue"""
     download_queue = FM_SINGLETON.queue
     alive   = []
@@ -654,16 +654,18 @@ def dqueue():
         else:
             ended.append((lfn, proc.exitcode))
             del download_queue[lfn]
-    if  len(alive):
-        print "\nIn progress:"
+    print "In progress: %s jobs" % len(alive)
+    if  arg and arg == 'list':
         for lfn in alive:
             print lfn
-    if  len(waiting):
-        print "\nWaiting:"
+        if  len(alive): print
+    print "Waiting    : %s jobs" % len(waiting)
+    if  arg and arg == 'list':
         for lfn in waiting:
             print lfn
-    if  len(ended):
-        print "\nFinished:"
+        if  len(waiting): print
+    print "Finished   : %s jobs" % len(ended)
+    if  arg and arg == 'list':
         for lfn, code in ended:
             print "%s, exit code %s" % (lfn, code)
 

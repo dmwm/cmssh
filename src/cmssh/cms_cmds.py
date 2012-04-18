@@ -525,7 +525,10 @@ def cms_cp(arg):
 
 def cms_dqueue(arg=None):
     "Return status of LFN in transfer (the download queue)"
-    dqueue()
+    if  arg and arg != 'list':
+        print_red("Wrong argument '%s', please use 'list'" % arg)
+        return
+    dqueue(arg)
 
 def cms_architectures():
     "Return list of supported CMS architectures"
