@@ -39,6 +39,13 @@ elif os.uname()[0] == 'Linux':
         DEF_SCRAM_ARCH = 'slc5_amd64_gcc462'
     else:
         DEF_SCRAM_ARCH = 'slc5_ia32_gcc434'
+    # test presence of readline
+    readline = os.path.realpath('/usr/lib/libreadline.so')
+    if  readline.find('so.5') == -1:
+        msg  = 'cmssh on Linux requires readline5. Please verify that'
+        msg += ' you have it installed on your system. So far we found\n'
+        msg += '/usr/lib/libreadline.so -> %s' % readline
+        raise Exception(msg)
 else:
     print 'Unsupported platform'
     sys.exit(1)
@@ -294,6 +301,10 @@ def main():
     if  not is_installed(url, path):
         with open('bootstrap.sh', 'w') as bootstrap:
              bootstrap.write(getdata(url, {}, debug))
+        if  os.uname()[0].lower() == 'linux':
+            os.rename('bootstrap.sh', 'b.sh')
+            cmd = 'cat b.sh | sed "s,\$seed \$unsupportedSeeds,\$seed \$unsupportedSeeds libreadline5,g" > bootstrap.sh'
+            res = subprocess.call(cmd, shell=True)
         os.chmod('bootstrap.sh', 0755)
         cmd  = 'sh -x $VO_CMS_SW_DIR/bootstrap.sh setup -path $VO_CMS_SW_DIR -arch $SCRAM_ARCH'
         if  unsupported_linux:
