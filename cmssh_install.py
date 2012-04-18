@@ -560,6 +560,7 @@ python setup.py install --prefix=$idir
         msg += 'export GLOBUS_PATH=$CMSSH_ROOT/globus\n'
         msg += 'export GLOBUS_LOCATION=$CMSSH_ROOT/globus\n'
         msg += 'export VOMS_PROXY_INFO_DONT_VERIFY_AC=anything_you_want\n'
+        msg += 'export MATPLOTLIBRC=$CMSSH_ROOT/install/lib/python%s/site-packages/matplotlib/mpl-data\n' % py_ver
         if  debug:
             print "+++ write setup.sh"
         setup.write(msg)
