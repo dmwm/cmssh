@@ -211,12 +211,24 @@ class PrintManager(object):
         self.instance = "Instance at %d" % self.__hash__()
         self.term = TerminalController()
 
+    def print_warning(self, msg):
+        """print message using pink color"""
+        print self.msg_yellow('\nWARNING:'), msg
+
+    def print_error(self, msg):
+        """print message using red color"""
+        print self.msg_red('\nERROR:'), msg
+
+    def print_success(self, msg):
+        """print message using green color"""
+        print self.msg_green('\nSUCCESS:'), msg
+
     def print_red(self, msg):
         """print message using red color"""
         print self.msg_red(msg)
 
     def print_green(self, msg):
-        """print message using blue color"""
+        """print message using green color"""
         print self.msg_green(msg)
 
     def print_blue(self, msg):
@@ -228,6 +240,12 @@ class PrintManager(object):
         if  not msg:
             msg = ''
         return self.term.RED + msg + self.term.NORMAL
+
+    def msg_yellow(self, msg):
+        """yield message using yellow color"""
+        if  not msg:
+            msg = ''
+        return self.term.YELLOW + msg + self.term.NORMAL
 
     def msg_green(self, msg):
         """yield message using green color"""
@@ -318,6 +336,15 @@ PM_SINGLETON = PrintManager()
 def print_red(msg):
     """print input message in red color"""
     PM_SINGLETON.print_red(msg)
+def print_warning(msg):
+    """print input message in red color"""
+    PM_SINGLETON.print_warning(msg)
+def print_error(msg):
+    """print input message in red color"""
+    PM_SINGLETON.print_error(msg)
+def print_success(msg):
+    """print input message in red color"""
+    PM_SINGLETON.print_success(msg)
 def msg_red(msg):
     """convert input message into red color"""
     return PM_SINGLETON.msg_red(msg)
