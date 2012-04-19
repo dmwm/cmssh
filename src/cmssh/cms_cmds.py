@@ -13,8 +13,9 @@ import subprocess
 
 # cmssh modules
 from cmssh.iprint import print_red, print_blue, msg_red, msg_green, PrintManager
+from cmssh.iprint import print_warning, print_error, print_success
 from cmssh.filemover import copy_lfn, rm_lfn, mkdir, rmdir, list_se, dqueue
-from cmssh.utils import list_results
+from cmssh.utils import list_results, check_os, exe_cmd, unsupported_linux
 from cmssh.cmsfs import dataset_info, block_info, file_info, site_info, run_info
 from cmssh.cmsfs import CMSFS, apply_filter, validate_dbs_instance
 from cmssh.cms_urls import dbs_instances, tc_url
@@ -112,20 +113,6 @@ def cms_releases(_arg):
         for rel in os.listdir(rdir):
             print rel
 
-def cms_install(arg):
-    """
-    Install given CMSSW release
-    """
-    arg = arg.strip()
-    print "Searching for %s" % arg
-    subprocess.call('apt-cache search %s | grep -v -i fwlite' % arg, shell=True)
-    if  arg.lower().find('patch') != -1:
-        print "Installing cms+cmssw-patch+%s" % arg
-        execute('apt-get', 'install cms+cmssw-patch+%s' % arg)
-    else:
-        print "Installing cms+cmssw+%s" % arg
-        execute('apt-get', 'install cms+cmssw+%s' % arg)
-
 def cms_root(arg):
     """
     Run ROOT command
@@ -208,6 +195,96 @@ def verbose(arg):
             ip.debug = True
 
 # CMSSW commands
+def bootstrap(arch):
+    "Bootstrap new architecture"
+    os.environ['SCRAM_ARCH'] = arch
+    cmd = 'sh -x $VO_CMS_SW_DIR/bootstrap.sh setup -path $VO_CMS_SW_DIR -arch $SCRAM_ARCH'
+    if  unsupported_linux():
+        cmd += ' -unsupported_distribution_hack'
+    sdir  = os.path.join(os.environ['CMSSH_ROOT'], 'CMSSW')
+    debug = 0
+    exe_cmd(sdir, cmd, debug, 'Bootstrap %s ...' % arch)
+    cmd   = 'source `find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt -name init.sh | tail -1`; '
+    cmd  += 'apt-get install external+fakesystem+1.0; '
+    cmd  += 'apt-get update; '
+    exe_cmd(sdir, cmd, debug, 'Initialize %s apt repository ...' % arch)
+
+def get_release_arch(rel):
+    "Return architecture for given CMSSW release"
+    args = {'release': rel}
+    releases = get_data(tc_url(), 'py_getReleaseArchitectures', args)
+    output = []
+    for item in releases:
+        rel_arch = item[0]
+        status   = item[1]
+        if  check_os(rel_arch):
+            output.append((rel_arch, status))
+    return output
+
+def check_release_arch(rel):
+    "Check release/architecture"
+    # check if given release name is installed on user system
+    rel_dir = '%s/cms/cmssw/%s' % (os.environ['SCRAM_ARCH'], rel)
+    if  os.path.isdir(os.path.join(os.environ['VO_CMS_SW_DIR'], rel_dir)):
+        return 'ok'
+
+    output = []
+    for arch, status in get_release_arch(rel):
+        if  not status:
+            msg = '%s release is not officially supported under %s' \
+                % (rel, arch)
+            print_warning(msg)
+        if  arch != os.environ['SCRAM_ARCH']:
+            msg = 'Your SCRAM_ARCH=%s, while found arch=%s' \
+                % (os.environ['SCRAM_ARCH'], arch)
+            print_warning(msg)
+        msg = '\n%s/%s is not installed within cmssh, proceed [y/N] ' \
+                % (rel, arch)
+        val = raw_input(msg)
+        if  val.lower() == 'y' or val.lower() == 'yes':
+            if  not os.path.isdir(os.path.join(os.environ['VO_CMS_SW_DIR'], arch)):
+                bootstrap(arch)
+            return 'ok'
+        else:
+            msg = '%s/%s rejected by user' % (rel, arch)
+            output.append(msg)
+
+    if  output:
+        return ', '.join(output)
+
+    return 'no match'
+
+def cms_install(arg):
+    """
+    Install given CMSSW release
+    """
+    pat = '^CMSSW(_[0-9]){3}$|^CMSSW(_[0-9]){3}_patch[0-9]+$|^CMSSW(_[0-9]){3}_pre[0-9]+$'
+    pat = re.compile(pat)
+    if  not pat.match(arg):
+        msg  = 'Fail to validate release name "%s"' % arg
+        print_error(msg)
+        msg  = 'Please check the you provide correct release name,'
+        msg += ' e.g. CMSSW_X_Y_Z<_patchN>'
+        print msg
+        return
+
+    # check if given release/architecture is in place
+    status = check_release_arch(arg)
+    if  status != 'ok':
+        msg = '\nCheck release architecture status: %s' % status
+        print msg
+        return
+
+    arg = arg.strip()
+    print "Searching for %s" % arg
+    subprocess.call('apt-cache search %s | grep -v -i fwlite' % arg, shell=True)
+    if  arg.lower().find('patch') != -1:
+        print "Installing cms+cmssw-patch+%s ..." % arg
+        execute('apt-get', 'install cms+cmssw-patch+%s' % arg)
+    else:
+        print "Installing cms+cmssw+%s ..." % arg
+        execute('apt-get', 'install cms+cmssw+%s' % arg)
+
 def cmsrel(rel):
     """
     Switch to given CMSSW release
@@ -228,6 +305,8 @@ def cmsrel(rel):
         msg += 'Use ' + msg_green('install %s' % rel) + ' command to install given release.'
         print msg
         return
+
+    # switch to given release
     cmssw_dir = os.environ.get('CMSSW_RELEASES', os.getcwd())
     if  not os.path.isdir(cmssw_dir):
         os.makedirs(cmssw_dir)
@@ -312,9 +391,11 @@ def cms_help_msg():
         + ' list available CMSSW releases\n'
     msg += PM.msg_green('install     ') \
         + ' install CMSSW release, e.g. install CMSSW_5_0_0\n'
-    msg += PM.msg_green('scram       ') + ' CMSSW scram command\n'
     msg += PM.msg_green('cmsrel      ') \
         + ' switch to given CMSSW release and setup its environment\n'
+    msg += PM.msg_green('arch        ') \
+        + ' show or switch to given CMSSW architecture\n'
+    msg += PM.msg_green('scram       ') + ' CMSSW scram command\n'
     msg += PM.msg_green('cmsRun      ') \
         + ' cmsRun command for release in question\n'
     msg += '\nAvailable GRID commands: <cmd> either grid or voms\n'
@@ -542,7 +623,15 @@ def cms_architectures():
 def cms_arch(arg=None):
     "Show and set CMSSW architecture"
     if  not arg:
-        print "CMSSW architecture SCRAM_ARCH=%s" % os.environ['SCRAM_ARCH']
+        print "Current architecture: %s" % os.environ['SCRAM_ARCH']
+        archs = []
+        for name in os.listdir(os.environ['VO_CMS_SW_DIR']):
+            if  check_os(name):
+                archs.append(name)
+        if  archs:
+            print '\nInstalled architectures:'
+            for item in archs:
+                print item
     else:
         cms_archs = cms_architectures()
         if  arg not in cms_archs:
