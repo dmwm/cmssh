@@ -238,3 +238,45 @@ def get_children(elem, event, row, key, notations):
         if  event == 'end':
             child.clear()
 
+def osparameters():
+    "Return OS parameters as expected in CMS, osx/slc and ia32/amd64"
+    osname = os.uname()[0].replace('Darwin', 'osx').replace('Linux', 'slc5')
+    osarch = os.uname()[-1].replace('x86_64', 'amd64')
+    for intel in ['i386', 'i486', 'i586', 'i686']:
+        osarch = osarch.replace(intel, 'ia32')
+    return osname, osarch
+
+def check_os(rel_arch):
+    "Check that given release architecture fits underlying OS"
+    osname, osarch = osparameters()
+    if  rel_arch.find(osname) != -1 and rel_arch.find(osarch) != -1:
+        return True
+    return False
+
+def unsupported_linux():
+    "Check if underlying OS is unsupported Linux platform"
+    if  os.uname()[0].lower() == 'linux':
+        redhat = '/etc/redhat-release'
+        if  os.path.isfile(redhat):
+            with open(redhat, 'r') as release:
+                content = release.read()
+                if  content.find('Scientific Linux') != -1 or \
+                    content.find('Red Hat') != -1 or \
+                    content.find('Fermi') != -1:
+                    return True
+    return False
+
+def exe_cmd(idir, cmd, debug, msg=None):
+    """Execute given command in a given dir"""
+    if  msg:
+        print msg
+    os.chdir(idir)
+    if  debug:
+        print "cd %s\n%s" % (os.getcwd(), cmd)
+    with open('install.log', 'w') as logstream:
+        try:
+            retcode = subprocess.call(cmd, shell=True, stdout=logstream, stderr=logstream)
+            if  retcode < 0:
+                print >> sys.stderr, "Child was terminated by signal", -retcode
+        except OSError, err:
+            print >> sys.stderr, "Execution failed:", err
