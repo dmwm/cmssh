@@ -197,7 +197,6 @@ def verbose(arg):
 # CMSSW commands
 def bootstrap(arch):
     "Bootstrap new architecture"
-    os.environ['SCRAM_ARCH'] = arch
     cmd = 'sh -x $VO_CMS_SW_DIR/bootstrap.sh setup -path $VO_CMS_SW_DIR -arch $SCRAM_ARCH'
     if  unsupported_linux():
         cmd += ' -unsupported_distribution_hack'
@@ -242,6 +241,7 @@ def check_release_arch(rel):
                 % (rel, arch)
         val = raw_input(msg)
         if  val.lower() == 'y' or val.lower() == 'yes':
+            os.environ['SCRAM_ARCH'] = arch
             if  not os.path.isdir(os.path.join(os.environ['VO_CMS_SW_DIR'], arch)):
                 bootstrap(arch)
             return 'ok'
@@ -253,6 +253,15 @@ def check_release_arch(rel):
         return ', '.join(output)
 
     return 'no match'
+
+def get_apt_init(arch):
+    "Return proper apt init.sh for given architecture"
+    apt_dir = os.path.join(os.environ['VO_CMS_SW_DIR'], '%s/external/apt' % arch)
+    dirs = os.listdir(apt_dir)
+    dirs.sort()
+    name = 'etc/profile.d/init.sh'
+    script = os.path.join(os.path.join(apt_dir, dirs[-1]), name)
+    return script
 
 def cms_install(arg):
     """
@@ -277,13 +286,16 @@ def cms_install(arg):
 
     arg = arg.strip()
     print "Searching for %s" % arg
-    subprocess.call('apt-cache search %s | grep -v -i fwlite' % arg, shell=True)
+    script = get_apt_init(os.environ['SCRAM_ARCH'])
+    cmd = 'source %s; apt-cache search %s | grep -v -i fwlite' % (script, arg)
+    subprocess.call(cmd, shell=True)
     if  arg.lower().find('patch') != -1:
         print "Installing cms+cmssw-patch+%s ..." % arg
-        execute('apt-get', 'install cms+cmssw-patch+%s' % arg)
+        cmd = 'source %s; apt-get install cms+cmssw-patch+%s' % (script, arg)
     else:
         print "Installing cms+cmssw+%s ..." % arg
-        execute('apt-get', 'install cms+cmssw+%s' % arg)
+        cmd = 'source %s; apt-get install cms+cmssw+%s' % (script, arg)
+    subprocess.call(cmd, shell=True)
 
 def cmsrel(rel):
     """
