@@ -16,6 +16,7 @@ from cmssh.iprint import print_red, print_blue, msg_red, msg_green, PrintManager
 from cmssh.iprint import print_warning, print_error, print_success
 from cmssh.filemover import copy_lfn, rm_lfn, mkdir, rmdir, list_se, dqueue
 from cmssh.utils import list_results, check_os, exe_cmd, unsupported_linux
+from cmssh.utils import osparameters
 from cmssh.cmsfs import dataset_info, block_info, file_info, site_info, run_info
 from cmssh.cmsfs import CMSFS, apply_filter, validate_dbs_instance
 from cmssh.cms_urls import dbs_instances, tc_url
@@ -108,10 +109,16 @@ def cms_releases(_arg):
     cmd += "| awk '{print $1}' | sed -e 's/cms+cmssw+//g' -e 's/cms+cmssw-patch+//g'"
     subprocess.call(cmd, shell=True)
     print "\nInstalled releases:"
-    rdir = os.path.join(os.environ['CMSSH_ROOT'], 'Releases')
-    if  os.path.isdir(rdir):
-        for rel in os.listdir(rdir):
-            print rel
+    osname, osarch = osparameters()
+    for idir in os.listdir(os.environ['VO_CMS_SW_DIR']):
+        if  idir.find(osarch) != -1:
+            rdir = os.path.join(os.environ['VO_CMS_SW_DIR'], '%s/cms/cmssw' % idir)
+            for rel in os.listdir(rdir):
+                print '%s/%s' % (rel, idir)
+#    rdir = os.path.join(os.environ['CMSSH_ROOT'], 'Releases')
+#    if  os.path.isdir(rdir):
+#        for rel in os.listdir(rdir):
+#            print rel
 
 def cms_root(arg):
     """
@@ -263,14 +270,15 @@ def get_apt_init(arch):
     script = os.path.join(os.path.join(apt_dir, dirs[-1]), name)
     return script
 
-def cms_install(arg):
+def cms_install(rel):
     """
     Install given CMSSW release
     """
+    rel = rel.strip()
     pat = '^CMSSW(_[0-9]){3}$|^CMSSW(_[0-9]){3}_patch[0-9]+$|^CMSSW(_[0-9]){3}_pre[0-9]+$'
     pat = re.compile(pat)
-    if  not pat.match(arg):
-        msg  = 'Fail to validate release name "%s"' % arg
+    if  not pat.match(rel):
+        msg  = 'Fail to validate release name "%s"' % rel
         print_error(msg)
         msg  = 'Please check the you provide correct release name,'
         msg += ' e.g. CMSSW_X_Y_Z<_patchN>'
@@ -278,24 +286,25 @@ def cms_install(arg):
         return
 
     # check if given release/architecture is in place
-    status = check_release_arch(arg)
+    status = check_release_arch(rel)
     if  status != 'ok':
         msg = '\nCheck release architecture status: %s' % status
         print msg
         return
 
-    arg = arg.strip()
-    print "Searching for %s" % arg
+    print "Searching for %s" % rel
     script = get_apt_init(os.environ['SCRAM_ARCH'])
-    cmd = 'source %s; apt-cache search %s | grep -v -i fwlite' % (script, arg)
+    cmd = 'source %s; apt-cache search %s | grep -v -i fwlite' % (script, rel)
     subprocess.call(cmd, shell=True)
-    if  arg.lower().find('patch') != -1:
-        print "Installing cms+cmssw-patch+%s ..." % arg
-        cmd = 'source %s; apt-get install cms+cmssw-patch+%s' % (script, arg)
+    if  rel.lower().find('patch') != -1:
+        print "Installing cms+cmssw-patch+%s ..." % rel
+        cmd = 'source %s; apt-get install cms+cmssw-patch+%s' % (script, rel)
     else:
-        print "Installing cms+cmssw+%s ..." % arg
-        cmd = 'source %s; apt-get install cms+cmssw+%s' % (script, arg)
+        print "Installing cms+cmssw+%s ..." % rel
+        cmd = 'source %s; apt-get install cms+cmssw+%s' % (script, rel)
     subprocess.call(cmd, shell=True)
+    print "Create user area for %s release ..." % rel
+    cmsrel(rel)
 
 def cmsrel(rel):
     """
@@ -629,7 +638,7 @@ def cms_architectures():
     # with new API which will return list of architectures
     args  = {'release':'CMSSW_6_0_X'}
     res   = get_data(tc_url(), 'py_getReleaseArchitectures', args)
-    archs = [r[0] for r in res]
+    archs = [r[0] for r in res] + ['osx106_amd64_gcc462']
     return archs
 
 def cms_arch(arg=None):
