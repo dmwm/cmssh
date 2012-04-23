@@ -129,6 +129,8 @@ class MyOptionParser:
             dest="install_dir", help="install directory")
         self.parser.add_option("-i", "--install", action="store_true",
             dest="install", help="install command")
+        self.parser.add_option("--dev", action="store_true",
+            dest="master", help="get cmssh code from development branch")
         drivers = ', '.join(available_architectures())
         self.parser.add_option("--arch", action="store",
             type="string", default=None, dest="arch",
@@ -490,8 +492,10 @@ python setup.py install --prefix=$idir
         exe_cmd(path, cmd, debug)
     except:
         pass
-#    url = 'http://github.com/vkuznet/cmssh/tarball/master/'
-    url = 'http://github.com/vkuznet/cmssh/tarball/v0.15/'
+    if  opts.master:
+        url = 'http://github.com/vkuznet/cmssh/tarball/master/'
+    else:
+        url = 'http://github.com/vkuznet/cmssh/tarball/v0.15/'
     get_file(url, 'cmssh.tar.gz', path, debug, check=False)
     cmd = 'mv vkuznet-cmssh* %s/cmssh' % path
     exe_cmd(path, cmd, debug)
