@@ -534,6 +534,7 @@ python setup.py install --prefix=$idir
         msg += 'source $matplotlib_init;source $numpy_init;source $lapack_init;source $png_init\n'
         msg += 'export DYLD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib\n'
         msg += 'export LD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib\n'
+        msg += 'export PATH=$PATH:$VO_CMS_SW_DIR/bin\n'
         msg += 'export PATH=$PATH:$CMSSH_ROOT/globus/bin\n'
         msg += 'export PATH=$PATH:$CMSSH_ROOT/glite/bin\n'
         msg += 'export PATH=$PATH:$CMSSH_ROOT/srmclient2/bin\n'
