@@ -42,12 +42,8 @@ def execute(cmd, args=''):
     dyld = os.environ.get('DYLD_LIBRARY_PATH', None)
     if  dyld:
         os.environ['DYLD_LIBRARY_PATH'] = ''
-    if  args.find("|") != -1:
-        cmd_opts = '%s %s' % (cmd, args.strip())
-        subprocess.call(cmd_opts, shell=True)
-    else:
-        cmd_opts = [cmd] + args.strip().split()
-        subprocess.call(cmd_opts)
+    cmd_opts = '%s %s' % (cmd, args.strip())
+    subprocess.call(cmd_opts, shell=True)
     if  dyld:
         os.environ['DYLD_LIBRARY_PATH'] = dyld
 
@@ -318,14 +314,22 @@ def cmsrel(rel):
         for rel in dirs:
             print rel
         return
+
     # check if given release name is installed on user system
-    rel_dir = '%s/cms/cmssw/%s' % (os.environ['SCRAM_ARCH'], rel)
-    if  not os.path.isdir(os.path.join(os.environ['VO_CMS_SW_DIR'], rel_dir)):
+    rel_arch = None
+    for arch in cms_architectures():
+        rel_dir = '%s/cms/cmssw/%s' % (arch, rel)
+        if  os.path.isdir(os.path.join(os.environ['VO_CMS_SW_DIR'], rel_dir)):
+            rel_arch = arch
+    if  not rel_arch:
         msg  = msg_red('Release %s is not yet installed on your system.\n' % rel)
         msg += 'Use ' + msg_green('releases') + ' command to list available releases.\n'
         msg += 'Use ' + msg_green('install %s' % rel) + ' command to install given release.'
         print msg
         return
+
+    # set release architecture
+    os.environ['SCRAM_ARCH'] = rel_arch
 
     # switch to given release
     cmssw_dir = os.environ.get('CMSSW_RELEASES', os.getcwd())
@@ -337,17 +341,6 @@ def cmsrel(rel):
         os.chdir(cmssw_dir)
         subprocess.call("scramv1 project CMSSW %s" % rel, shell=True)
         os.chdir(os.path.join(rel, 'src'))
-    vdir = os.environ['VO_CMS_SW_DIR']
-    arch = os.environ['SCRAM_ARCH']
-    cmd = "eval `scramv1 runtime -sh`; env"
-    proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-    for line in proc.stdout.read().split('\n'):
-        if  line and line.find('=') != -1 and line[0] != '_':
-            key, val = line.replace('\n', '').split('=')
-            os.environ[key] = val
-    path = '%s/%s/cms/cmssw/%s/external/%s/lib:' % (vdir, arch, rel, arch)
-    if  arch.find('osx') != -1:
-        os.environ['DYLD_LIBRARY_PATH'] = path + os.environ['DYLD_LIBRARY_PATH']
     print "%s is ready, cwd: %s" % (rel, os.getcwd())
 
 def cmsrun(arg):
@@ -356,15 +349,15 @@ def cmsrun(arg):
     """
     vdir = os.environ.get('VO_CMS_SW_DIR', None)
     arch = os.environ.get('SCRAM_ARCH', None)
-    base = os.environ.get('CMSSW_RELEASE_BASE', None)
-    if  not vdir or not arch or not base:
+    if  not vdir or not arch:
         msg  = PM.msg_red('Unable to identify CMSSW environment, please run first: ')
         msg += PM.msg_blue('cmsrel <rel>\n')
         releases = os.listdir(os.environ['CMSSW_RELEASES'])
         msg += '\nInstalled releases: ' + PM.msg_green(', '.join(releases))
         print msg
         return
-    execute("cmsRun", arg)
+    cmd = "eval `scramv1 runtime -sh`; cmsRun"
+    execute(cmd, arg)
 
 def dbs_instance(arg=None):
     """
@@ -635,11 +628,12 @@ def cms_dqueue(arg=None):
 def cms_architectures():
     "Return list of supported CMS architectures"
     # TODO: I need to replace py_getReleaseArchitectures
-    # with new API which will return list of architectures
+    # with new API which will return list of all architectures
     args  = {'release':'CMSSW_6_0_X'}
     res   = get_data(tc_url(), 'py_getReleaseArchitectures', args)
-    archs = [r[0] for r in res] + ['osx106_amd64_gcc462']
-    return archs
+    archs = [r[0] for r in res] \
+        + ['osx106_amd64_gcc421', 'osx106_amd64_gcc461', 'osx106_amd64_gcc462']
+    return list(set(archs))
 
 def cms_arch(arg=None):
     "Show and set CMSSW architecture"
