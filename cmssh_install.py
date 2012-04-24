@@ -360,17 +360,18 @@ def main():
     if  not is_installed(url, path):
         get_file(url, 'voms-essentials.tar.gz', path, debug)
 
-    print "Installing expat"
-    ver = '2.0.1'
-    url = 'http://sourceforge.net/projects/expat/files/expat/2.0.1/expat-%s.tar.gz/download?use_mirror=iweb' % ver
-    if  not is_installed(url, path):
-        get_file(url, 'expat-%s.tar.gz' % ver, path, debug)
-        if platform == 'Darwin':
-            cmd = 'CFLAGS=-m32 ./configure --prefix=%s/install; make; make install' % path
-        else:
-            cmd = './configure --prefix=%s/install; make; make install' % path
-        os.chdir(os.path.join(path, 'expat-%s' % ver))
-        exe_cmd(os.path.join(path, 'expat-%s' % ver), cmd, debug)
+    if  platform == 'Darwin':
+        print "Installing expat"
+        ver = '2.0.1'
+        url = 'http://sourceforge.net/projects/expat/files/expat/2.0.1/expat-%s.tar.gz/download?use_mirror=iweb' % ver
+        if  not is_installed(url, path):
+            get_file(url, 'expat-%s.tar.gz' % ver, path, debug)
+            if platform == 'Darwin':
+                cmd = 'CFLAGS=-m32 ./configure --prefix=%s/install; make; make install' % path
+            else:
+                cmd = './configure --prefix=%s/install; make; make install' % path
+            os.chdir(os.path.join(path, 'expat-%s' % ver))
+            exe_cmd(os.path.join(path, 'expat-%s' % ver), cmd, debug)
 
     print "Installing PythonUtilities"
     url = "http://cmssw.cvs.cern.ch/cgi-bin/cmssw.cgi/CMSSW/FWCore/PythonUtilities.tar.gz?view=tar"
@@ -437,11 +438,11 @@ def main():
         exe_cmd(path, cmd, debug)
 
     print "Installing IPython"
-    cmd = '%s/install/bin/pip install --upgrade ipython' % path
+    cmd = cms_env + '%s/install/bin/pip install --upgrade ipython' % path
     exe_cmd(path, cmd, debug)
 
     print "Installing Routes"
-    cmd = '%s/install/bin/pip install --upgrade Routes' % path
+    cmd = cms_env + '%s/install/bin/pip install --upgrade Routes' % path
     exe_cmd(path, cmd, debug)
 
     print "Installing readline"
@@ -473,11 +474,11 @@ python setup.py install --prefix=$idir
         exe_cmd(os.path.join(path, 'readline-%s' % ver), cmd, debug)
 
     print "Installing httplib2"
-    cmd = '%s/install/bin/pip install --upgrade httplib2' % path
+    cmd = cms_env + '%s/install/bin/pip install --upgrade httplib2' % path
     exe_cmd(path, cmd, debug)
 
     print "Installing paramiko"
-    cmd = '%s/install/bin/pip install --upgrade paramiko' % path
+    cmd = cms_env + '%s/install/bin/pip install --upgrade paramiko' % path
     exe_cmd(path, cmd, debug)
 
     print "Installing cmssh"
@@ -537,7 +538,7 @@ python setup.py install --prefix=$idir
         msg += 'source $xz_init;source $pcre_init;source $root_init;\n'
         msg += 'source $matplotlib_init;source $numpy_init;source $lapack_init;source $png_init\n'
         msg += 'export DYLD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib\n'
-        msg += 'export LD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib\n'
+        msg += 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib\n'
         msg += 'export PATH=$PATH:$VO_CMS_SW_DIR/bin\n'
         msg += 'export PATH=$PATH:$CMSSH_ROOT/globus/bin\n'
         msg += 'export PATH=$PATH:$CMSSH_ROOT/glite/bin\n'
