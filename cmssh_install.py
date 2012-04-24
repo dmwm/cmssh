@@ -226,6 +226,7 @@ def check_system(unsupported):
             msg += 're-configure /bin/sh to point to /bin/bash.\n'
             msg += 'On Ubuntu, if you have /bin/sh -> /bin/dash, just do:\n'
             msg += 'sudo dpkg-reconfigure dash'
+            print msg
             sys.exit(1)
 
 def main():
@@ -508,9 +509,19 @@ python setup.py install --prefix=$idir
         os.makedirs(ndir)
     except:
         pass
-    cmd  = 'cp %s/cmssh/src/config/matplotlibrc' % path
-    cmd += ' %s/install/lib/python%s/site-packages/matplotlib/mpl-data/' % (path, py_ver)
-    exe_cmd(path, cmd, debug)
+#    cmd  = 'cp %s/cmssh/src/config/matplotlibrc' % path
+#    cmd += ' %s/install/lib/python%s/site-packages/matplotlib/mpl-data/' % (path, py_ver)
+#    exe_cmd(path, cmd, debug)
+    fin  = '%s/cmssh/src/config/matplotlibrc' % path
+    fout = '%s/install/lib/python%s/site-packages/matplotlib/mpl-data/matplotlibrc' % (path, py_ver)
+    with open(fout, 'w') as output:
+        with open(fin, 'r') as config:
+            for line in config.readlines():
+                if  line.find('backend : MacOSX') != -1:
+                    if  platform == 'Linux':
+                        output.write('#backend : GTK')
+                else:
+                    output.write(line)
 
     print "Create configuration"
     os.chdir(path)
