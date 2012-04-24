@@ -109,8 +109,9 @@ def cms_releases(_arg):
     for idir in os.listdir(os.environ['VO_CMS_SW_DIR']):
         if  idir.find(osarch) != -1:
             rdir = os.path.join(os.environ['VO_CMS_SW_DIR'], '%s/cms/cmssw' % idir)
-            for rel in os.listdir(rdir):
-                print '%s/%s' % (rel, idir)
+            if  os.path.isdir(rdir):
+                for rel in os.listdir(rdir):
+                    print '%s/%s' % (rel, idir)
 #    rdir = os.path.join(os.environ['CMSSH_ROOT'], 'Releases')
 #    if  os.path.isdir(rdir):
 #        for rel in os.listdir(rdir):
@@ -255,6 +256,9 @@ def check_release_arch(rel):
     if  output:
         return ', '.join(output)
 
+    osname, osarch = osparameters()
+    if  osname == 'osx' and osarch == 'ia32':
+        return 'OSX/ia32 is not supported in CMSSW'
     return 'no match'
 
 def get_apt_init(arch):
