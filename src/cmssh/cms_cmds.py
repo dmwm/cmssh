@@ -285,6 +285,13 @@ def cms_install(rel):
         print msg
         return
 
+    # check if we have stand-alone installation
+    if  os.path.islink(os.environ['VO_CMS_SW_DIR']):
+        msg  = '\nYou are not allowed to install new release, '
+        msg += 'since cmssh was installed with system CMSSW install area'
+        print msg
+        return
+
     # check if given release/architecture is in place
     status = check_release_arch(rel)
     if  status != 'ok':
@@ -637,6 +644,9 @@ def cms_architectures():
     res   = get_data(tc_url(), 'py_getReleaseArchitectures', args)
     archs = [r[0] for r in res] \
         + ['osx106_amd64_gcc421', 'osx106_amd64_gcc461', 'osx106_amd64_gcc462']
+    for name in os.listdir(os.environ['VO_CMS_SW_DIR']):
+        if  check_os(name):
+            archs.append(name)
     return list(set(archs))
 
 def cms_arch(arg=None):
