@@ -68,14 +68,24 @@ class Magic(object):
 
 def installed_releases():
     "Print a list of releases installed on a system"
-    print "\nInstalled releases:"
     osname, osarch = osparameters()
+    releases = []
     for idir in os.listdir(os.environ['VO_CMS_SW_DIR']):
         if  idir.find(osarch) != -1:
             rdir = os.path.join(os.environ['VO_CMS_SW_DIR'], '%s/cms/cmssw' % idir)
             if  os.path.isdir(rdir):
                 for rel in os.listdir(rdir):
-                    print '%s/%s' % (rel, idir)
+                    releases.append('%s/%s' % (rel, idir))
+    if  releases:
+        releases.sort()
+        print "\nInstalled releases:"
+        for rel in releases:
+            print rel
+    else:
+        msg  = "\nYou don't have yet CMSSW release installed on your system."
+        msg += "\nPlease use " + msg_green('install CMSSW_X_Y_Z') \
+                + ' command to install one'
+        print msg
 
 def cms_releases(_arg):
     """List available CMS releases"""
