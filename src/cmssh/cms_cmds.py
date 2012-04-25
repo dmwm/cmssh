@@ -540,9 +540,10 @@ def cms_ls(arg):
     if  not arg:
         arg = '.'
     opts = options(arg)
+    path = '/'.join(arg.split('/')[:-1])
     if  opts:
         arg = arg.strip().replace(''.join(opts), '').strip()
-    if  os.path.exists(arg) or not arg:
+    if  os.path.exists(arg) or not arg  or (path and os.path.exists(path)):
         prc = subprocess.Popen("ls " + " " + ''.join(opts) + " " + arg, shell=True)
         sts = os.waitpid(prc.pid, 0)[1]
     else:
