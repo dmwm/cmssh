@@ -194,12 +194,21 @@ for r in results():
 <p><code>releases</code>  </p>
 
 <h3>install your favorite release</h3>
+If you install cmssh on your system withon --cmssw option, you'll be
+able to manually install CMSSW releases by using the following command
 
-<p><code>cmsrel CMSSW_5_X_Y</code></p>
+<p><code>install CMSSW_X_Y_Z</code></p>
+
+Once CMSSW release is installed in your shell, you can simply invoke your favorite
+release as simple as
+
+<p><code>cmsrel CMSSW_X_Y_Z</code></p>
+
+This command will setup release area and you'll be ready to use it.
 
 <h3>run cms job</h3>
-Once CMSSW release is installed in your shell, you can simply invoke your favorite
-cms run job
+Once CMSSW release is available in your shell (cmsrel CMSSW_X_Y_Z),
+you can run your cms run job as following
 
 <p><code>cmsRun runevt_cfg.py</code></p>
 
