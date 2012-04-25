@@ -397,18 +397,14 @@ def main():
     if  not is_installed(url, path):
         get_file(url, 'voms-essentials.tar.gz', path, debug)
 
-    if  platform == 'Darwin':
-        print "Installing expat"
-        ver = '2.0.1'
-        url = 'http://sourceforge.net/projects/expat/files/expat/2.0.1/expat-%s.tar.gz/download?use_mirror=iweb' % ver
-        if  not is_installed(url, path):
-            get_file(url, 'expat-%s.tar.gz' % ver, path, debug)
-            if platform == 'Darwin':
-                cmd = 'CFLAGS=-m32 ./configure --prefix=%s/install; make; make install' % path
-            else:
-                cmd = './configure --prefix=%s/install; make; make install' % path
-            os.chdir(os.path.join(path, 'expat-%s' % ver))
-            exe_cmd(os.path.join(path, 'expat-%s' % ver), cmd, debug)
+    print "Installing expat"
+    ver = '2.0.1'
+    url = 'http://sourceforge.net/projects/expat/files/expat/2.0.1/expat-%s.tar.gz/download?use_mirror=iweb' % ver
+    if  not is_installed(url, path):
+        get_file(url, 'expat-%s.tar.gz' % ver, path, debug)
+        cmd = 'CFLAGS=-m32 ./configure --prefix=%s/install; make; make install' % path
+        os.chdir(os.path.join(path, 'expat-%s' % ver))
+        exe_cmd(os.path.join(path, 'expat-%s' % ver), cmd, debug)
 
     print "Installing PythonUtilities"
     url = "http://cmssw.cvs.cern.ch/cgi-bin/cmssw.cgi/CMSSW/FWCore/PythonUtilities.tar.gz?view=tar"
@@ -584,11 +580,10 @@ python setup.py install --prefix=$idir
         msg += 'source $matplotlib_init;source $numpy_init;source $lapack_init;source $png_init\n'
         msg += 'export DYLD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib\n'
         msg += 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib\n'
-        msg += 'export PATH=$PATH:$VO_CMS_SW_DIR/bin\n'
+        msg += 'export PATH=$VO_CMS_SW_DIR/bin:$CMSSH_ROOT/install/bin:$PATH\n'
         msg += 'export PATH=$PATH:$CMSSH_ROOT/globus/bin\n'
         msg += 'export PATH=$PATH:$CMSSH_ROOT/glite/bin\n'
         msg += 'export PATH=$PATH:$CMSSH_ROOT/srmclient2/bin\n'
-        msg += 'export PATH=$PATH:$CMSSH_ROOT/install/bin\n'
         msg += 'export PATH=$PATH:$CMSSH_ROOT/bin\n'
         msg += 'export PATH=$PATH:$CMSSH_ROOT/lcg/bin\n'
         msg += 'export PATH=$PATH:$CMSSH_ROOT/CRABClient/bin\n'
@@ -597,10 +592,8 @@ python setup.py install --prefix=$idir
         msg += 'export PYTHONPATH=$PYTHONPATH:$CMSSH_ROOT\n'
         msg += 'export PYTHONPATH=$PYTHONPATH:$CMSSH_ROOT/CRABClient/src/python\n'
         msg += 'export PYTHONPATH=$PYTHONPATH:$CMSSH_ROOT/WMCore/src/python\n'
-#        msg += 'export PYTHONPATH=$PYTHONPATH:$PWD/soft/install/lib/python%s/site-packages\n' % py_ver
         msg += 'export PYTHONPATH=$PWD/soft/install/lib/python%s/site-packages:$PYTHONPATH\n' % py_ver
         msg += 'export DBS_INSTANCE=cms_dbs_prod_global\n'
-#        msg += 'export DEFAULT_ROOT=$CMSSH_ROOT/root\n'
         msg += 'export LCG_GFAL_INFOSYS=lcg-bdii.cern.ch:2170\n'
         msg += 'export VOMS_USERCONF=$CMSSH_ROOT/glite/etc/vomses\n'
         msg += 'export VOMS_LOCATION=$CMSSH_ROOT/glite\n'
