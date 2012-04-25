@@ -55,9 +55,8 @@ A brief introduction of cmssh capabilities are outlined in this
 </p>
 
 <h1>Installation</h1>
-To install cmssh you only need its installer script and python on your system.
-Simply download
-<a href="https://raw.github.com/vkuznet/cmssh/v0.16/cmssh_install.py">cmssh installer</a>
+To install cmssh please download installer
+<a href="https://raw.github.com/vkuznet/cmssh/v0.16/cmssh_install.py">installer script</a>
 and run it as
 <p>
 <code>
@@ -71,6 +70,9 @@ you'll run it as
 python cmssh_install.py --install --dir=$PWD
 </code>
 </p>
+Please note that python should be version 2.6 or above (but not python 3 yet) and
+you'll need to have your JAVA_HOME environment set, since cmssh uses GRID middleware
+based on java. But don't worry the install script will prompt you about that.
 
 <h3>Installtion within CMSSW environment</h3>
 If you want to install cmssh on a system with already existing CMSSW environment
