@@ -88,33 +88,33 @@ def cms_releases(_arg):
     else:
         raise Exception('Unsupported platform %s' % os.uname())
 
-    active_releases = get_data(tc_url(), 'py_getActiveReleases')
-    active = {}
-    non_active = {}
-    for rel in active_releases:
-        args = {'release': rel}
-        releases = get_data(tc_url(), 'py_getReleaseArchitectures', args)
-        for item in releases:
-            rel_arch = item[0]
-            status   = item[1]
-            if  rel_arch.find(arch) != -1:
-                if  status:
-                    active.setdefault(rel_arch, []).append(rel)
-                else:
-                    non_active.setdefault(rel_arch, []).append(rel)
-    if  active:
-        print "Supported releases for %s:" % platform.replace('Darwin', 'Mac OS X')
-        for arch, releases in active.items():
-            print '%s: %s' % (arch, ', '.join(releases))
-    if  non_active:
-        print "Un-supported releases for %s:" % platform.replace('Darwin', 'Mac OS X')
-        for arch, releases in non_active.items():
-            print '%s: %s' % (arch, ', '.join(releases))
+#    active_releases = get_data(tc_url(), 'py_getActiveReleases')
+#    active = {}
+#    non_active = {}
+#    for rel in active_releases:
+#        args = {'release': rel}
+#        releases = get_data(tc_url(), 'py_getReleaseArchitectures', args)
+#        for item in releases:
+#            rel_arch = item[0]
+#            status   = item[1]
+#            if  rel_arch.find(arch) != -1:
+#                if  status:
+#                    active.setdefault(rel_arch, []).append(rel)
+#                else:
+#                    non_active.setdefault(rel_arch, []).append(rel)
+#    if  active:
+#        print "Supported releases for %s:" % platform.replace('Darwin', 'Mac OS X')
+#        for arch, releases in active.items():
+#            print '%s: %s' % (arch, ', '.join(releases))
+#    if  non_active:
+#        print "Un-supported releases for %s:" % platform.replace('Darwin', 'Mac OS X')
+#        for arch, releases in non_active.items():
+#            print '%s: %s' % (arch, ', '.join(releases))
 
-    print "\nAvailable CMS releases for %s:" % os.environ['SCRAM_ARCH']
-    cmd  = "apt-cache search CMSSW | grep CMSSW | grep -v -i fwlite"
-    cmd += "| awk '{print $1}' | sed -e 's/cms+cmssw+//g' -e 's/cms+cmssw-patch+//g'"
-    subprocess.call(cmd, shell=True)
+#    print "\nAvailable CMS releases for %s:" % os.environ['SCRAM_ARCH']
+#    cmd  = "apt-cache search CMSSW | grep CMSSW | grep -v -i fwlite"
+#    cmd += "| awk '{print $1}' | sed -e 's/cms+cmssw+//g' -e 's/cms+cmssw-patch+//g'"
+#    subprocess.call(cmd, shell=True)
     installed_releases()
 
 def cms_root(arg):
