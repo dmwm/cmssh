@@ -17,7 +17,7 @@ from   types import GeneratorType, InstanceType
 import xml.etree.cElementTree as ET
 
 # cmssh modules
-from   cmssh.iprint import format_dict
+from   cmssh.iprint import format_dict, print_warning, msg_green
 
 float_number_pattern = \
     re.compile(r'(^[-]?\d+\.\d*$|^\d*\.{1,1}\d+$)')
@@ -280,3 +280,19 @@ def exe_cmd(idir, cmd, debug, msg=None):
                 print >> sys.stderr, "Child was terminated by signal", -retcode
         except OSError, err:
             print >> sys.stderr, "Execution failed:", err
+
+def check_voms_proxy():
+    "Check status of user VOMS proxy"
+    cmd = 'voms-proxy-info -timeleft'
+    res = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (stdout, stderr) = (res.stdout, res.stderr)
+    err = stderr.read()
+    if  err:
+        print_red('Fail to check user proxy info')
+        return
+
+    out = int(stdout.read())
+    if  out < 3600: # time left is less then 1 hour
+        msg  = 'Your VOMS proxy will expire in %s sec (< 1 hour). ' % out
+        msg += 'Please run ' + msg_green('vomsinit') + ' command to renew it'
+        print_warning(msg)

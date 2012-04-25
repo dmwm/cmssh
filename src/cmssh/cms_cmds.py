@@ -16,7 +16,7 @@ from cmssh.iprint import print_red, print_blue, msg_red, msg_green, PrintManager
 from cmssh.iprint import print_warning, print_error, print_success
 from cmssh.filemover import copy_lfn, rm_lfn, mkdir, rmdir, list_se, dqueue
 from cmssh.utils import list_results, check_os, exe_cmd, unsupported_linux
-from cmssh.utils import osparameters
+from cmssh.utils import osparameters, check_voms_proxy
 from cmssh.cmsfs import dataset_info, block_info, file_info, site_info, run_info
 from cmssh.cmsfs import CMSFS, apply_filter, validate_dbs_instance
 from cmssh.cms_urls import dbs_instances, tc_url
@@ -595,6 +595,7 @@ def cms_cp(arg):
         cmssh# cp /store/mc/file.root T3_US_Cornell:/store/user/name
         cmssh# cp T3_US_Cornell:/store/user/name/file.root T3_US_Omaha
     """
+    check_voms_proxy()
     arg = arg.strip()
     try:
         src, dst = arg.split(' ', 1)

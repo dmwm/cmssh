@@ -206,8 +206,8 @@ def main(ipython):
     test_key_cert()
 
     # start vomsproxy daemon
-    interval = 3*60*60 # 3 hours
-    thread.start_new_thread(voms_monitor, (interval, ))
+#    interval = 3*60*60 # 3 hours
+#    thread.start_new_thread(voms_monitor, (interval, ))
 
 def load_ipython_extension(ipython):
     """Load custom extensions"""
