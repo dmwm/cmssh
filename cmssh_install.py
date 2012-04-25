@@ -138,6 +138,9 @@ class MyOptionParser:
         self.parser.add_option("--unsupported", action="store_true",
             dest="unsupported",
             help="enforce installation on unsupported platforms, e.g. Ubuntu")
+        self.parser.add_option("--cmssw", action="store",
+            type="string", default=None, dest="cmssw",
+            help="specify location of CMSSW install area")
     def get_opt(self):
         """Returns parse list of options"""
         return self.parser.parse_args()
@@ -269,7 +272,7 @@ def main():
 
     # setup system architecture
     parch = 'x86'
-    arch  = None
+    arch  = opts.__dict__.get('arch', None)
     if  platform == 'Linux':
         if  unsupported_linux:
             ver = 'deb_5.0'
@@ -288,53 +291,82 @@ def main():
         print "Unsupported architecture"
         sys.exit(1)
 
-    msg = "Bootstrap CMSSW"
+    print 'Checking CMSSW ...'
+    if  debug:
+        print 'Probe architecture', arch
     os.chdir(path)
-    sdir = '%s/CMSSW' % path
-    try:
-        os.makedirs(sdir)
-    except:
-        pass
-    os.chdir(sdir)
-    os.environ['VO_CMS_SW_DIR'] = sdir
-    os.environ['SCRAM_ARCH'] = arch
     os.environ['LANG'] = 'C'
+    use_matplotlib = False
+    sdir = '%s/CMSSW' % path
 
-    url  = 'http://cmsrep.cern.ch/cmssw/cms/bootstrap.sh'
-    if  not is_installed(url, path):
-        with open('bootstrap.sh', 'w') as bootstrap:
-             bootstrap.write(getdata(url, {}, debug))
-        if  os.uname()[0].lower() == 'linux':
-            os.rename('bootstrap.sh', 'b.sh')
-            cmd = 'cat b.sh | sed "s,\$seed \$unsupportedSeeds,\$seed \$unsupportedSeeds libreadline5,g" > bootstrap.sh'
-            res = subprocess.call(cmd, shell=True)
-        os.chmod('bootstrap.sh', 0755)
-        cmd  = 'sh -x $VO_CMS_SW_DIR/bootstrap.sh setup -path $VO_CMS_SW_DIR -arch $SCRAM_ARCH'
-        if  unsupported_linux:
-            cmd += ' -unsupported_distribution_hack'
-        exe_cmd(sdir, cmd, debug, 'Bootstrap CMSSW')
-        apt  = 'source `find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt -name init.sh | tail -1`; '
-        cmd  = apt
-        cmd += 'apt-get install external+fakesystem+1.0; '
-        cmd += 'apt-get update; '
-        exe_cmd(sdir, cmd, debug, 'Init CMSSW apt repository')
-        root = find_root_package(apt, debug)
-        cmd  = apt + 'echo "Y" | apt-get install %s' % root
-        exe_cmd(sdir, cmd, debug, 'Install %s' % root)
-        root = libpng_package(apt, debug)
-        cmd  = apt + 'echo "Y" | apt-get install %s' % root 
-        exe_cmd(sdir, cmd, debug, 'Install libpng')
-        root = matplotlib_package(apt, debug)
-        cmd  = apt + 'echo "Y" | apt-get install %s' % root 
-        exe_cmd(sdir, cmd, debug, 'Install matplotlib')
-        add_url2packages(url, path)
+    if  opts.cmssw:
+        # check if default architecture is present
+        if  arch in os.listdir(opts.cmssw):
+            os.symlink(opts.cmssw, sdir)
+            os.environ['SCRAM_ARCH'] = arch
+            os.environ['VO_CMS_SW_DIR'] = sdir
+            if  os.path.isdir('%s/%s/external/py2-matplotlib' % (sdir, arch)):
+                cmd = 'find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/py2-matplotlib -name init.sh | tail -1'
+                res = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+                mat = res.stdout.read().replace('\n', '').strip()
+                if  mat.find('init.sh') != -1:
+                    use_matplotlib = True
+            if  debug:
+                print 'Will use %s/%s' % (sdir, arch)
+        else:
+            print "Please supply via --arch the architecture from %s you wish to use"\
+                % opts.cmssh 
+            sys.exit(1)
+    else: # do local CMSSW bootstrap
+        try:
+            os.makedirs(sdir)
+        except:
+            pass
+        os.chdir(sdir)
+        os.environ['VO_CMS_SW_DIR'] = sdir
+        os.environ['SCRAM_ARCH'] = arch
+        url  = 'http://cmsrep.cern.ch/cmssw/cms/bootstrap.sh'
+        if  not is_installed(url, path):
+            with open('bootstrap.sh', 'w') as bootstrap:
+                 bootstrap.write(getdata(url, {}, debug))
+            if  os.uname()[0].lower() == 'linux':
+                os.rename('bootstrap.sh', 'b.sh')
+                cmd = 'cat b.sh | sed "s,\$seed \$unsupportedSeeds,\$seed \$unsupportedSeeds libreadline5,g" > bootstrap.sh'
+                res = subprocess.call(cmd, shell=True)
+            os.chmod('bootstrap.sh', 0755)
+            cmd  = 'sh -x $VO_CMS_SW_DIR/bootstrap.sh setup -path $VO_CMS_SW_DIR -arch $SCRAM_ARCH'
+            if  unsupported_linux:
+                cmd += ' -unsupported_distribution_hack'
+            exe_cmd(sdir, cmd, debug, 'Bootstrap CMSSW')
+            apt  = 'source `find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt -name init.sh | tail -1`; '
+            cmd  = apt
+            cmd += 'apt-get install external+fakesystem+1.0; '
+            cmd += 'apt-get update; '
+            exe_cmd(sdir, cmd, debug, 'Init CMSSW apt repository')
+            root = find_root_package(apt, debug)
+            cmd  = apt + 'echo "Y" | apt-get install %s' % root
+            exe_cmd(sdir, cmd, debug, 'Install %s' % root)
+            root = libpng_package(apt, debug)
+            cmd  = apt + 'echo "Y" | apt-get install %s' % root 
+            exe_cmd(sdir, cmd, debug, 'Install libpng')
+            root = matplotlib_package(apt, debug)
+            cmd  = apt + 'echo "Y" | apt-get install %s' % root 
+            exe_cmd(sdir, cmd, debug, 'Install matplotlib')
+            use_matplotlib = True
+            add_url2packages(url, path)
 
     # command to setup CMSSW python
-    cms_env = 'source `find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/python -name init.sh | tail -1`;'
-    cmd = 'find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/python -name init.sh | tail -1'
-    res = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+    find_python = 'find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/python -name init.sh | tail -1'
+    res = subprocess.Popen(find_python, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     cms_python_env = res.stdout.read().replace('\n', '').strip()
-    pver = '.'.join(cms_python_env.split('/')[-4].split('.')[0:2])
+    if  not cms_python_env.find('init.sh') != -1:
+        msg  = '\nUnable to locate python in:'
+        msg += '\n%s/%s/external/python' % (os.environ['VO_CMS_SW_DIR'], os.environ['SCRAM_ARCH'])
+        msg += '\nPlease check CMSSW area and/or choose another architecture\n'
+        print msg
+        sys.exit(1)
+    pver     = '.'.join(cms_python_env.split('/')[-4].split('.')[0:2])
+    cms_env  = 'source `%s`;' % find_python 
     if  debug:
         print "CMSSW python:", cms_python_env
         print "python version", pver
@@ -509,9 +541,6 @@ python setup.py install --prefix=$idir
         os.makedirs(ndir)
     except:
         pass
-#    cmd  = 'cp %s/cmssh/src/config/matplotlibrc' % path
-#    cmd += ' %s/install/lib/python%s/site-packages/matplotlib/mpl-data/' % (path, py_ver)
-#    exe_cmd(path, cmd, debug)
     fin  = '%s/cmssh/src/config/matplotlibrc' % path
     fout = '%s/install/lib/python%s/site-packages/matplotlib/mpl-data/matplotlibrc' % (path, py_ver)
     with open(fout, 'w') as output:
@@ -627,11 +656,13 @@ export IPYTHON_DIR=$ipdir
 #grid-proxy-init
 voms-proxy-init -voms cms:/cms -valid 24:00
 """ % path
-        if  platform == 'Darwin':
-            flags = '--pylab=osx'
-        else:
-            flags = '--pylab'
-        flags += ' --InteractiveShellApp.pylab_import_all=False --no-banner'
+        flags = '--no-banner'
+        if  use_matplotlib:
+            if  platform == 'Darwin':
+                flags += ' --pylab=osx'
+            else:
+                flags += ' --pylab'
+            flags += ' --InteractiveShellApp.pylab_import_all=False'
         msg += 'ipython %s --ipython-dir=$ipdir --profile=cmssh' % flags
         cmssh.write(msg)
     os.chmod('bin/cmssh', 0755)
