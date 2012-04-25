@@ -66,6 +66,17 @@ class Magic(object):
         "Execute given command and its args in a shell"
         execute_within_env(self.cmd, args)
 
+def installed_releases():
+    "Print a list of releases installed on a system"
+    print "\nInstalled releases:"
+    osname, osarch = osparameters()
+    for idir in os.listdir(os.environ['VO_CMS_SW_DIR']):
+        if  idir.find(osarch) != -1:
+            rdir = os.path.join(os.environ['VO_CMS_SW_DIR'], '%s/cms/cmssw' % idir)
+            if  os.path.isdir(rdir):
+                for rel in os.listdir(rdir):
+                    print '%s/%s' % (rel, idir)
+
 def cms_releases(_arg):
     """List available CMS releases"""
     arch = None
@@ -104,18 +115,7 @@ def cms_releases(_arg):
     cmd  = "apt-cache search CMSSW | grep CMSSW | grep -v -i fwlite"
     cmd += "| awk '{print $1}' | sed -e 's/cms+cmssw+//g' -e 's/cms+cmssw-patch+//g'"
     subprocess.call(cmd, shell=True)
-    print "\nInstalled releases:"
-    osname, osarch = osparameters()
-    for idir in os.listdir(os.environ['VO_CMS_SW_DIR']):
-        if  idir.find(osarch) != -1:
-            rdir = os.path.join(os.environ['VO_CMS_SW_DIR'], '%s/cms/cmssw' % idir)
-            if  os.path.isdir(rdir):
-                for rel in os.listdir(rdir):
-                    print '%s/%s' % (rel, idir)
-#    rdir = os.path.join(os.environ['CMSSH_ROOT'], 'Releases')
-#    if  os.path.isdir(rdir):
-#        for rel in os.listdir(rdir):
-#            print rel
+    installed_releases()
 
 def cms_root(arg):
     """
@@ -320,10 +320,7 @@ def cmsrel(rel):
     rel = rel.strip()
     if  not rel:
         print_red('Please specify release name')
-        print "\nInstalled releases:"
-        dirs = os.listdir(os.path.join(os.environ['CMSSH_ROOT'], 'Releases'))
-        for rel in dirs:
-            print rel
+        installed_releases()
         return
 
     # check if given release name is installed on user system
