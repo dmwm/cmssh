@@ -135,12 +135,16 @@ class MyOptionParser:
         self.parser.add_option("--arch", action="store",
             type="string", default=None, dest="arch",
             help="CMSSW architectures:\n%s, default %s" % (drivers, DEF_SCRAM_ARCH))
-        self.parser.add_option("--unsupported", action="store_true",
-            dest="unsupported",
-            help="enforce installation on unsupported platforms, e.g. Ubuntu")
         self.parser.add_option("--cmssw", action="store",
             type="string", default=None, dest="cmssw",
             help="specify location of CMSSW install area")
+        self.parser.add_option("--multi-user", action="store_true",
+            default=False, dest="multi_user",
+            help="install cmssh in multi-user environment")
+        self.parser.add_option("--unsupported", action="store_true",
+            dest="unsupported",
+            help="enforce installation on unsupported platforms, e.g. Ubuntu")
+
     def get_opt(self):
         """Returns parse list of options"""
         return self.parser.parse_args()
@@ -559,7 +563,8 @@ python setup.py install --prefix=$idir
         msg += 'export VO_CMS_SW_DIR=$CMSSH_ROOT/CMSSW\n'
         msg += 'export SCRAM_ARCH=%s\n' % arch
         msg += 'export LANG="C"\n'
-        msg += 'export CMSSW_RELEASES=$CMSSH_ROOT/Releases\n'
+        if  not opts.multi_user:
+            msg += 'export CMSSW_RELEASES=$CMSSH_ROOT/Releases\n'
         msg += 'if [ -f $VO_CMS_SW_DIR/cmsset_default.sh ]; then\n'
         msg += '   source $VO_CMS_SW_DIR/cmsset_default.sh\nfi\n'
         msg += 'export OLD_PATH=$PATH\n'
