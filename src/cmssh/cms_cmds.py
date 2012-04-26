@@ -532,6 +532,7 @@ def cms_ls(arg):
         verbose = 0
     if  not arg:
         arg = '.'
+    orig_arg = arg
     opts = options(arg)
     path = '/'.join(arg.split('/')[:-1])
     if  opts:
@@ -540,6 +541,11 @@ def cms_ls(arg):
         prc = subprocess.Popen("ls " + " " + ''.join(opts) + " " + arg, shell=True)
         sts = os.waitpid(prc.pid, 0)[1]
     else:
+        if  orig_arg.find('|') != -1:
+            arg, flt = orig_arg.split('|', 1)
+            arg = arg.strip()
+        else:
+            flt = None
         pat_site = re.compile('^(site=)?T[0-9]_[A-Z]+(_)[A-Z]+')
         pat_dataset = re.compile('^(dataset=)?/.*/.*/.*')
         pat_block = re.compile('^(block=)?/.*/.*/.*#.*')
@@ -567,7 +573,7 @@ def cms_ls(arg):
         else:
             raise Exception('Unsupported input')
         RESMGR.assign(res)
-        list_results(res, debug=True)
+        list_results(res, debug=True, flt=flt)
 
 def cms_info(arg):
     """
