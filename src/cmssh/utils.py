@@ -14,6 +14,7 @@ import readline
 import traceback
 import subprocess
 from   types import GeneratorType, InstanceType
+from   cStringIO import StringIO
 import xml.etree.cElementTree as ET
 
 # cmssh modules
@@ -71,8 +72,19 @@ class Completer:
         except IndexError:
             return None
 
-def list_results(res, debug):
+def list_results(res, debug, flt=None):
     """List results"""
+
+    old_stdout = sys.stdout
+    match = None
+    if  flt:
+        arr = flt.split()
+        if  arr[0] == 'grep':
+            match = ' '.join(arr[1:]).strip()
+        else:
+            raise NotImplementedError
+        sys.stdout = mystdout = StringIO()
+
     if  not res:
         return
     if  isinstance(res, list) or isinstance(res, GeneratorType):
@@ -94,6 +106,31 @@ def list_results(res, debug):
             print res
         else:
             print repr(res)
+
+    sys.stdout = old_stdout
+    if  flt and match:
+        arr = match.split()
+        opt = None
+        if  len(arr) == 1:
+            match = arr[0]
+        elif len(arr) == 2:
+            opt, match = arr
+        else:
+            raise NotImplementedError
+        output = mystdout.getvalue()
+        for line in output.split('\n'):
+            if  opt and opt == '-i':
+                if  line.lower().find(match.lower()) != -1:
+                    print line
+            elif  opt and opt == '-v':
+                if  line.find(match) == -1:
+                    print line
+            elif  opt and (opt == '-iv' or opt == '-vi'):
+                if  line.lower().find(match.lower()) == -1:
+                    print line
+            else:
+                if  line.find(match) != -1:
+                    print line
 
 def execmd(cmd):
     """Execute given command in subprocess"""
