@@ -579,7 +579,7 @@ python setup.py install --prefix=$idir
         msg += 'source $xz_init;source $pcre_init;source $root_init;\n'
         msg += 'source $matplotlib_init;source $numpy_init;source $lapack_init;source $png_init\n'
         msg += 'export DYLD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib\n'
-        msg += 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib\n'
+        msg += 'export LD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib:$LD_LIBRARY_PATH\n'
         msg += 'export PATH=$VO_CMS_SW_DIR/bin:$CMSSH_ROOT/install/bin:$PATH\n'
         msg += 'export PATH=$PATH:$CMSSH_ROOT/globus/bin\n'
         msg += 'export PATH=$PATH:$CMSSH_ROOT/glite/bin\n'
@@ -635,20 +635,23 @@ python setup.py install --prefix=$idir
     with open(os.path.join(path, 'bin/cmssh'), 'w') as cmssh:
         msg  = '#!/bin/bash\n'
         msg += 'source %s/setup.sh\n' % path
-        msg += 'ipdir="%s/.ipython"\nmkdir -p $ipdir\n' % path
+        if  opts.multi_user:
+            msg += 'ipdir="/tmp/$USER/.ipython"\nmkdir -p $ipdir\n'
+        else:
+            msg += 'ipdir="%s/.ipython"\nmkdir -p $ipdir\n' % path
         msg += """
 soft_dir=%s
-if [ ! -d $soft_dir/.ipython/extensions ]; then
-    mkdir -p $soft_dir/.ipython/extensions
+if [ ! -d $ipdir/extensions ]; then
+    mkdir -p $ipdir/extensions
 fi
-if [ ! -d $soft_dir/.ipython/profile_cmssh ]; then
-    mkdir -p $soft_dir/.ipython/profile_cmssh
+if [ ! -d $ipdir/profile_cmssh ]; then
+    mkdir -p $ipdir/profile_cmssh
 fi
-if [ ! -f $soft_dir/.ipython/extensions/cmssh_extension.py ]; then
-    cp $soft_dir/cmssh/src/config/cmssh_extension.py $soft_dir/.ipython/extensions/
+if [ ! -f $ipdir/extensions/cmssh_extension.py ]; then
+    cp $soft_dir/cmssh/src/config/cmssh_extension.py $ipdir/extensions/
 fi
-if [ ! -f $soft_dir/.ipython/profile_cmssh/ipython_config.py ]; then
-    cp $soft_dir/cmssh/src/config/ipython_config.py $soft_dir/.ipython/profile_cmssh/
+if [ ! -f $ipdir/profile_cmssh/ipython_config.py ]; then
+    cp $soft_dir/cmssh/src/config/ipython_config.py $ipdir/profile_cmssh/
 fi
 export IPYTHON_DIR=$ipdir
 #grid-proxy-init
