@@ -25,7 +25,7 @@ from   cmssh.cms_cmds import cms_ls, cms_cp, verbose, cms_dqueue
 from   cmssh.cms_cmds import cms_rm, cms_rmdir, cms_mkdir, cms_root, cms_xrdcp
 from   cmssh.cms_cmds import cms_install, cms_releases, cms_info
 from   cmssh.cms_cmds import cmsrel, cmsrun, cms_help, cms_arch
-from   cmssh.cms_cmds import cms_help_msg, results
+from   cmssh.cms_cmds import cms_help_msg, results, cms_apt
 
 def voms_monitor(interval):
     "VOMS proxy monitor worker, it keep user proxy alive"
@@ -113,17 +113,16 @@ cmsMagicList = [ \
     ('env', Magic('env').execute),
     ('pip', Magic('pip').execute),
     # CMS commands
-    ('apt-get', Magic('apt-get').execute_within_env),
-    ('apt-cache', Magic('apt-cache').execute_within_env),
-    ('crab', Magic('crab').execute_within_env),
-    ('cmsenv', Magic('eval `scramv1 runtime -sh`').execute_within_env),
-    ('scram', Magic('scramv1').execute_within_env),
+    ('crab', Magic('crab').execute),
+    ('cmsenv', Magic('eval `scramv1 runtime -sh`').execute),
+    ('scram', Magic('scramv1').execute),
     # grid middleware commands
-    ('gridinit', Magic('grid-proxy-init').execute_within_env),
-    ('gridinfo', Magic('grid-proxy-info').execute_within_env),
-    ('vomsinit', Magic('voms-proxy-init').execute_within_env),
-    ('vomsinfo', Magic('voms-proxy-info').execute_within_env),
+    ('gridinit', Magic('grid-proxy-init').execute),
+    ('gridinfo', Magic('grid-proxy-info').execute),
+    ('vomsinit', Magic('voms-proxy-init').execute),
+    ('vomsinfo', Magic('voms-proxy-info').execute),
     # specific commands whose execution depends on conditions
+    ('apt', cms_apt),
     ('xrdcp', cms_xrdcp),
     ('root', cms_root),
     ('find', cms_find),
