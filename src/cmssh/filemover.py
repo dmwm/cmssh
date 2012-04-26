@@ -195,6 +195,8 @@ def resolve_user_srm_path(node, ldir='/store/user', verbose=None):
     """
     Use TFC phedex API to resolve srm path for given node
     """
+    # change ldir if user supplied full path, e.g. /xrootdfs/cms/store/...
+    ldir   = '/store/' + ldir.split('/store/')[-1]
     url    = phedex_url('lfn2pfn')
     params = {'node':node, 'lfn':ldir, 'protocol': 'srmv2'}
     data   = urllib2.urlopen(url, urllib.urlencode(params, doseq=True))
@@ -245,6 +247,7 @@ def srmcp(srmcmd, lfn, dst, verbose=None):
     """
     Look-up LFN in Phedex and construct srmcp command for further processing
     """
+    dstfname = None
     pat = re.compile('^T[0-9]_[A-Z]+(_)[A-Z]+')
     if  pat.match(dst):
         dst_split = dst.split(':')
@@ -263,8 +266,18 @@ def srmcp(srmcmd, lfn, dst, verbose=None):
             dst = '%s/%s' % (paths[0], get_username())
         check_permission(dst, verbose)
     else:
-        if  not dst.find('file:///') != -1:
-            dst = 'file:///%s' % dst
+        if  dst.find('file:///') == -1:
+            dstfname = dst.split('/')[-1]
+            if  dstfname == '.':
+                dstfname = None
+            if  dst[0] == '/': # absolute path
+                ddir  =  '/'.join(dst.split('/')[:-1])
+                if  not os.path.isdir(ddir):
+                    msg = 'Provided destination directory %s does not exists' % ddir
+                    raise Exception(msg)
+                dst = 'file:///%s' % ddir
+            else:
+                dst = 'file:///%s' % os.getcwd()
     pfnlist   = []
     if  os.path.isfile(lfn) or lfn.find('file:///') != -1: # local file
         pfn = lfn.replace('file:///', '')
@@ -338,7 +351,7 @@ def srmcp(srmcmd, lfn, dst, verbose=None):
 
     # finally let's create srmcp commands for each found pfn
     for item in pfnlist:
-        ifile = item.split("/")[-1]
+        ifile = item.split("/")[-1] if not dstfname else dstfname
         cmd = "%s %s %s/%s -pushmode -statuswaittime 30" \
                 % (srmcmd, item, dst, ifile)
         yield cmd
@@ -577,10 +590,14 @@ class FileMover(object):
             raise Exception(msg)
         cmd = 'srm-rm'
         dst = [r for r in resolve_user_srm_path(node)][0]
-        dst = dst.split('=')[0]
+        dst, path = dst.split('=')
         if  dst[-1] != '=':
-            dst += '=' 
-        cmd = "%s %s" % (cmd, dst+lfn)
+            dst += '='
+        for item in lfn.split('/'):
+            if  not item or item in path:
+                continue
+            path += '/%s' % item
+        cmd = "%s %s" % (cmd, dst+path)
         if  verbose:
             print cmd
         stdout, stderr = execmd(cmd)
