@@ -65,29 +65,43 @@ def find_sites(url, method, params):
 
 def apply_filter(flt, gen):
     """Apply given filter to a given set of results"""
-    flt_func, flt_name = flt.split()
+    arr = flt.split()
+    if  len(arr) == 2:
+        flt_func, flt_name = arr
+        flt_opt = None
+    elif len(arr) == 3:
+        flt_func, flt_opt, flt_name = arr
+    elif len(arr) > 3:
+        raise NotImplementedError
+    else:
+        flt_func = arr[0]
+        flt_name = None
     if  isinstance(gen, list) or isinstance(gen, GeneratorType):
-        if  flt_func == 'grep':
+        if  flt_func == 'grep' and flt_name:
             for row in gen:
-                att = flt_name.split('.')[-1]
-                if  row.data.has_key(att):
-                    yield row.data[att]
-        elif flt_func == 'count':
+                rrr = repr(row)
+                if  flt_opt:
+                    if  flt_opt == '-i':
+                        if  rrr.lower().find(flt_name.lower()) != -1:
+                            yield row
+                    elif flt_opt == '-v':
+                        if  rrr.find(flt_name) == -1:
+                            yield row
+                    elif flt_opt == '-iv' or flt_opt == '-vi':
+                        if  rrr.lower().find(flt_name.lower()) == -1:
+                            yield row
+                    else:
+                        raise NotImplementedError
+                else:
+                    if  rrr.find(flt_name) != -1:
+                        yield row
+        elif flt_func == 'count' or flt_func == 'wc':
             res = 0
             for row in gen:
-                att = flt_name.split('.')[-1]
-                if  row.data.has_key(att):
-                    res += 1
-        elif flt_func == 'sum':
-            res = 0
-            for row in gen:
-                att = flt_name.split('.')[-1]
-                if  row.data.has_key(att):
-                    res += float(row.data[att])
+                res += 1
             yield res
         else:
-            for row in gen:
-                yield row
+            raise NotImplementedError
     else:
         yield gen
 
