@@ -12,7 +12,7 @@ import traceback
 import subprocess
 
 # cmssh modules
-from cmssh.iprint import print_red, print_blue, msg_red, msg_green, PrintManager
+from cmssh.iprint import print_red, print_blue, msg_red, msg_green, msg_blue
 from cmssh.iprint import print_warning, print_error, print_success
 from cmssh.filemover import copy_lfn, rm_lfn, mkdir, rmdir, list_se, dqueue
 from cmssh.utils import list_results, check_os, exe_cmd, unsupported_linux
@@ -26,7 +26,6 @@ from cmssh.results import ResultManager
 # global scope
 CMSMGR = CMSFS()
 RESMGR = ResultManager()
-PM     = PrintManager()
 
 def options(arg):
     """Extract options from given arg string"""
@@ -37,34 +36,17 @@ def options(arg):
             opts.append(par)
     return opts
 
-def execute(cmd, args=''):
-    "Execute given command and its args in a shell"
-    dyld = os.environ.get('DYLD_LIBRARY_PATH', None)
-    if  dyld:
-        os.environ['DYLD_LIBRARY_PATH'] = ''
-    cmd_opts = '%s %s' % (cmd, args.strip())
-    subprocess.call(cmd_opts, shell=True)
-    if  dyld:
-        os.environ['DYLD_LIBRARY_PATH'] = dyld
-
-def execute_within_env(cmd, args=''):
-    "Execute given command and its args in a shell"
-    if  args.find("|") != -1:
-        cmd_opts = '%s %s' % (cmd, args.strip())
-        subprocess.call(cmd_opts, shell=True)
-    else:
-        cmd_opts = [cmd] + args.strip().split()
-        subprocess.call(cmd_opts)
-
 class Magic(object):
+    """
+    Class to be used with ipython magic functions. It holds given
+    command and provide a method to execute it in a shell
+    """
     def __init__(self, cmd):
         self.cmd = cmd
     def execute(self, args=''):
-        "Execute given command and its args in a shell"
-        execute(self.cmd, args)
-    def execute_within_env(self, args=''):
-        "Execute given command and its args in a shell"
-        execute_within_env(self.cmd, args)
+        "Execute given command in a shell"
+        cmd_opts = '%s %s' % (self.cmd, args.strip())
+        subprocess.call(cmd_opts.strip(), shell=True)
 
 def installed_releases():
     "Print a list of releases installed on a system"
@@ -161,10 +143,10 @@ def debug(arg):
     """
     arg = arg.strip()
     if  arg:
-        PM.print_blue("Set debug level to %s" % arg)
+        print_blue("Set debug level to %s" % arg)
         DEBUG.set(arg)
     else:
-        PM.print_blue("Debug level is %s" % DEBUG.level)
+        print_blue("Debug level is %s" % DEBUG.level)
 
 def cms_find(arg):
     """
@@ -368,14 +350,15 @@ def cmsrun(arg):
     vdir = os.environ.get('VO_CMS_SW_DIR', None)
     arch = os.environ.get('SCRAM_ARCH', None)
     if  not vdir or not arch:
-        msg  = PM.msg_red('Unable to identify CMSSW environment, please run first: ')
-        msg += PM.msg_blue('cmsrel <rel>\n')
+        msg  = msg_red('Unable to identify CMSSW environment, please run first: ')
+        msg += msg_blue('cmsrel <rel>\n')
         releases = os.listdir(os.environ['CMSSW_RELEASES'])
-        msg += '\nInstalled releases: ' + PM.msg_green(', '.join(releases))
+        msg += '\nInstalled releases: ' + msg_green(', '.join(releases))
         print msg
         return
     cmd = "eval `scramv1 runtime -sh`; cmsRun"
-    execute(cmd, arg)
+    cmd_opts = '%s %s' % (cmd, arg.strip())
+    subprocess.call(cmd_opts, shell=True)
 
 def dbs_instance(arg=None):
     """
@@ -399,46 +382,46 @@ def dbs_instance(arg=None):
 def cms_help_msg():
     """cmsHelp message"""
     msg  = '\nAvailable cmssh commands:\n'
-    msg += PM.msg_green('find        ') \
+    msg += msg_green('find        ') \
         + ' search CMS meta-data (query DBS/Phedex/SiteDB)\n'
-    msg += PM.msg_green('dbs_instance') \
+    msg += msg_green('dbs_instance') \
         + ' show/set DBS instance, default is DBS global instance\n'
-    msg += PM.msg_green('mkdir/rmdir ') \
+    msg += msg_green('mkdir/rmdir ') \
         + ' mkdir/rmdir command, e.g. mkdir /path/foo or rmdir T3_US_Cornell:/store/user/foo\n'
-    msg += PM.msg_green('ls          ') \
+    msg += msg_green('ls          ') \
         + ' list file/LFN, e.g. ls local.file or ls /store/user/file.root\n'
-    msg += PM.msg_green('rm          ') \
+    msg += msg_green('rm          ') \
         + ' remove file/LFN, e.g. rm local.file or rm T3_US_Cornell:/store/user/file.root\n'
-    msg += PM.msg_green('cp          ') \
+    msg += msg_green('cp          ') \
         + ' copy file/LFN, e.g. cp local.file or cp /store/user/file.root .\n'
-    msg += PM.msg_green('info        ') \
+    msg += msg_green('info        ') \
         + ' provides detailed info about given CMS entity, e.g. info run=160915\n'
-    msg += PM.msg_green('dqueue      ') \
+    msg += msg_green('dqueue      ') \
         + ' status of download queue, list files which are in progress.\n'
-    msg += PM.msg_green('root        ') + ' invoke ROOT\n'
-    msg += PM.msg_green('du          ') \
+    msg += msg_green('root        ') + ' invoke ROOT\n'
+    msg += msg_green('du          ') \
         + ' display disk usage for given site, e.g. du T3_US_Cornell\n'
     msg += '\nAvailable CMSSW commands (once you install any CMSSW release):\n'
-    msg += PM.msg_green('releases    ') \
+    msg += msg_green('releases    ') \
         + ' list available CMSSW releases\n'
-    msg += PM.msg_green('install     ') \
+    msg += msg_green('install     ') \
         + ' install CMSSW release, e.g. install CMSSW_5_0_0\n'
-    msg += PM.msg_green('cmsrel      ') \
+    msg += msg_green('cmsrel      ') \
         + ' switch to given CMSSW release and setup its environment\n'
-    msg += PM.msg_green('arch        ') \
+    msg += msg_green('arch        ') \
         + ' show or switch to given CMSSW architecture\n'
-    msg += PM.msg_green('scram       ') + ' CMSSW scram command\n'
-    msg += PM.msg_green('cmsRun      ') \
+    msg += msg_green('scram       ') + ' CMSSW scram command\n'
+    msg += msg_green('cmsRun      ') \
         + ' cmsRun command for release in question\n'
     msg += '\nAvailable GRID commands: <cmd> either grid or voms\n'
-    msg += PM.msg_green('<cmd>init    ') + ' setup your proxy (aka <cmd>-proxy-init)\n'
-    msg += PM.msg_green('<cmd>info    ') + ' show your proxy info (aka <cmd>-proxy-info)\n'
-    msg += '\nQuery results are accessible via %s function:\n' % PM.msg_blue('results()')
+    msg += msg_green('<cmd>init    ') + ' setup your proxy (aka <cmd>-proxy-init)\n'
+    msg += msg_green('<cmd>info    ') + ' show your proxy info (aka <cmd>-proxy-info)\n'
+    msg += '\nQuery results are accessible via %s function:\n' % msg_blue('results()')
     msg += '   find dataset=/*Zee*\n'
     msg += '   for r in results(): print r, type(r)\n'
-    msg += '\nHelp is accessible via ' + PM.msg_blue('cmshelp <command>\n')
+    msg += '\nHelp is accessible via ' + msg_blue('cmshelp <command>\n')
     msg += '\nTo install python software use ' + \
-                PM.msg_blue('pip <search|(un)install> <package>')
+                msg_blue('pip <search|(un)install> <package>')
     return msg
 
 def cms_help(arg=None):
@@ -639,14 +622,14 @@ def cms_cp(arg):
             print_red("Wrong argument '%s'" % arg)
 
 def cms_dqueue(arg=None):
-    "Return status of LFN in transfer (the download queue)"
+    "Return status of transfer queue. For detailed view please use list option."
     if  arg and arg != 'list':
         print_red("Wrong argument '%s', please use 'list'" % arg)
         return
     dqueue(arg)
 
 def cms_architectures():
-    "Return list of supported CMS architectures"
+    "Return list of CMSSW architectures (aka SCRAM_ARCH)"
     # TODO: I need to replace py_getReleaseArchitectures
     # with new API which will return list of all architectures
     args  = {'release':'CMSSW_6_0_X'}
@@ -659,7 +642,7 @@ def cms_architectures():
     return list(set(archs))
 
 def cms_arch(arg=None):
-    "Show and set CMSSW architecture"
+    "Show or set CMSSW architecture"
     if  not arg:
         print "Current architecture: %s" % os.environ['SCRAM_ARCH']
         archs = []
@@ -678,6 +661,15 @@ def cms_arch(arg=None):
             raise Exception(msg)
         print "Switch to SCRAM_ARCH=%s" % arg
         os.environ['SCRAM_ARCH'] = arg
+
+def cms_apt(arg=''):
+    "Execute apt commands"
+    if  '-cache' in arg or '-get' in arg:
+        cmd = 'apt%s' % arg
+    else:
+        msg = 'Not supported apt command'
+        raise Exception(msg)
+    subprocess.call(cmd, shell=True)
 
 def results():
     """Return results from recent query"""
