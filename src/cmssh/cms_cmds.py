@@ -7,7 +7,9 @@ Set of UNIX commands, e.g. ls, cp, supported in cmssh.
 # system modules
 import os
 import re
+import json
 import glob
+import pprint
 import traceback
 import subprocess
 
@@ -18,14 +20,11 @@ from cmssh.filemover import copy_lfn, rm_lfn, mkdir, rmdir, list_se, dqueue
 from cmssh.utils import list_results, check_os, exe_cmd, unsupported_linux
 from cmssh.utils import osparameters, check_voms_proxy
 from cmssh.cmsfs import dataset_info, block_info, file_info, site_info, run_info
-from cmssh.cmsfs import CMSFS, apply_filter, validate_dbs_instance
+from cmssh.cmsfs import CMSMGR, apply_filter, validate_dbs_instance
 from cmssh.cms_urls import dbs_instances, tc_url
+from cmssh.das import get_data as das_get_data, das_client
 from cmssh.url_utils import get_data
-from cmssh.results import ResultManager
-
-# global scope
-CMSMGR = CMSFS()
-RESMGR = ResultManager()
+from cmssh.results import RESMGR
 
 def options(arg):
     """Extract options from given arg string"""
@@ -396,6 +395,10 @@ def cms_help_msg():
         + ' copy file/LFN, e.g. cp local.file or cp /store/user/file.root .\n'
     msg += msg_green('info        ') \
         + ' provides detailed info about given CMS entity, e.g. info run=160915\n'
+    msg += msg_green('das         ') \
+        + ' query DAS\n'
+    msg += msg_green('das_json    ') \
+        + ' query DAS and return data in JSON format\n'
     msg += msg_green('dqueue      ') \
         + ' status of download queue, list files which are in progress.\n'
     msg += msg_green('root        ') + ' invoke ROOT\n'
@@ -495,7 +498,7 @@ def cms_rmdir(arg):
 
 def cms_mkdir(arg):
     """
-    cmssh mkdir command creates directory on local filesystem or remove CMS storage element.
+    cmssh mkdir command creates directory on local filesystem or remote CMS storage element.
     Examples:
         cmssh# mkdir foo
         cmssh# mkdir T3_US_Cornell:/store/user/user_name/foo
@@ -676,6 +679,24 @@ def cms_apt(arg=''):
         msg = 'Not supported apt command'
         raise Exception(msg)
     subprocess.call(cmd, shell=True)
+
+def cms_das(query):
+    "Execute given query in CMS DAS data-service"
+    host  = 'https://cmsweb.cern.ch'
+    idx   = 0
+    limit = 0
+    debug = 0
+    das_client(host, query, idx, limit, debug, 'plain')
+
+def cms_das_json(query):
+    "Execute given query in CMS DAS data-service"
+    host  = 'https://cmsweb.cern.ch'
+    idx   = 0
+    limit = 0
+    debug = 0
+    res   = das_client(host, query, idx, limit, debug, 'json')
+    RESMGR.assign([res])
+    pprint.pprint(res)
 
 def results():
     """Return results from recent query"""
