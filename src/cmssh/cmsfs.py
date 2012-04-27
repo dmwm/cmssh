@@ -418,3 +418,6 @@ def run_info(run, verbose=None):
                 run.update(rec)
         plist.append(Run(run))
     return plist
+
+# create instance of CMSFS class (singleton)
+CMSMGR = CMSFS()
