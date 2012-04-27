@@ -271,7 +271,11 @@ def srmcp(srmcmd, lfn, dst, verbose=None):
             if  dstfname == '.':
                 dstfname = None
             if  dst[0] == '/': # absolute path
-                ddir  =  '/'.join(dst.split('/')[:-1])
+                if  os.path.isdir(dst):
+                    ddir = dst
+                    dstfname = None
+                else:
+                    ddir =  '/'.join(dst.split('/')[:-1])
                 if  not os.path.isdir(ddir):
                     msg = 'Provided destination directory %s does not exists' % ddir
                     raise Exception(msg)
