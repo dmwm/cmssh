@@ -244,6 +244,14 @@ def main():
     if  platform == 'Darwin':
         if  not os.environ.has_key('JAVA_HOME'):
             os.environ['JAVA_HOME'] = '/Library/Java/Home'
+    elif platform == 'Linux':
+        if  not os.environ.has_key('JAVA_HOME'):
+            if  os.path.isfile('/usr/bin/java') or os.path.islink('/usr/bin/java'):
+                os.environ['JAVA_HOME'] = '/usr'
+            elif os.path.isfile('/usr/local/bin/java') or os.path.islink('/usr/local/bin/java'):
+                os.environ['JAVA_HOME'] = '/usr/local'
+            elif os.path.isfile('/opt/local/bin/java') or os.path.islink('/opt/local/bin/java'):
+                os.environ['JAVA_HOME'] = '/opt/local'
 
     if  not opts.install:
         print "Usage: cmssh_install.py --help"
