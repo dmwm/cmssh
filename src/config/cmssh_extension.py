@@ -25,7 +25,7 @@ from   cmssh.cms_cmds import cms_ls, cms_cp, verbose, cms_dqueue
 from   cmssh.cms_cmds import cms_rm, cms_rmdir, cms_mkdir, cms_root, cms_xrdcp
 from   cmssh.cms_cmds import cms_install, cms_releases, cms_info
 from   cmssh.cms_cmds import cmsrel, cmsrun, cms_help, cms_arch
-from   cmssh.cms_cmds import cms_help_msg, results, cms_apt
+from   cmssh.cms_cmds import cms_help_msg, results, cms_apt, cms_das, cms_das_json
 
 def voms_monitor(interval):
     "VOMS proxy monitor worker, it keep user proxy alive"
@@ -122,6 +122,8 @@ cmsMagicList = [ \
     ('vomsinit', Magic('voms-proxy-init').execute),
     ('vomsinfo', Magic('voms-proxy-info').execute),
     # specific commands whose execution depends on conditions
+    ('das', cms_das),
+    ('das_json', cms_das_json),
     ('apt', cms_apt),
     ('xrdcp', cms_xrdcp),
     ('root', cms_root),
