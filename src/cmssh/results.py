@@ -48,3 +48,6 @@ class ResultManager(object):
             return self.data.__getitem__(idx)
         else:
              raise TypeError
+
+# create an singleton instance which will be used through the code
+RESMGR = ResultManager()
