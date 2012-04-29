@@ -575,7 +575,6 @@ python setup.py install --prefix=$idir
         msg += 'apt_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt -name init.sh | tail -1`\n'
         msg += 'pcre_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/pcre -name init.sh | tail -1`\n'
         msg += 'xz_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/xz -name init.sh | tail -1`\n'
-        msg += 'root_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/lcg/root -name init.sh | tail -1`\n'
         msg += 'png_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/libpng -name init.sh | tail -1`\n'
         msg += 'lapack_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/lapack -name init.sh | tail -1`\n'
         msg += 'numpy_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/py2-numpy -name init.sh | tail -1`\n'
@@ -584,7 +583,7 @@ python setup.py install --prefix=$idir
         msg += 'unset PYTHONPATH\n'
         msg += 'source $apt_init;\n'
         msg += 'source %s\n' % cms_python_env.replace(sdir, '$CMSSH_ROOT/CMSSW').replace(arch, '$SCRAM_ARCH')
-        msg += 'source $xz_init;source $pcre_init;source $root_init;\n'
+        msg += 'source $xz_init;source $pcre_init;\n'
         msg += 'source $matplotlib_init;source $numpy_init;source $lapack_init;source $png_init\n'
         msg += 'export DYLD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib\n'
         msg += 'export LD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib:$LD_LIBRARY_PATH\n'
