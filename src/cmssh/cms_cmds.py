@@ -108,19 +108,24 @@ def cms_releases(_arg):
 #    subprocess.call(cmd, shell=True)
     installed_releases()
 
+def pkg_init(pkg_dir):
+    "Create CMS command to source pkg environment"
+    pkg_dir  = '%s/%s/%s' \
+        % (os.environ['VO_CMS_SW_DIR'], os.environ['SCRAM_ARCH'], pkg_dir)
+    pkg_init = 'source `find %s -name init.sh | tail -1`;' % pkg_dir
+    if  not os.path.isdir(pkg_dir):
+        pkg_init = ''
+    return pkg_init
+
 def cms_root(arg):
     """
     Run ROOT command
     """
-#    dyld_path = os.environ.get('DYLD_LIBRARY_PATH', None)
-#    root_path = os.environ['DEFAULT_ROOT']
-#    if  dyld_path:
-#        os.environ['DYLD_LIBRARY_PATH'] = os.path.join(root_path, 'lib')
-#    cmd_opts = '%s/root -l %s' % (os.path.join(root_path, 'bin'), arg.strip())
-#    subprocess.call(cmd_opts, shell=True)
-#    if  dyld_path:
-#        os.environ['DYLD_LIBRARY_PATH'] = dyld_path
-    cmd_opts = 'root -l %s' % arg.strip()
+    pcre_init = pkg_init('external/pcre')
+    gcc_init  = pkg_init('external/gcc')
+    root_init = pkg_init('lcg/root')
+    pkgs_init = '%s %s %s' % (pcre_init, gcc_init, root_init)
+    cmd_opts  = '%s root -l %s' % (pkgs_init, arg.strip())
     subprocess.call(cmd_opts, shell=True)
 
 def cms_xrdcp(arg):
