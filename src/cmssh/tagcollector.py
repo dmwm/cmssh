@@ -40,6 +40,27 @@ def releases(rel_name=None):
         row['release_name'] = key
         yield row
 
+def architectures(arch_type='production'):
+    "Return list of CMSSW known architectures"
+    prod_arch = set()
+    dev_arch  = set()
+    for row in releases():
+        for item in row['architectures']:
+            if  item['is_production_architecture']:
+                prod_arch.add(item['architecture_name'])
+            else:
+                dev_arch.add(item['architecture_name'])
+    if  arch_type == 'production':
+        arch_list = list(prod_arch)
+    elif arch_type == 'development':
+        arch_list = list(dev_arch)
+    elif arch_type == 'all':
+        arch_list = list(prod_arch | dev_arch)
+    else:
+        raise NotImplementedError
+    arch_list.sort()
+    return arch_list
+
 if __name__ == '__main__':
     for r in releases():
         print r
