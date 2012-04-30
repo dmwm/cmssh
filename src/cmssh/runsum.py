@@ -10,7 +10,8 @@ import time
 import urllib
 
 from cmssh.utils import xml_parser
-from cmssh.auth_utils import get_data, get_key_cert
+from cmssh.url_utils import get_key_cert
+from cmssh.auth_utils import get_data
 
 def run_summary_url(url, params):
     """Construct Run Summary URL from provided parameters"""
