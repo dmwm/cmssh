@@ -20,10 +20,12 @@ from cmssh.filemover import copy_lfn, rm_lfn, mkdir, rmdir, list_se, dqueue
 from cmssh.utils import list_results, check_os, exe_cmd, unsupported_linux
 from cmssh.utils import osparameters, check_voms_proxy
 from cmssh.cmsfs import dataset_info, block_info, file_info, site_info, run_info
-from cmssh.cmsfs import CMSMGR, apply_filter, validate_dbs_instance
+from cmssh.cmsfs import CMSMGR, apply_filter, validate_dbs_instance, release_info
 from cmssh.cms_urls import dbs_instances, tc_url
 from cmssh.das import get_data as das_get_data, das_client
 from cmssh.url_utils import get_data
+from cmssh.regex import pat_release, pat_site, pat_dataset, pat_block
+from cmssh.regex import pat_lfn, pat_run, pat_se, pat_release
 from cmssh.results import RESMGR
 
 def options(arg):
@@ -79,33 +81,6 @@ def cms_releases(_arg):
     else:
         raise Exception('Unsupported platform %s' % os.uname())
 
-#    active_releases = get_data(tc_url(), 'py_getActiveReleases')
-#    active = {}
-#    non_active = {}
-#    for rel in active_releases:
-#        args = {'release': rel}
-#        releases = get_data(tc_url(), 'py_getReleaseArchitectures', args)
-#        for item in releases:
-#            rel_arch = item[0]
-#            status   = item[1]
-#            if  rel_arch.find(arch) != -1:
-#                if  status:
-#                    active.setdefault(rel_arch, []).append(rel)
-#                else:
-#                    non_active.setdefault(rel_arch, []).append(rel)
-#    if  active:
-#        print "Supported releases for %s:" % platform.replace('Darwin', 'Mac OS X')
-#        for arch, releases in active.items():
-#            print '%s: %s' % (arch, ', '.join(releases))
-#    if  non_active:
-#        print "Un-supported releases for %s:" % platform.replace('Darwin', 'Mac OS X')
-#        for arch, releases in non_active.items():
-#            print '%s: %s' % (arch, ', '.join(releases))
-
-#    print "\nAvailable CMS releases for %s:" % os.environ['SCRAM_ARCH']
-#    cmd  = "apt-cache search CMSSW | grep CMSSW | grep -v -i fwlite"
-#    cmd += "| awk '{print $1}' | sed -e 's/cms+cmssw+//g' -e 's/cms+cmssw-patch+//g'"
-#    subprocess.call(cmd, shell=True)
     installed_releases()
 
 def pkg_init(pkg_dir):
@@ -271,8 +246,7 @@ def cms_install(rel):
     Install given CMSSW release
     """
     rel = rel.strip()
-    pat = '^CMSSW(_[0-9]){3}$|^CMSSW(_[0-9]){3}_patch[0-9]+$|^CMSSW(_[0-9]){3}_pre[0-9]+$'
-    pat = re.compile(pat)
+    pat = pat_release
     if  not pat.match(rel):
         msg  = 'Fail to validate release name "%s"' % rel
         print_error(msg)
@@ -470,7 +444,6 @@ def cms_rm(arg):
         prc = subprocess.Popen("rm " + arg, shell=True)
         sts = os.waitpid(prc.pid, 0)[1]
     else:
-        pat_lfn = re.compile('.*\.root$')
         if  pat_lfn.match(arg):
             status = rm_lfn(arg, verbose=verbose)
             print_blue("Status %s" % status)
@@ -554,12 +527,6 @@ def cms_ls(arg):
             arg = arg.strip()
         else:
             flt = None
-        pat_site = re.compile('^(site=)?T[0-9]_[A-Z]+(_)[A-Z]+')
-        pat_dataset = re.compile('^(dataset=)?/.*/.*/.*')
-        pat_block = re.compile('^(block=)?/.*/.*/.*#.*')
-        pat_lfn = re.compile('^(file=)?/.*\.root$')
-        pat_run = re.compile('^(run=)?[1-9][0-9]{5,8}$')
-        pat_se = re.compile('^(site=)?T[0-3]_.*:/.*')
         if  pat_se.match(arg):
             arg = arg.replace('site=', '')
             res = list_se(arg, verbose)
@@ -578,6 +545,9 @@ def cms_ls(arg):
         elif pat_run.match(arg):
             arg = arg.replace('run=', '')
             res = run_info(arg, verbose)
+        elif pat_release.match(arg):
+            arg = arg.replace('release=', '')
+            res = release_info(arg, verbose)
         else:
             raise Exception('Unsupported input')
         RESMGR.assign(res)
@@ -623,7 +593,7 @@ def cms_cp(arg):
         verbose = 0
     if  not arg:
         print_red("Usage: cp <options> source_file target_{file,directory}")
-    pat = re.compile('T[0-3].*:/.*')
+    pat = pat_se
     if  os.path.exists(src) and not pat.match(dst):
         prc = subprocess.Popen("cp %s %s" % (src, dst), shell=True)
         sts = os.waitpid(prc.pid, 0)[1]
