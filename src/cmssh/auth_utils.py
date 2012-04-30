@@ -9,39 +9,19 @@ Set of auth utils:
 """
 __author__ = "Valentin Kuznetsov"
 
+# system modules
 import os
 import time
 import urllib
 import urllib2
 import httplib
 
+# cmssh modules
+from   cmssh.url_utils import HTTPSClientAuthHandler, get_key_cert
+
 def timestamp():
     """Construct timestamp used by Shibboleth"""
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-
-class HTTPSClientAuthHandler(urllib2.HTTPSHandler):
-    """
-    Simple HTTPS client authentication class based on provided 
-    key/ca information
-    """
-    def __init__(self, key=None, cert=None, level=0):
-        urllib2.HTTPSHandler.__init__(self, debuglevel=level)
-        self.key = key
-        self.cert = cert
-
-    def https_open(self, req):
-        """Open request method"""
-        #Rather than pass in a reference to a connection class, we pass in
-        # a reference to a function which, for all intents and purposes,
-        # will behave as a constructor
-        return self.do_open(self.get_connection, req)
-
-    def get_connection(self, host, timeout=300):
-        """Connection method"""
-        if  self.key:
-            return httplib.HTTPSConnection(host, key_file=self.key, 
-                                                cert_file=self.cert)
-        return httplib.HTTPSConnection(host)
 
 def get_data(url, key, cert, debug=0):
     """
@@ -86,7 +66,7 @@ def get_data(url, key, cert, debug=0):
 
     # at this point it sends back the XML form to proceed since my client
     # doesn't support JavaScript and no auto-redirection happened
-    # Since XML form is not well-formed XML I'll parsed manually, urggg ...
+    # Since XML form is not well-formed XML I'll parse it manually, urggg ...
     param_dict = {}
     for item in data.split('<input '):
         if  item.find('name=') != -1 and item.find('value=') != -1:
@@ -103,44 +83,3 @@ def get_data(url, key, cert, debug=0):
     params = urllib.urlencode(param_dict)
     fdesc  = opener.open(url, params)
     return fdesc
-
-def get_key_cert():
-    """
-    Get user key/certificate
-    """
-    key  = None
-    cert = None
-    globus_key  = os.path.join(os.environ['HOME'], '.globus/userkey.pem')
-    globus_cert = os.path.join(os.environ['HOME'], '.globus/usercert.pem')
-    if  os.path.isfile(globus_key):
-        key  = globus_key
-    if  os.path.isfile(globus_cert):
-        cert  = globus_cert
-
-    # First presendence to HOST Certificate, RARE
-    if  os.environ.has_key('X509_HOST_CERT'):
-        cert = os.environ['X509_HOST_CERT']
-        key  = os.environ['X509_HOST_KEY']
-
-    # Second preference to User Proxy, very common
-    elif os.environ.has_key('X509_USER_PROXY'):
-        cert = os.environ['X509_USER_PROXY']
-        key  = cert
-
-    # Third preference to User Cert/Proxy combinition
-    elif os.environ.has_key('X509_USER_CERT'):
-        cert = os.environ['X509_USER_CERT']
-        key  = os.environ['X509_USER_KEY']
-
-    # Worst case, look for cert at default location /tmp/x509up_u$uid
-    elif not key or not cert:
-        uid  = os.getuid()
-        cert = '/tmp/x509up_u'+str(uid)
-        key  = cert
-
-    if  not os.path.exists(cert):
-        raise Exception("Certificate PEM file %s not found" % key)
-    if  not os.path.exists(key):
-        raise Exception("Key PEM file %s not found" % key)
-
-    return key, cert
