@@ -486,6 +486,10 @@ def main():
     cmd = cms_env + '%s/install/bin/pip install --upgrade Routes' % path
     exe_cmd(path, cmd, debug)
 
+    print "Installing decorator"
+    cmd = cms_env + '%s/install/bin/pip install --upgrade decorator' % path
+    exe_cmd(path, cmd, debug)
+
     print "Installing readline"
     ver = '6.2.2'
     url = 'http://pypi.python.org/packages/source/r/readline/readline-%s.tar.gz' % ver
