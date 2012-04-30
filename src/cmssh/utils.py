@@ -16,14 +16,34 @@ import subprocess
 from   types import GeneratorType, InstanceType
 from   cStringIO import StringIO
 import xml.etree.cElementTree as ET
+from   decorator import decorator
 
 # cmssh modules
 from   cmssh.iprint import format_dict, print_warning, msg_green
+from   cmssh.regex import float_number_pattern, int_number_pattern
 
-float_number_pattern = \
-    re.compile(r'(^[-]?\d+\.\d*$|^\d*\.{1,1}\d+$)')
-int_number_pattern = \
-    re.compile(r'(^[0-9-]$|^[0-9-][0-9]*$)')
+class Memoize(object):
+    def __init__(self, interval=1*60*60):
+        self.interval = interval # cache expiration time, default 1h
+        self.expire = time.time() + self.interval
+
+    def __call__(self, func):
+        "Wrap for decorator function call"
+        return decorator(self.check_cache, func)
+
+    def check_cache(self, func, *args):
+        "Set/get results from cache"
+        if  not hasattr(func, 'results'):
+            func.results = {}
+        if  time.time() > self.expire:
+            func.results = {}
+            self.expire = time.time() + self.interval
+        if  args not in func.results:
+            result = func(*args)
+            if  isinstance(result, GeneratorType):
+                result = [r for r in result]
+            func.results[args] = result
+        return func.results[args]
 
 def print_progress(progress, msg='Download in progress:'):
     "Print on stdout progress message"
