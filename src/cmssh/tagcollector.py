@@ -8,10 +8,12 @@ CMS Tag Collector interface
 import re
 
 # cmssh modules
+from cmssh.utils import Memoize
 from cmssh.cms_urls import tc_url
 from cmssh.url_utils import get_data
 from cmssh.regex import pat_release
 
+@Memoize(interval=3600)
 def releases(rel_name=None):
     "Return information about CMS releases"
     if  rel_name:
