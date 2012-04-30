@@ -26,6 +26,8 @@ from cmssh.das import get_data as das_get_data, das_client
 from cmssh.url_utils import get_data
 from cmssh.regex import pat_release, pat_site, pat_dataset, pat_block
 from cmssh.regex import pat_lfn, pat_run, pat_se, pat_release
+from cmssh.tagcollector import releases as tc_releases
+from cmssh.tagcollector import architectures as tc_architectures
 from cmssh.results import RESMGR
 
 def options(arg):
@@ -70,7 +72,7 @@ def installed_releases():
                 + ' command to install one'
         print msg
 
-def cms_releases(_arg):
+def cms_releases(arg=None):
     """List available CMS releases"""
     arch = None
     platform = os.uname()[0]
@@ -81,6 +83,9 @@ def cms_releases(_arg):
     else:
         raise Exception('Unsupported platform %s' % os.uname())
 
+    if  arg == 'all':
+        for rel in tc_releases():
+            print rel['release_name']
     installed_releases()
 
 def pkg_init(pkg_dir):
@@ -612,21 +617,18 @@ def cms_dqueue(arg=None):
         return
     dqueue(arg)
 
-def cms_architectures():
+def cms_architectures(arch_type=None):
     "Return list of CMSSW architectures (aka SCRAM_ARCH)"
-    # TODO: I need to replace py_getReleaseArchitectures
-    # with new API which will return list of all architectures
-    args  = {'release':'CMSSW_6_0_X'}
-    res   = get_data(tc_url(), 'py_getReleaseArchitectures', args)
-    archs = [r[0] for r in res] \
-        + ['osx106_amd64_gcc421', 'osx106_amd64_gcc461', 'osx106_amd64_gcc462']
-    for name in os.listdir(os.environ['VO_CMS_SW_DIR']):
-        if  check_os(name):
-            archs.append(name)
-    return list(set(archs))
+    archs = [a for a in tc_architectures(arch_type)]
+    return archs
 
 def cms_arch(arg=None):
-    "Show or set CMSSW architecture"
+    """
+    Show or set CMSSW architecture. Optional parameters either <all> or <list>
+        arch      # show current and installed architecture(s)
+        arch all  # show all known CMSSW architectures
+        arch list # show all CMSSW architectures for given platform
+    """
     if  not arg:
         print "Current architecture: %s" % os.environ['SCRAM_ARCH']
         archs = []
@@ -637,8 +639,19 @@ def cms_arch(arg=None):
             print '\nInstalled architectures:'
             for item in archs:
                 print item
+    elif arg == 'all' or arg == 'list':
+        if  arg == 'all':
+            print 'CMSSW architectures:'
+        else:
+            print 'CMSSW architectures for %s:' % os.uname()[0].replace('Darwin', 'OSX')
+        for name in cms_architectures('all'):
+            if  arg == 'all':
+                print name
+            else:
+                if  check_os(name):
+                    print name
     else:
-        cms_archs = cms_architectures()
+        cms_archs = cms_architectures('all')
         if  arg not in cms_archs:
             msg  = 'Wrong architecture, please choose from the following list\n'
             msg += ', '.join(cms_archs)
