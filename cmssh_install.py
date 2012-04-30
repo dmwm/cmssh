@@ -608,6 +608,7 @@ python setup.py install --prefix=$idir
         msg += 'export LCG_GFAL_INFOSYS=lcg-bdii.cern.ch:2170\n'
         msg += 'export VOMS_USERCONF=$CMSSH_ROOT/glite/etc/vomses\n'
         msg += 'export VOMS_LOCATION=$CMSSH_ROOT/glite\n'
+        msg += 'export MYPROXY_SERVER=myproxy.cern.ch\n'
         msg += 'export X509_CERT_DIR=$CMSSH_ROOT/certificates\n'
         msg += 'export GLOBUS_ERROR_VERBOSE=true\n'
         msg += 'export GLOBUS_OPTIONS=-Xmx512M\n'
