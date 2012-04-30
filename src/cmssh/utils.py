@@ -19,7 +19,7 @@ import xml.etree.cElementTree as ET
 from   decorator import decorator
 
 # cmssh modules
-from   cmssh.iprint import format_dict, print_warning, msg_green
+from   cmssh.iprint import format_dict, print_warning, msg_green, print_error
 from   cmssh.regex import float_number_pattern, int_number_pattern
 
 class Memoize(object):
@@ -345,7 +345,7 @@ def check_voms_proxy():
     (stdout, stderr) = (res.stdout, res.stderr)
     err = stderr.read()
     if  err:
-        print_red('Fail to check user proxy info')
+        print_error('Fail to check user proxy info')
         return
 
     out = int(stdout.read())
