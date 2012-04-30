@@ -18,6 +18,8 @@ from   types import GeneratorType
 from   cmssh.iprint import format_dict
 from   cmssh.url_utils import get_data
 from   cmssh.cms_objects import Run, File, Block, Dataset, Site, User, Job
+from   cmssh.cms_objects import Release
+from   cmssh.tagcollector import releases
 from   cmssh.filemover import get_pfns, resolve_user_srm_path
 from   cmssh.cms_urls import phedex_url, dbs_url, conddb_url, sitedb_url
 from   cmssh.cms_urls import dashboard_url, dbs_instances
@@ -138,6 +140,9 @@ class CMSFS(object):
         rmp.connect('job user={user:.*?}', controller='list_jobs')
         rmp.connect('job site={site:T[0-3].*?}', controller='list_jobs')
         rmp.connect('job', controller='list_jobs')
+        rmp.connect('release', controller='list_releases')
+        rmp.connect('releases', controller='list_releases')
+        rmp.connect('release={name:CMSSW(_[0-9]){3}}', controller='list_releases')
         return rmp
 
     def lookup(self, obj):
@@ -157,6 +162,14 @@ class CMSFS(object):
         Dataset access method
         """
         return self.lookup(path)
+
+    def list_releases(self, **kwargs):
+        """
+        Controller to get CMSSW release information
+        """
+        data  = releases(kwargs.get('name', None))
+        plist = [Release(r) for r in data]
+        return plist
 
     def list_datasets(self, **kwargs):
         """
@@ -417,6 +430,12 @@ def run_info(run, verbose=None):
             if  run['run'] == rec['Run']:
                 run.update(rec)
         plist.append(Run(run))
+    return plist
+
+def release_info(release, verbose=None):
+    """Return release info"""
+    data  = releases(release)
+    plist = [Release(r) for r in data]
     return plist
 
 # create instance of CMSFS class (singleton)
