@@ -97,3 +97,15 @@ class Job(CMSObj):
         """User string representation"""
         return self.data['name']
 
+class Release(CMSObj):
+    """docstring for Release"""
+    def __init__(self, data):
+        CMSObj.__init__(self, data)
+    def __str__(self):
+        """Release string representation"""
+        if  self.data.has_key('name'):
+            return self.data['name']
+        elif self.data.has_key('release_name'):
+            return self.data['release_name']
+        return self.data
+
