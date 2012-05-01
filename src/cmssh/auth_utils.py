@@ -30,7 +30,7 @@ def get_data(url, key, cert, debug=0):
     """
     # setup HTTP handlers
     cookie_handler = urllib2.HTTPCookieProcessor()
-    https_handler  = HTTPSClientAuthHandler(key, cert, debug)
+    https_handler  = HTTPSClientAuthHandler(key, cert)
     opener = urllib2.build_opener(cookie_handler, https_handler)
     urllib2.install_opener(opener)
 
