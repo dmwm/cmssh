@@ -15,9 +15,46 @@ import time
 import urllib
 import urllib2
 import httplib
+import tempfile
+import subprocess
 
 # cmssh modules
 from   cmssh.url_utils import HTTPSClientAuthHandler, get_key_cert
+
+class _PEMMgr(object):
+    "PEM content holder"
+    def __init__(self):
+        self.pem  = None # to be initialized at run time
+
+# Singleton
+PEMMGR = _PEMMgr()
+
+def read_pem():
+    "Create user key pem content"
+    globus_dir = os.path.join(os.environ['HOME'], '.globus')
+    fobj = tempfile.NamedTemporaryFile(mode='r+', dir=globus_dir)
+    cmd  = '/usr/bin/openssl rsa -in $HOME/.globus/userkey.pem -out %s' % fobj.name
+    print # extra empty line before we read user key
+    subprocess.call(cmd, shell=True)
+    with open(fobj.name, 'r') as userkey:
+        PEMMGR.pem = userkey.read()
+
+class working_pem(object):
+    "ContextManager for temporary user key pem file"
+    def __init__(self, pem):
+        self.pem  = pem
+        self.fobj = None
+    def __enter__(self):
+        "Enter the runtime context related to this object"
+        globus_dir = os.path.join(os.environ['HOME'], '.globus')
+        self.fobj  = tempfile.NamedTemporaryFile(mode='w+b', dir=globus_dir, delete=False)
+        self.fobj.write(self.pem)
+        self.fobj.close()
+        return self.fobj.name
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        "Exit the runtime context related to this object"
+        os.remove(self.fobj.name)
+        self.fobj = None
 
 def timestamp():
     """Construct timestamp used by Shibboleth"""
