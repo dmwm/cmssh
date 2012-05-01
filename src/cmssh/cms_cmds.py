@@ -693,7 +693,8 @@ def cms_vomsinit(_arg=None):
     "Execute voms-proxy-init command on behalf of the user"
     cert = os.path.join(os.environ['HOME'], '.globus/usercert.pem')
     with working_pem(PEMMGR.pem) as key:
-        cmd = "voms-proxy-init -voms cms:/cms -key %s -cert %s" % (key, cert)
+        cmd  = "voms-proxy-destroy; "
+        cmd += "voms-proxy-init -voms cms:/cms -key %s -cert %s" % (key, cert)
         subprocess.call(cmd, shell=True)
 
 def results():
