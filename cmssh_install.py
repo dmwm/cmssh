@@ -659,6 +659,9 @@ fi
 if [ ! -d $ipdir/profile_cmssh ]; then
     mkdir -p $ipdir/profile_cmssh
 fi
+if [ -f /tmp/$USER/.ipython/extensions/cmssh_extension.py ]; then
+    /bin/rm -f /tmp/$USER/.ipython/extensions/cmssh_extension.py
+fi
 if [ ! -f $ipdir/extensions/cmssh_extension.py ]; then
     cp $soft_dir/cmssh/src/config/cmssh_extension.py $ipdir/extensions/
 fi
