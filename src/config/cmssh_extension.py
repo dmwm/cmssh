@@ -187,7 +187,10 @@ def main(ipython):
         setattr(ip, magic_name, m[1])
 
     # import required modules for the shell
-    ip.ex("from cmssh.cms_cmds import results")
+    ip.ex("from cmssh.cms_cmds import results, cms_vomsinit")
+    ip.ex("from cmssh.auth_utils import PEMMGR, read_pem")
+    ip.ex("read_pem()")
+    ip.ex("cms_vomsinit()")
 
     # Set cmssh prompt
     prompt = 'cms-sh'
