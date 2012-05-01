@@ -25,6 +25,7 @@ from cmssh.ddict import DotDict
 from cmssh.cms_urls import phedex_url
 from cmssh.cms_objects import CMSObj
 from cmssh.utils import execmd, print_progress
+from cmssh.url_utils import get_data
 
 def file_size(ifile):
     "Return file size"
@@ -101,18 +102,6 @@ def lfns(run=None, dataset=None):
     """
     Get lfns list for provided run/dataset
     """
-#    url  = 'http://cmsdbsprod.cern.ch/cms_dbs_prod_global/servlet/DBSServlet'
-#    api  = 'listFiles' # DBS2 
-#    args = dict(data_tier_list='', analysis_dataset_name='',
-#                  processed_dataset='', detail='False',
-#                  retrive_list='', block_name='', path='',
-#                  run_number='', primay_dataset='',
-#                  other_details='False')
-#    params = {'user_type': 'NORMAL', 'apiversion': 'DBS_2_0_9', 'api': api}
-#    if  run:
-#        args['run_number'] = run
-#    if  dataset:
-#        args['path'] = dataset
     url  = dbs_url()
     params = {'detail':'True'}
     api  = 'files' # DBS3
@@ -122,12 +111,7 @@ def lfns(run=None, dataset=None):
     if  dataset:
         args['dataset'] = dataset
     params.update(args)
-    data = urllib2.urlopen(url, urllib.urlencode(params, doseq=True))
-#    result = data.read() # DBS2
-#    for row in parser(result):
-#        yield row
-
-    json_dict = json.load(data) # JSON is only for DBS3
+    json_dict = get_data(dbs_url(), api, params)
     for row in json_dict:
         yield row['logical_file_name']
 
@@ -163,10 +147,7 @@ def nodes(select=True):
     """
     Yield list of Phedex nodes, I only select T2 and below
     """
-    url    = phedex_url('nodes')
-    params = {}
-    data   = urllib2.urlopen(url, urllib.urlencode(params, doseq=True))
-    result = json.load(data)
+    result = get_data(phedex_url(), 'nodes', {})
     pat    = re.compile('^T[0-1]_[A-Z]+(_)[A-Z]+')
     lnodes = []
     for row in result['phedex']['node']:
@@ -183,10 +164,8 @@ def resolve_srm_path(node, verbose=None):
     """
     Use TFC phedex API to resolve srm path for given node
     """
-    url    = phedex_url('tfc')
     params = {'node':node}
-    data   = urllib2.urlopen(url, urllib.urlencode(params, doseq=True))
-    result = json.load(data)
+    result = get_data(phedex_url(), 'tfc', params)
     for row in result['phedex']['storage-mapping']['array']:
         if  row['protocol'] == 'srmv2' and row['element_name'] == 'lfn-to-pfn':
             yield (row['result'], row['path-match'])
@@ -197,10 +176,8 @@ def resolve_user_srm_path(node, ldir='/store/user', verbose=None):
     """
     # change ldir if user supplied full path, e.g. /xrootdfs/cms/store/...
     ldir   = '/store/' + ldir.split('/store/')[-1]
-    url    = phedex_url('lfn2pfn')
     params = {'node':node, 'lfn':ldir, 'protocol': 'srmv2'}
-    data   = urllib2.urlopen(url, urllib.urlencode(params, doseq=True))
-    result = json.load(data)
+    result = get_data(phedex_url(), 'lfn2pfn', params)
     for row in result['phedex']['mapping']:
         yield row['pfn']
 
@@ -210,15 +187,9 @@ def get_pfns(lfn, verbose=None):
     """
     pfnlist   = []
     params    = {'se':'*', 'lfn':lfn}
-    url       = phedex_url('fileReplicas')
-    data      = urllib2.urlopen(url, urllib.urlencode(params, doseq=True))
-    json_dict = json.load(data)
+    json_dict = get_data(phedex_url(), 'fileReplicas', params)
     ddict     = DotDict(json_dict)
     if  not json_dict['phedex']['block']:
-#        msg  = "LFN: %s\n" % lfn
-#        msg += 'No replicas found\n'
-#        msg += str(json_dict)
-#        print msg
         return pfnlist
     selist = []
     for fname in ddict.get('phedex.block.file'):
@@ -228,10 +199,8 @@ def get_pfns(lfn, verbose=None):
             if  se not in selist:
                 selist.append(se)
             # query Phedex for PFN
-            url    = phedex_url('lfn2pfn')
             params = {'protocol':'srmv2', 'lfn':lfn, 'node':cmsname}
-            data   = urllib2.urlopen(url, urllib.urlencode(params, doseq=True))
-            result = json.load(data)
+            result = get_data(phedex_url(), 'lfn2pfn', params)
             try:
                 for item in result['phedex']['mapping']:
                     pfn = item['pfn']
@@ -294,12 +263,11 @@ def srmcp(srmcmd, lfn, dst, verbose=None):
         if  lfn.find(':') != -1:
             node, lfn = lfn.split(':')
             params    = {'node':node, 'lfn':lfn, 'protocol':'srmv2'}
-            url       = phedex_url('lfn2pfn')
+            method    = 'lfn2pfn'
         else:
             params    = {'se':'*', 'lfn':lfn}
-            url       = phedex_url('fileReplicas')
-        data      = urllib2.urlopen(url, urllib.urlencode(params, doseq=True))
-        json_dict = json.load(data)
+            method    = 'fileReplicas'
+        json_dict = get_data(phedex_url(), method, params)
         ddict     = DotDict(json_dict)
         if  verbose:
             print "Look-up LFN:"
@@ -335,10 +303,8 @@ def srmcp(srmcmd, lfn, dst, verbose=None):
                 if  cmsname.count('T0', 0, 2) == 1:
                     continue # skip T0's
                 # query Phedex for PFN
-                url    = phedex_url('lfn2pfn')
                 params = {'protocol':'srmv2', 'lfn':lfn, 'node':cmsname}
-                data   = urllib2.urlopen(url, urllib.urlencode(params, doseq=True))
-                result = json.load(data)
+                result = get_data(phedex_url(), 'lfn2pfn', params)
                 try:
                     for item in result['phedex']['mapping']:
                         pfn = item['pfn']
@@ -423,31 +389,6 @@ def execute(cmd, lfn, verbose):
     status = check_file(src, dst, verbose) # check again since SRM may fail
     return status
     
-def check_allowance(verbose):
-    """
-    Check if user is allowed to perform srm-copy command.
-    We send request to FileMover server, who response with ok/fail.
-    """
-    url  = filemover_url() + '/allow'
-    args = {'userdn': get_username()}
-    if  verbose:
-        print "check_allowance", url, args
-    data = urllib2.urlopen(url, urllib.urlencode(args, doseq=True))
-    return data.read()
-    
-def add_request(lfn, src, dst, verbose):
-    """
-    Send request to FileMover server to add information abotu src/dst request.
-    """
-    url  = filemover_url() + '/record'
-    date = '%s' % datetime.date.today()
-    args = {'userdn':get_username(), 'src':src,
-                'dst':dst, 'date':date, 'lfn':lfn}
-    if  verbose:
-        print "add_request", url, args
-    data = urllib2.urlopen(url, urllib.urlencode(args, doseq=True))
-    return data.read()
-
 def active_jobs(queue):
     "Return number of active jobs in a queue"
     njobs = 0
