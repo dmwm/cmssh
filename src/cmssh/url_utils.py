@@ -19,8 +19,12 @@ class HTTPSClientAuthHandler(urllib2.HTTPSHandler):
     def __init__(self, ckey=None, cert=None):
 #        urllib2.HTTPSHandler.__init__(self, debuglevel=1)
         urllib2.HTTPSHandler.__init__(self)
-        self.ckey = ckey
-        self.cert = cert
+        if  ckey != cert:
+            self.ckey = ckey
+            self.cert = cert
+        else:
+            self.cert = cert
+            self.ckey = None
 
     def https_open(self, req):
         """Open request method"""
@@ -31,7 +35,7 @@ class HTTPSClientAuthHandler(urllib2.HTTPSHandler):
 
     def get_connection(self, host, timeout=300):
         """Connection method"""
-        if  self.ckey:
+        if  self.cert:
             return httplib.HTTPSConnection(host, key_file=self.ckey,
                                                 cert_file=self.cert)
         return httplib.HTTPSConnection(host)
@@ -76,12 +80,6 @@ def get_key_cert():
     """
     key  = None
     cert = None
-    globus_key  = os.path.join(os.environ['HOME'], '.globus/userkey.pem')
-    globus_cert = os.path.join(os.environ['HOME'], '.globus/usercert.pem')
-    if  os.path.isfile(globus_key):
-        key  = globus_key
-    if  os.path.isfile(globus_cert):
-        cert  = globus_cert
 
     # First presendence to HOST Certificate, RARE
     if  os.environ.has_key('X509_HOST_CERT'):
@@ -98,16 +96,27 @@ def get_key_cert():
         cert = os.environ['X509_USER_CERT']
         key  = os.environ['X509_USER_KEY']
 
-    # Worst case, look for cert at default location /tmp/x509up_u$uid
+    # look for cert at default location /tmp/x509up_u$uid
     elif not key or not cert:
         uid  = os.getuid()
         cert = '/tmp/x509up_u'+str(uid)
         key  = cert
+
+    # worse case take user key/cert from .globus
+    else:
+        globus_key  = os.path.join(os.environ['HOME'], '.globus/userkey.pem')
+        globus_cert = os.path.join(os.environ['HOME'], '.globus/usercert.pem')
+        if  os.path.isfile(globus_key):
+            key  = globus_key
+        if  os.path.isfile(globus_cert):
+            cert  = globus_cert
 
     if  not os.path.exists(cert):
         raise Exception("Certificate PEM file %s not found" % key)
     if  not os.path.exists(key):
         raise Exception("Key PEM file %s not found" % key)
 
-    return key, cert
+    if  key == cert: # key/cert in one file, e.g. /tmp/x509up_u<uid>
+        key = None   # to handle correctly HTTPSHandler call
 
+    return key, cert
