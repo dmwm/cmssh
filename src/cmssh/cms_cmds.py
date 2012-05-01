@@ -29,6 +29,7 @@ from cmssh.regex import pat_lfn, pat_run, pat_se, pat_release
 from cmssh.tagcollector import releases as tc_releases
 from cmssh.tagcollector import architectures as tc_architectures
 from cmssh.results import RESMGR
+from cmssh.auth_utils import PEMMGR, working_pem
 
 def options(arg):
     """Extract options from given arg string"""
@@ -518,6 +519,8 @@ def cms_ls(arg):
         verbose = 0
     if  not arg:
         arg = '.'
+    if  arg and arg[0] == '~':
+        arg = os.path.join(os.environ['HOME'], arg.replace('~/', ''))
     orig_arg = arg
     opts = options(arg)
     path = '/'.join(arg.split('/')[:-1])
@@ -688,8 +691,10 @@ def cms_das_json(query):
 
 def cms_vomsinit(_arg=None):
     "Execute voms-proxy-init command on behalf of the user"
-    cmd = "voms-proxy-init -voms cms:/cms -key $X509_USER_KEY -cert $X509_USER_CERT"
-    subprocess.call(cmd, shell=True)
+    cert = os.path.join(os.environ['HOME'], '.globus/usercert.pem')
+    with working_pem(PEMMGR.pem) as key:
+        cmd = "voms-proxy-init -voms cms:/cms -key %s -cert %s" % (key, cert)
+        subprocess.call(cmd, shell=True)
 
 def results():
     """Return results from recent query"""
