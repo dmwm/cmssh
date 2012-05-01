@@ -696,7 +696,7 @@ voms-proxy-init -voms cms:/cms -key $ukey -cert $cert
             flags += ' --InteractiveShellApp.pylab_import_all=False'
         msg += 'ipython %s --ipython-dir=$ipdir --profile=cmssh' % flags
         cmssh.write(msg)
-        cmssh.write('/bin/rm -f $ukey')
+        cmssh.write('\n/bin/rm -f $ukey')
     os.chmod('bin/cmssh', 0755)
 
     print "Clean-up ..."
