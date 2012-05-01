@@ -665,9 +665,27 @@ fi
 if [ ! -f $ipdir/profile_cmssh/ipython_config.py ]; then
     cp $soft_dir/cmssh/src/config/ipython_config.py $ipdir/profile_cmssh/
 fi
+if [ ! -f $HOME/.globus/userkey.pem ]; then
+    echo "You don't have $HOME/.globus/userkey.pem on this system"
+    echo "Please install it to proceed"
+    exit -1
+fi
+if [ ! -f $HOME/.globus/usercert.pem ]; then
+    echo "You don't have $HOME/.globus/usercert.pem on this system"
+    echo "Please install it to proceed"
+    exit -1
+fi
 export IPYTHON_DIR=$ipdir
-#grid-proxy-init
-voms-proxy-init -voms cms:/cms -valid 24:00
+ukey=$HOME/.globus/cmssh.x509pk
+cert=$HOME/.globus/usercert.pem
+if [ -f $ukey ]; then
+    /bin/rm -f $ukey
+fi
+/usr/bin/openssl rsa -in $HOME/.globus/userkey.pem -out $ukey
+chmod 0400 $ukey
+export X509_USER_KEY=$ukey
+export X509_USER_CERT=$cert
+voms-proxy-init -voms cms:/cms -key $ukey -cert $cert
 """ % path
         flags = '--no-banner'
         if  use_matplotlib:
@@ -678,6 +696,7 @@ voms-proxy-init -voms cms:/cms -valid 24:00
             flags += ' --InteractiveShellApp.pylab_import_all=False'
         msg += 'ipython %s --ipython-dir=$ipdir --profile=cmssh' % flags
         cmssh.write(msg)
+        cmssh.write('/bin/rm -f $ukey')
     os.chmod('bin/cmssh', 0755)
 
     print "Clean-up ..."
