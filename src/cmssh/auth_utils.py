@@ -43,18 +43,18 @@ class working_pem(object):
     "ContextManager for temporary user key pem file"
     def __init__(self, pem):
         self.pem  = pem
-        self.fobj = None
+        self.name = None # runtime thing
     def __enter__(self):
         "Enter the runtime context related to this object"
-        globus_dir = os.path.join(os.environ['HOME'], '.globus')
-        self.fobj  = tempfile.NamedTemporaryFile(mode='w+b', dir=globus_dir, delete=False)
-        self.fobj.write(self.pem)
-        self.fobj.close()
-        return self.fobj.name
+        fobj = tempfile.mkstemp()
+        self.name = fobj[-1]
+        with open(self.name, 'w') as fname:
+            fname.write(self.pem)
+        return self.name
     def __exit__(self, exc_type, exc_val, exc_tb):
         "Exit the runtime context related to this object"
-        os.remove(self.fobj.name)
-        self.fobj = None
+        os.remove(self.name)
+        self.name = None
 
 def timestamp():
     """Construct timestamp used by Shibboleth"""
