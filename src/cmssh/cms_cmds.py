@@ -401,8 +401,8 @@ def cms_help_msg():
     msg += msg_green('cmsRun      ') \
         + ' cmsRun command for release in question\n'
     msg += '\nAvailable GRID commands: <cmd> either grid or voms\n'
-    msg += msg_green('<cmd>init    ') + ' setup your proxy (aka <cmd>-proxy-init)\n'
-    msg += msg_green('<cmd>info    ') + ' show your proxy info (aka <cmd>-proxy-info)\n'
+    msg += msg_green('vomsinit    ') + ' setup your proxy (aka voms-proxy-init)\n'
+    msg += msg_green('vomsinfo    ') + ' show your proxy info (aka voms-proxy-info)\n'
     msg += '\nQuery results are accessible via %s function:\n' % msg_blue('results()')
     msg += '   find dataset=/*Zee*\n'
     msg += '   for r in results(): print r, type(r)\n'
@@ -685,6 +685,11 @@ def cms_das_json(query):
     res   = das_client(host, query, idx, limit, debug, 'json')
     RESMGR.assign([res])
     pprint.pprint(res)
+
+def cms_vomsinit(_arg=None):
+    "Execute voms-proxy-init command on behalf of the user"
+    cmd = "voms-proxy-init -voms cms:/cms -key $X509_USER_KEY -cert $X509_USER_CERT"
+    subprocess.call(cmd, shell=True)
 
 def results():
     """Return results from recent query"""
