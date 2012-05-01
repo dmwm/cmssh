@@ -18,7 +18,7 @@ from   IPython import release
 
 # cmssh modules
 import cmssh
-from   cmssh.iprint import PrintManager
+from   cmssh.iprint import PrintManager, print_error, print_warning
 from   cmssh.debug import DebugManager
 from   cmssh.cms_cmds import dbs_instance, Magic, cms_find, cms_du
 from   cmssh.cms_cmds import cms_ls, cms_cp, verbose, cms_dqueue
@@ -148,29 +148,42 @@ cmsMagicList = [ \
     ('arch', cms_arch),
 ]
 
+def check_0400(kfile):
+    "Check 0400 permission of given file"
+    mode = os.stat(kfile).st_mode
+    cond = bool(mode & stat.S_IRUSR) and not bool(mode & stat.S_IWUSR) \
+            and not bool(mode & stat.S_IXUSR) \
+            and not bool(mode & stat.S_IRWXO) \
+            and not bool(mode & stat.S_IRWXG)
+    return cond
+
+def check_0600(kfile):
+    "Check 0600 permission of given file"
+    mode = os.stat(kfile).st_mode
+    cond = bool(mode & stat.S_IRUSR) and not bool(mode & stat.S_IXUSR) \
+            and not bool(mode & stat.S_IRWXO) \
+            and not bool(mode & stat.S_IRWXG)
+    return cond
+
 def test_key_cert():
     """Test user key/cert file and their permissions"""
     kfile = os.path.join(os.environ['HOME'], '.globus/userkey.pem')
     cfile = os.path.join(os.environ['HOME'], '.globus/usercert.pem')
     if  os.path.isfile(kfile):
-        mode = os.stat(kfile).st_mode
-        cond = bool(mode & stat.S_IRUSR) and not bool(mode & stat.S_IWUSR) \
-                and not bool(mode & stat.S_IXUSR) \
-                and not bool(mode & stat.S_IRWXO) \
-                and not bool(mode & stat.S_IRWXG)
-        if  not cond:
-            PM.print_red("File %s has wrong permission, try chmod 0400 %s" % (kfile, kfile))
+        if  not (check_0600(kfile) or check_0400(kfile)):
+            msg = "File %s has weak permission settings, try" % kfile
+            print_warning(msg)
+            print "chmod 0400 %s" % kfile
     else:
         PM.print_red("File %s does not exists, grid/cp commands will not work" % kfile)
     if  os.path.isfile(cfile):
-        mode = os.stat(cfile).st_mode
-        cond = bool(mode & stat.S_IRUSR) and not bool(mode & stat.S_IXUSR) \
-                and not bool(mode & stat.S_IRWXO) \
-                and not bool(mode & stat.S_IRWXG)
-        if  not cond:
-            PM.print_red("File %s has wrong permission, try chmod 0600 %s" % (cfile, cfile))
+        if  not (check_0600(cfile) or check_0400(cfile)):
+            msg = "File %s has weak permission settings, try" % cfile
+            print_warning(msg)
+            print "chmod 0600 %s" % cfile
     else:
-        PM.print_red("File %s does not exists, grid/cp commands will not work" % cfile)
+        msg = "File %s does not exists, grid/cp commands will not work" % cfile
+        print_error(msg)
 
 #
 # Main function
