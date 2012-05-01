@@ -11,7 +11,7 @@ import time
 import urllib
 
 from cmssh.utils import xml_parser
-from cmssh.auth_utils import get_data
+from cmssh.auth_utils import get_data, PEMMGR, working_pem
 
 def run_summary_url(url, params):
     """Construct Run Summary URL from provided parameters"""
@@ -35,11 +35,12 @@ def convert_datetime(sec):
 
 def runsum(run, debug=0):
     "Get run information from RunSummary data-service"
-    url = "https://cmswbm.web.cern.ch/cmswbm/cmsdb/servlet/RunSummary"
-    params = {"DB":"cms_omds_lb", "FORMAT":"XML", "RUN": "%s" % run}
-    url = run_summary_url(url, params)
-    key  = os.environ['X509_USER_KEY']
-    cert = os.environ['X509_USER_CERT']
-    data = get_data(url, key, cert, debug)
-    for row in xml_parser(data, 'runInfo'):
-        yield row['runInfo']
+    url  = "https://cmswbm.web.cern.ch/cmswbm/cmsdb/servlet/RunSummary"
+    args = {"DB":"cms_omds_lb", "FORMAT":"XML", "RUN": "%s" % run}
+    url  = run_summary_url(url, args)
+    key  = None
+    cert = os.path.join(os.environ['HOME'], '.globus/usercert.pem')
+    with working_pem(PEMMGR.pem) as key:
+        data = get_data(url, key, cert, debug)
+        for row in xml_parser(data, 'runInfo'):
+            yield row['runInfo']
