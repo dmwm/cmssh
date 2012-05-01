@@ -676,16 +676,6 @@ if [ ! -f $HOME/.globus/usercert.pem ]; then
     exit -1
 fi
 export IPYTHON_DIR=$ipdir
-ukey=$HOME/.globus/cmssh.x509pk
-cert=$HOME/.globus/usercert.pem
-if [ -f $ukey ]; then
-    /bin/rm -f $ukey
-fi
-/usr/bin/openssl rsa -in $HOME/.globus/userkey.pem -out $ukey
-chmod 0400 $ukey
-export X509_USER_KEY=$ukey
-export X509_USER_CERT=$cert
-voms-proxy-init -voms cms:/cms -key $ukey -cert $cert
 """ % path
         flags = '--no-banner'
         if  use_matplotlib:
@@ -696,7 +686,6 @@ voms-proxy-init -voms cms:/cms -key $ukey -cert $cert
             flags += ' --InteractiveShellApp.pylab_import_all=False'
         msg += 'ipython %s --ipython-dir=$ipdir --profile=cmssh' % flags
         cmssh.write(msg)
-        cmssh.write('\n/bin/rm -f $ukey')
     os.chmod('bin/cmssh', 0755)
 
     print "Clean-up ..."
