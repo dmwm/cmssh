@@ -6,11 +6,11 @@ RunSummary service
 """
 __author__ = "Valentin Kuznetsov"
 
+import os
 import time
 import urllib
 
 from cmssh.utils import xml_parser
-from cmssh.url_utils import get_key_cert
 from cmssh.auth_utils import get_data
 
 def run_summary_url(url, params):
@@ -38,7 +38,8 @@ def runsum(run, debug=0):
     url = "https://cmswbm.web.cern.ch/cmswbm/cmsdb/servlet/RunSummary"
     params = {"DB":"cms_omds_lb", "FORMAT":"XML", "RUN": "%s" % run}
     url = run_summary_url(url, params)
-    key, cert = get_key_cert()
+    key  = os.environ['X509_USER_KEY']
+    cert = os.environ['X509_USER_CERT']
     data = get_data(url, key, cert, debug)
     for row in xml_parser(data, 'runInfo'):
         yield row['runInfo']
