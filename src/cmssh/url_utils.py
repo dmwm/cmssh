@@ -86,6 +86,12 @@ def get_key_cert():
         cert = os.environ['X509_HOST_CERT']
         key  = os.environ['X509_HOST_KEY']
 
+    # look for cert at default location /tmp/x509up_u$uid
+    elif not key or not cert:
+        uid  = os.getuid()
+        cert = '/tmp/x509up_u'+str(uid)
+        key  = cert
+
     # Second preference to User Proxy, very common
     elif os.environ.has_key('X509_USER_PROXY'):
         cert = os.environ['X509_USER_PROXY']
@@ -95,12 +101,6 @@ def get_key_cert():
     elif os.environ.has_key('X509_USER_CERT'):
         cert = os.environ['X509_USER_CERT']
         key  = os.environ['X509_USER_KEY']
-
-    # look for cert at default location /tmp/x509up_u$uid
-    elif not key or not cert:
-        uid  = os.getuid()
-        cert = '/tmp/x509up_u'+str(uid)
-        key  = cert
 
     # worse case take user key/cert from .globus
     else:
