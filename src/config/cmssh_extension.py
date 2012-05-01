@@ -24,7 +24,7 @@ from   cmssh.cms_cmds import dbs_instance, Magic, cms_find, cms_du
 from   cmssh.cms_cmds import cms_ls, cms_cp, verbose, cms_dqueue
 from   cmssh.cms_cmds import cms_rm, cms_rmdir, cms_mkdir, cms_root, cms_xrdcp
 from   cmssh.cms_cmds import cms_install, cms_releases, cms_info
-from   cmssh.cms_cmds import cmsrel, cmsrun, cms_help, cms_arch
+from   cmssh.cms_cmds import cmsrel, cmsrun, cms_help, cms_arch, cms_vomsinit
 from   cmssh.cms_cmds import cms_help_msg, results, cms_apt, cms_das, cms_das_json
 
 def voms_monitor(interval):
@@ -117,9 +117,10 @@ cmsMagicList = [ \
     ('cmsenv', Magic('eval `scramv1 runtime -sh`').execute),
     ('scram', Magic('scramv1').execute),
     # grid middleware commands
-    ('gridinit', Magic('grid-proxy-init').execute),
-    ('gridinfo', Magic('grid-proxy-info').execute),
-    ('vomsinit', Magic('voms-proxy-init').execute),
+#    ('gridinit', Magic('grid-proxy-init').execute),
+#    ('gridinfo', Magic('grid-proxy-info').execute),
+#    ('vomsinit', Magic('voms-proxy-init').execute),
+    ('vomsinit', cms_vomsinit),
     ('vomsinfo', Magic('voms-proxy-info').execute),
     # specific commands whose execution depends on conditions
     ('das', cms_das),
