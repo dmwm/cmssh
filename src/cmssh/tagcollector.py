@@ -43,6 +43,8 @@ def releases(rel_name=None, rfilter=None):
 
 def architectures(arch_type='production'):
     "Return list of CMSSW known architectures"
+    if  not arch_type:
+        arch_type = 'all'
     prod_arch = set()
     dev_arch  = set()
     for row in releases():
