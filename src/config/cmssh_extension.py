@@ -18,7 +18,7 @@ from   IPython import release
 
 # cmssh modules
 import cmssh
-from   cmssh.iprint import PrintManager, print_error, print_warning
+from   cmssh.iprint import PrintManager, print_error, print_warning, print_info
 from   cmssh.debug import DebugManager
 from   cmssh.cms_cmds import dbs_instance, Magic, cms_find, cms_du
 from   cmssh.cms_cmds import cms_ls, cms_cp, verbose, cms_dqueue
@@ -67,12 +67,12 @@ def register(prompt, name, funcList=[]):
     funcList.sort()
     ID.dict[name] = funcList
     if  funcList:
-        PM.print_blue("Available commands within %s sub-shell:" % prompt)
+        print_info("Available commands within %s sub-shell:" % prompt)
     if  funcList:
         if  not funcList.count('_exit'):
             funcList.append('_exit')
         for func in funcList:
-            PM.print_blue("%s %s" % (" "*10, func))
+            print_info("%s %s" % (" "*10, func))
             if  not ID.funcList.count(func):
                 ID.funcList.append(func)
     else:
@@ -90,7 +90,6 @@ def set_prompt(in1):
 # load managers
 #
 try:
-    PM       = PrintManager()
     DEBUG    = DebugManager()
     ID       = ShellName()
 except:
@@ -175,7 +174,7 @@ def test_key_cert():
             print_warning(msg)
             print "chmod 0400 %s" % kfile
     else:
-        PM.print_red("File %s does not exists, grid/cp commands will not work" % kfile)
+        print_error("File %s does not exists, grid/cp commands will not work" % kfile)
     if  os.path.isfile(cfile):
         if  not (check_0600(cfile) or check_0400(cfile)):
             msg = "File %s has weak permission settings, try" % cfile
