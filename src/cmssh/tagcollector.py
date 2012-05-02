@@ -14,7 +14,7 @@ from cmssh.url_utils import get_data
 from cmssh.regex import pat_release
 
 @Memoize(interval=3600)
-def releases(rel_name=None):
+def releases(rel_name=None, rfilter=None):
     "Return information about CMS releases"
     if  rel_name:
         if  not pat_release.match(rel_name):
@@ -27,8 +27,9 @@ def releases(rel_name=None):
     columns   = rel_info['columns']
     pat = re.compile('CMSSW_[1-9]_[0-9]_X\.*')
     for key, val in rel_info['data'].iteritems():
-        if  pat.match(key):
-            continue
+        if rfilter == 'list':
+            if  pat.match(key) or not key.find('CMSSW') != -1:
+                continue
         row   = {}
         pairs = zip(columns['release_name'], val)
         for kkk, vvv in pairs:
