@@ -12,6 +12,7 @@ import sys
 import time
 import urllib
 import urllib2
+import traceback
 
 import re
 import xml.etree.cElementTree as ET
@@ -203,6 +204,7 @@ def file_info(lfn, verbose=None):
         lfnobj.assign('pfn', pfnlist)
         lfnobj.assign('se', selist)
     except:
+        traceback.print_exc()
         lfnobj.assign('pfn', [])
         lfnobj.assign('se', [])
     return lfnobj
