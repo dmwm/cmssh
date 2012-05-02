@@ -81,7 +81,9 @@ def cms_releases(arg=None):
         releases all  # show all known CMS releases, including online, tests, etc.
     """
     if  arg:
-        releases = [r['release_name'] for r in tc_releases(rfilter=arg)]
+        res = release_info(release=None, rfilter=arg)
+        RESMGR.assign(res)
+        releases = [str(r) for r in res]
         releases = list(set(releases))
         releases.sort()
         for rel in releases:
