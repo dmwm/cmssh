@@ -66,22 +66,6 @@ def check_software(softlist):
             print help
             sys.exit(1)
 
-def check_proxy():
-    """
-    Perform validity of the proxy
-    """
-    # check valid proxy
-    cmd    = 'grid-proxy-info'
-    stdout, stderr = execmd(cmd)
-    if  stderr.find('command not found') != -1:
-        print 'Unable to find grid-proxy-info tool'
-        print help
-        sys.exit(1)
-    for line in stdout.split('\n'):
-        if  line.find('timeleft') != -1 and line.split()[-1] == '0:00:00':
-            print '\nYour proxy has been expired, renew proxy ...'
-            os.system('grid-proxy-init')
-
 def parser(data):
     """Parser DBS2 listFiles output"""
     elem  = ET.fromstring(data)
@@ -417,7 +401,6 @@ def worker(queue, threshold):
 class FileMover(object):
     def __init__(self):
         self.instance = "Instance at %d" % self.__hash__()
-        check_proxy()
         self.queue = {} # download queue
         threshold = 3 # number of simulteneous downloads
         thread.start_new_thread(worker, (self.queue, threshold))
