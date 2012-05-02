@@ -14,8 +14,8 @@ import traceback
 import subprocess
 
 # cmssh modules
-from cmssh.iprint import print_red, print_blue, msg_red, msg_green, msg_blue
-from cmssh.iprint import print_warning, print_error, print_success
+from cmssh.iprint import msg_red, msg_green, msg_blue
+from cmssh.iprint import print_warning, print_error, print_status, print_info
 from cmssh.filemover import copy_lfn, rm_lfn, mkdir, rmdir, list_se, dqueue
 from cmssh.utils import list_results, check_os, exe_cmd, unsupported_linux
 from cmssh.utils import osparameters, check_voms_proxy
@@ -128,10 +128,10 @@ def debug(arg):
     """
     arg = arg.strip()
     if  arg:
-        print_blue("Set debug level to %s" % arg)
+        print_info("Set debug level to %s" % arg)
         DEBUG.set(arg)
     else:
-        print_blue("Debug level is %s" % DEBUG.level)
+        print_info("Debug level is %s" % DEBUG.level)
 
 def cms_find(arg):
     """
@@ -295,7 +295,7 @@ def cmsrel(rel):
     """
     rel = rel.strip()
     if  not rel:
-        print_red('Please specify release name')
+        print_error('Please specify release name')
         installed_releases()
         return
 
@@ -444,7 +444,7 @@ def cms_rm(arg):
     except:
         verbose = 0
     if  not arg:
-        print_red("Usage: rm <options> source_file")
+        print_error("Usage: rm <options> source_file")
     dst = arg.split()[-1]
     if  os.path.exists(dst) or len(glob.glob(dst)):
         prc = subprocess.Popen("rm " + arg, shell=True)
@@ -452,7 +452,7 @@ def cms_rm(arg):
     else:
         if  pat_lfn.match(arg):
             status = rm_lfn(arg, verbose=verbose)
-            print_blue("Status %s" % status)
+            print_status(status)
         else:
             raise Exception('Not implemented yet')
 
@@ -469,14 +469,14 @@ def cms_rmdir(arg):
     except:
         verbose = 0
     if  not arg:
-        print_red("Usage: rmdir <options> dir")
+        print_error("Usage: rmdir <options> dir")
     if  os.path.exists(arg):
         prc = subprocess.Popen("rmdir " + arg, shell=True)
         sts = os.waitpid(prc.pid, 0)[1]
     else:
         try:
             status = rmdir(arg, verbose=verbose)
-            print_blue("Status %s" % status)
+            print_status(status)
         except:
             traceback.print_exc()
 
@@ -493,14 +493,14 @@ def cms_mkdir(arg):
     except:
         verbose = 0
     if  not arg:
-        print_red("Usage: mkdir <options> dir")
+        print_error("Usage: mkdir <options> dir")
     if  arg.find(':') == -1: # not a SE:dir pattern
         prc = subprocess.Popen("mkdir " + arg, shell=True)
         sts = os.waitpid(prc.pid, 0)[1]
     else:
         try:
             status = mkdir(arg, verbose=verbose)
-            print_blue("Status %s" % status)
+            print_status(status)
         except:
             traceback.print_exc()
 
@@ -594,13 +594,13 @@ def cms_cp(arg):
             dst = os.getcwd()
     except:
         traceback.print_exc()
-        print_red("Wrong argument(s) for, cp '%s'" % arg)
+        return
     try:
         verbose = get_ipython().debug
     except:
         verbose = 0
     if  not arg:
-        print_red("Usage: cp <options> source_file target_{file,directory}")
+        print_error("Usage: cp <options> source_file target_{file,directory}")
     pat = pat_se
     if  os.path.exists(src) and not pat.match(dst):
         prc = subprocess.Popen("cp %s %s" % (src, dst), shell=True)
@@ -608,15 +608,14 @@ def cms_cp(arg):
     else:
         try:
             status = copy_lfn(src, dst, verbose, background)
-            print_blue("Status %s" % status)
+            print_status(status)
         except:
             traceback.print_exc()
-            print_red("Wrong argument '%s'" % arg)
 
 def cms_dqueue(arg=None):
     "Return status of transfer queue. For detailed view please use list option."
     if  arg and arg != 'list':
-        print_red("Wrong argument '%s', please use 'list'" % arg)
+        print_error("Wrong argument '%s', please use 'list'" % arg)
         return
     dqueue(arg)
 
