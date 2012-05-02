@@ -223,6 +223,14 @@ class PrintManager(object):
         """print message using green color"""
         print self.msg_green('\nSUCCESS:'), msg
 
+    def print_info(self, msg):
+        """print message using green color"""
+        print self.msg_green('\nINFO:'), msg
+
+    def print_status(self, msg):
+        """print message using blue color"""
+        print self.msg_green('\nSTATUS:'), msg
+
     def print_red(self, msg):
         """print message using red color"""
         print self.msg_red(msg)
@@ -337,14 +345,20 @@ def print_red(msg):
     """print input message in red color"""
     PM_SINGLETON.print_red(msg)
 def print_warning(msg):
-    """print input message in red color"""
+    """print warning message"""
     PM_SINGLETON.print_warning(msg)
 def print_error(msg):
-    """print input message in red color"""
+    """print error message"""
     PM_SINGLETON.print_error(msg)
 def print_success(msg):
-    """print input message in red color"""
+    """print success message"""
     PM_SINGLETON.print_success(msg)
+def print_info(msg):
+    """print info message"""
+    PM_SINGLETON.print_info(msg)
+def print_status(msg):
+    """print status message"""
+    PM_SINGLETON.print_status(msg)
 def msg_red(msg):
     """convert input message into red color"""
     return PM_SINGLETON.msg_red(msg)
