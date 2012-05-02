@@ -432,9 +432,9 @@ def run_info(run, verbose=None):
         plist.append(Run(run))
     return plist
 
-def release_info(release, verbose=None):
+def release_info(release, rfilter=None):
     """Return release info"""
-    data  = releases(release)
+    data  = releases(release, rfilter)
     plist = [Release(r) for r in data]
     return plist
 
