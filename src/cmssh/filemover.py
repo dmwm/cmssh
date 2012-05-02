@@ -19,7 +19,7 @@ from multiprocessing import Process
 import xml.etree.ElementTree as ET
 
 # cmssh modules
-from cmssh.iprint import print_red, print_blue
+from cmssh.iprint import print_error, print_info
 from cmssh.utils import size_format
 from cmssh.ddict import DotDict
 from cmssh.cms_urls import phedex_url
@@ -322,7 +322,7 @@ def get_size(cmd, verbose=None):
         print help
         sys.exit(1)
     if  stderr:
-        print_red(stderr)
+        print_error(stderr)
     orig_size = 0
     if  cmd.find('file:///') != -1: # srm-ls returns XML
         orig_size = parse_srmls(stdout)
@@ -367,7 +367,7 @@ def execute(cmd, lfn, verbose):
 #        os.system(cmd) # execute given command
         stdout, stderr = execmd(cmd)
         if  stderr:
-            print_red(stderr)
+            print_error(stderr)
         if  not stdout.find('SRM_SUCCESS') != -1:
             print stdout
     status = check_file(src, dst, verbose) # check again since SRM may fail
@@ -409,12 +409,12 @@ class FileMover(object):
         "Copy LFN to given destination via xrdcp command"
         if  not os.path.isdir(dst):
             msg = 'xrdcp only works with local destination'
-            print_red(msg)
+            print_error(msg)
             return 'fail'
         cmd = 'xrdcp root://xrootd.unl.edu/%s %s' % (lfn, dst)
         stdout, stderr = execmd(cmd)
         if  stderr:
-            print_red(stderr)
+            print_error(stderr)
             return 'fail'
         return 'success'
 
@@ -434,7 +434,7 @@ class FileMover(object):
                         dst, dst_size = status
                         size = size_format(dst_size)
                         if  not size or not dst_size:
-                            print_red(err)
+                            print_error(err)
                             print "Status of transfer:\n", status
                             return 'fail'
                         else:
@@ -465,7 +465,7 @@ class FileMover(object):
                             time.sleep(0.5)
                         print '' # to finish print_progress
                     else:
-                        print_red(err)
+                        print_error(err)
                         return 'fail'
         return 'success'
 
@@ -492,7 +492,7 @@ class FileMover(object):
             print cmd
         stdout, stderr = execmd(cmd)
         if  stderr:
-            print_red(stderr)
+            print_error(stderr)
         output = []
         row = {}
         for line in stdout.split():
@@ -530,7 +530,7 @@ class FileMover(object):
             print cmd
         stdout, stderr = execmd(cmd)
         if  stderr:
-            print_red(stderr)
+            print_error(stderr)
         if  stdout.find('SRM_SUCCESS') != -1:
             return 'success'
         else:
@@ -550,7 +550,7 @@ class FileMover(object):
         print cmd
         stdout, stderr = execmd(cmd)
         if  stderr:
-            print_red(stderr)
+            print_error(stderr)
         if  stdout.find('SRM_SUCCESS') != -1:
             return 'success'
         else:
@@ -570,7 +570,7 @@ class FileMover(object):
         print cmd
         stdout, stderr = execmd(cmd)
         if  stderr:
-            print_red(stderr)
+            print_error(stderr)
         if  stdout.find('SRM_SUCCESS') != -1:
             return 'success'
         else:
@@ -581,7 +581,7 @@ def copy_lfn(lfn, dst, verbose=0, background=False):
     """Copy lfn to destination"""
     status = FM_SINGLETON.copy(lfn, dst, verbose, background)
     if  status == 'fail':
-        print_blue('Fallback to xrdcp method')
+        print_info('Fallback to xrdcp method')
         FM_SINGLETON.copy_via_xrdcp(lfn, dst, verbose)
     return status
 
