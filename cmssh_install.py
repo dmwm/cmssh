@@ -303,7 +303,7 @@ def main():
         print "Unsupported architecture"
         sys.exit(1)
 
-    print 'Checking CMSSW ...'
+    print 'Checking CMSSW'
     if  debug:
         print 'Probe architecture', arch
     os.chdir(path)
@@ -691,7 +691,7 @@ export IPYTHON_DIR=$ipdir
         cmssh.write(msg)
     os.chmod('bin/cmssh', 0755)
 
-    print "Clean-up ..."
+    print "Clean-up soft area"
     os.chdir(path)
     res = subprocess.call("rm *.tar.gz", shell=True)
 
