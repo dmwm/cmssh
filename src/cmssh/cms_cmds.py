@@ -74,19 +74,18 @@ def installed_releases():
         print msg
 
 def cms_releases(arg=None):
-    """List available CMS releases"""
-    arch = None
-    platform = os.uname()[0]
-    if  platform == 'Darwin':
-        arch = 'osx'
-    elif platform == 'Linux':
-        arch = 'slc'
-    else:
-        raise Exception('Unsupported platform %s' % os.uname())
-
-    if  arg == 'all':
-        for rel in tc_releases():
-            print rel['release_name']
+    """
+    List available CMS releases. Optional parameters either <list> or <all>
+        releases      # show installed CMSSW releases
+        releases list # show available CMSSW releases
+        releases all  # show all known CMS releases, including online, tests, etc.
+    """
+    if  arg:
+        releases = [r['release_name'] for r in tc_releases(rfilter=arg)]
+        releases = list(set(releases))
+        releases.sort()
+        for rel in releases:
+            print rel
     installed_releases()
 
 def pkg_init(pkg_dir):
