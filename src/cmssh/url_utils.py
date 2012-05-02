@@ -63,7 +63,7 @@ def get_data(url, method, kwargs=None, headers=None, verbose=None, decoder='json
             req.add_header(key, val)
     else:
         headers = {'Accept':'application/json;text/json'}
-    if  ckey and cert:
+    if  cert:
         handler = HTTPSClientAuthHandler(ckey, cert)
         opener  = urllib2.build_opener(handler)
         urllib2.install_opener(opener)
