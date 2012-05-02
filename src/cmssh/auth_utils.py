@@ -49,11 +49,12 @@ def read_pem():
 class working_pem(object):
     "ContextManager for temporary user key pem file"
     def __init__(self, pem):
+        self.gdir = os.path.join(os.environ['HOME'], '.globus')
         self.pem  = pem
         self.name = None # runtime thing
     def __enter__(self):
         "Enter the runtime context related to this object"
-        fobj = tempfile.mkstemp()
+        fobj = tempfile.mkstemp(prefix='cmssh', dir=self.gdir)
         self.name = fobj[-1]
         with open(self.name, 'w') as fname:
             fname.write(self.pem)
