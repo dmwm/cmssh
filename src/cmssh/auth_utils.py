@@ -32,17 +32,19 @@ PEMMGR = _PEMMgr()
 def read_pem():
     "Create user key pem content"
     globus_dir = os.path.join(os.environ['HOME'], '.globus')
-    fobj = tempfile.NamedTemporaryFile(mode='r+', dir=globus_dir, delete=False)
+    fname = 'cmssh.x509pk_u%s' % os.getuid()
     try:
-        cmd  = '/usr/bin/openssl rsa -in $HOME/.globus/userkey.pem -out %s' % fobj.name
+        cmd  = '/usr/bin/openssl rsa -in $HOME/.globus/userkey.pem -out %s' % fname
         print # extra empty line before we read user key
         subprocess.call(cmd, shell=True)
-        fobj.close()
-        with open(fobj.name, 'r') as userkey:
+        with open(fname, 'r') as userkey:
             PEMMGR.pem = userkey.read()
     except:
         traceback.print_exc()
-    os.remove(fobj.name)
+    try:
+        os.remove(fname)
+    except:
+        traceback.print_exc()
 
 class working_pem(object):
     "ContextManager for temporary user key pem file"
