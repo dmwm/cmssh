@@ -520,13 +520,13 @@ def cms_ls(arg):
         verbose = 0
     if  not arg:
         arg = '.'
-    if  arg and arg[0] == '~':
-        arg = os.path.join(os.environ['HOME'], arg.replace('~/', ''))
     orig_arg = arg
     opts = options(arg)
     path = '/'.join(arg.split('/')[:-1])
     if  opts:
         arg = arg.strip().replace(''.join(opts), '').strip()
+    if  arg and arg[0] == '~':
+        arg = os.path.join(os.environ['HOME'], arg.replace('~/', ''))
     if  os.path.exists(arg) or not arg  or (path and os.path.exists(path)):
         prc = subprocess.Popen("ls " + " " + ''.join(opts) + " " + arg, shell=True)
         sts = os.waitpid(prc.pid, 0)[1]
