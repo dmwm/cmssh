@@ -15,6 +15,7 @@ import time
 import urllib
 import urllib2
 import tempfile
+import traceback
 import subprocess
 
 # cmssh modules
@@ -31,12 +32,17 @@ PEMMGR = _PEMMgr()
 def read_pem():
     "Create user key pem content"
     globus_dir = os.path.join(os.environ['HOME'], '.globus')
-    fobj = tempfile.NamedTemporaryFile(mode='r+', dir=globus_dir)
-    cmd  = '/usr/bin/openssl rsa -in $HOME/.globus/userkey.pem -out %s' % fobj.name
-    print # extra empty line before we read user key
-    subprocess.call(cmd, shell=True)
-    with open(fobj.name, 'r') as userkey:
-        PEMMGR.pem = userkey.read()
+    fobj = tempfile.NamedTemporaryFile(mode='r+', dir=globus_dir, delete=False)
+    try:
+        cmd  = '/usr/bin/openssl rsa -in $HOME/.globus/userkey.pem -out %s' % fobj.name
+        print # extra empty line before we read user key
+        subprocess.call(cmd, shell=True)
+        fobj.close()
+        with open(fobj.name, 'r') as userkey:
+            PEMMGR.pem = userkey.read()
+    except:
+        traceback.print_exc()
+    os.remove(fobj.name)
 
 class working_pem(object):
     "ContextManager for temporary user key pem file"
