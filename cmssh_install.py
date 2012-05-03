@@ -637,7 +637,7 @@ python setup.py install --prefix=$idir
         fds.write(msg + '\n')
         msg = '"cms" "lcg-voms.cern.ch" "15002" "/DC=ch/DC=cern/OU=computers/CN=lcg-voms.cern.ch" "cms"'
         fds.write(msg + '\n')
-    os.chmod(fname, stat.S_IRUSR)
+    os.chmod(fname, stat.S_IRUSR | stat.S_IROTH | stat.S_IRGRP)
 
     print "Create cmssh"
     try:
