@@ -11,6 +11,7 @@ __author__ = "Valentin Kuznetsov"
 
 # system modules
 import os
+import stat
 import time
 import urllib
 import urllib2
@@ -32,11 +33,14 @@ PEMMGR = _PEMMgr()
 def read_pem():
     "Create user key pem content"
     globus_dir = os.path.join(os.environ['HOME'], '.globus')
-    fname = 'cmssh.x509pk_u%s' % os.getuid()
+    fname = os.path.join(globus_dir, 'cmssh.x509pk_u%s' % os.getuid())
+    mode = stat.S_IRUSR
     try:
-        cmd  = '/usr/bin/openssl rsa -in $HOME/.globus/userkey.pem -out %s' % fname
+        cmd  = '/usr/bin/openssl rsa -in %s/.globus/userkey.pem -out %s' \
+                % (os.environ['HOME'], fname)
         print # extra empty line before we read user key
-        subprocess.call(cmd, shell=True)
+        subprocess.call(cmd.split())
+        os.chmod(fname, mode)
         with open(fname, 'r') as userkey:
             PEMMGR.pem = userkey.read()
     except:
