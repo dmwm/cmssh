@@ -17,10 +17,10 @@ import urllib
 import urllib2
 import tempfile
 import traceback
-import subprocess
 
 # cmssh modules
 from   cmssh.url_utils import HTTPSClientAuthHandler, get_key_cert
+from   cmssh.utils import run
 
 class _PEMMgr(object):
     "PEM content holder"
@@ -39,7 +39,7 @@ def read_pem():
         cmd  = '/usr/bin/openssl rsa -in %s/.globus/userkey.pem -out %s' \
                 % (os.environ['HOME'], fname)
         print # extra empty line before we read user key
-        subprocess.call(cmd.split())
+        run(cmd)
         os.chmod(fname, mode)
         with open(fname, 'r') as userkey:
             PEMMGR.pem = userkey.read()
