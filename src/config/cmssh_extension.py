@@ -9,7 +9,6 @@ import stat
 import time
 import thread
 import traceback
-import subprocess
 from   types import GeneratorType
 
 # ipython modules
@@ -26,23 +25,6 @@ from   cmssh.cms_cmds import cms_rm, cms_rmdir, cms_mkdir, cms_root, cms_xrdcp
 from   cmssh.cms_cmds import cms_install, cms_releases, cms_info
 from   cmssh.cms_cmds import cmsrel, cmsrun, cms_help, cms_arch, cms_vomsinit
 from   cmssh.cms_cmds import cms_help_msg, results, cms_apt, cms_das, cms_das_json
-
-def voms_monitor(interval):
-    "VOMS proxy monitor worker, it keep user proxy alive"
-    cmd = 'voms-proxy-init -q -voms cms:/cms -valid 24:00'
-    small = 5 # small interval in case of errors
-    while True:
-        try:
-            res = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            (stdout, stderr) = (res.stdout, res.stderr)
-            err = stderr.read()
-            out = stdout.read()
-            if  err:
-                time.sleep(small)
-            else:
-                time.sleep(interval)
-        except:
-            time.sleep(small)
 
 class ShellName(object):
     def __init__(self):
@@ -221,10 +203,6 @@ def main(ipython):
 
     # check existance and permission of key/cert 
     test_key_cert()
-
-    # start vomsproxy daemon
-#    interval = 3*60*60 # 3 hours
-#    thread.start_new_thread(voms_monitor, (interval, ))
 
 def load_ipython_extension(ipython):
     """Load custom extensions"""
