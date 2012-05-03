@@ -234,7 +234,11 @@ def srmcp(srmcmd, lfn, dst, verbose=None):
                     raise Exception(msg)
                 dst = 'file:///%s' % ddir
             else:
-                dst = 'file:///%s' % os.getcwd()
+                ddir = '/'.join(dst.split('/')[:-1]).replace('$PWD', os.getcwd())
+                if  os.path.isdir(ddir):
+                    dst = 'file:///%s' % os.path.join(os.getcwd(), ddir)
+                else:
+                    dst = 'file:///%s' % os.getcwd()
     pfnlist   = []
     if  os.path.isfile(lfn) or lfn.find('file:///') != -1: # local file
         pfn = lfn.replace('file:///', '')
