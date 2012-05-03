@@ -9,6 +9,7 @@ import os
 import re
 import sys
 import time
+import shlex
 import types
 import readline
 import traceback
@@ -19,8 +20,57 @@ import xml.etree.cElementTree as ET
 from   decorator import decorator
 
 # cmssh modules
-from   cmssh.iprint import format_dict, print_warning, msg_green, print_error
+from   cmssh.iprint import format_dict, msg_green
+from   cmssh.iprint import print_warning, print_error, print_info
 from   cmssh.regex import float_number_pattern, int_number_pattern
+
+class working_dir(object):
+    "ContextManager to switch for given directory"
+    def __init__(self, new_dir, debug=None):
+        self.ndir  = new_dir
+        self.odir  = os.getcwd()
+        self.debug = debug
+    def __enter__(self):
+        "Switch to new directory"
+        if  self.ndir:
+            if  self.debug:
+                print "cd %s" % self.ndir
+            os.chdir(self.ndir)
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        "Switch to original directory"
+        if  self.ndir:
+            if  self.debug:
+                print "cd %s" % self.odir
+            os.chdir(self.odir)
+
+def run(cmd, cdir=None, log=None, msg=None, debug=None, shell=False):
+    "Run given command via subprocess call"
+    if  msg:
+        print msg
+    cmd  = cmd.strip()
+    kwds = {}
+    if  shell or cmd.find(';') != -1 or cmd.find('&&') != -1:
+        kwds = {'shell': True}
+    else:
+        if  isinstance(cmd, unicode):
+            cmd = shlex.split(cmd.encode('ascii', 'ignore'))
+        else:
+            cmd = shlex.split(cmd)
+    if  debug:
+        print_info('Execute cmd=%s, kwds=%s' % (cmd, kwds))
+    try:
+        with working_dir(cdir):
+            if  log:
+                with open(log, 'w') as logstream:
+                    kwds.update({'stdout': logstream, 'stderr': logstream})
+                    code = subprocess.call(cmd, **kwds)
+            else:
+                code = subprocess.call(cmd, **kwds)
+            if  code < 0:
+                print_error('Child was terminated by signal %s', -code)
+    except OSError as err:
+        msg = 'Fail to execute cmd=%a, kwds=%s, error=%s' % (cmd, kwds, err)
+        print_error(msg)
 
 class Memoize(object):
     def __init__(self, interval=1*60*60):
@@ -323,33 +373,15 @@ def unsupported_linux():
                     return True
     return False
 
-def exe_cmd(idir, cmd, debug, msg=None):
-    """Execute given command in a given dir"""
-    if  msg:
-        print msg
-    os.chdir(idir)
-    if  debug:
-        print "cd %s\n%s" % (os.getcwd(), cmd)
-    with open('install.log', 'w') as logstream:
-        try:
-            retcode = subprocess.call(cmd, shell=True, stdout=logstream, stderr=logstream)
-            if  retcode < 0:
-                print >> sys.stderr, "Child was terminated by signal", -retcode
-        except OSError, err:
-            print >> sys.stderr, "Execution failed:", err
-
 def check_voms_proxy():
     "Check status of user VOMS proxy"
     cmd = 'voms-proxy-info -timeleft'
-    res = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    (stdout, stderr) = (res.stdout, res.stderr)
-    err = stderr.read()
+    out, err = execmd(cmd)
     if  err:
         print_error('Fail to check user proxy info')
         return
 
-    out = int(stdout.read())
-    if  out < 3600: # time left is less then 1 hour
+    if  int(out) < 3600: # time left is less then 1 hour
         msg  = 'Your VOMS proxy will expire in %s sec (< 1 hour). ' % out
         msg += 'Please run ' + msg_green('vomsinit') + ' command to renew it'
         print_warning(msg)
