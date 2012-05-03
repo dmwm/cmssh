@@ -11,14 +11,13 @@ import json
 import glob
 import pprint
 import traceback
-import subprocess
 
 # cmssh modules
 from cmssh.iprint import msg_red, msg_green, msg_blue
 from cmssh.iprint import print_warning, print_error, print_status, print_info
 from cmssh.filemover import copy_lfn, rm_lfn, mkdir, rmdir, list_se, dqueue
-from cmssh.utils import list_results, check_os, exe_cmd, unsupported_linux
-from cmssh.utils import osparameters, check_voms_proxy
+from cmssh.utils import list_results, check_os, unsupported_linux
+from cmssh.utils import osparameters, check_voms_proxy, run
 from cmssh.cmsfs import dataset_info, block_info, file_info, site_info, run_info
 from cmssh.cmsfs import CMSMGR, apply_filter, validate_dbs_instance, release_info
 from cmssh.cms_urls import dbs_instances, tc_url
@@ -49,8 +48,8 @@ class Magic(object):
         self.cmd = cmd
     def execute(self, args=''):
         "Execute given command in a shell"
-        cmd_opts = '%s %s' % (self.cmd, args.strip())
-        subprocess.call(cmd_opts.strip(), shell=True)
+        cmd = '%s %s' % (self.cmd, args.strip())
+        run(cmd)
 
 def installed_releases():
     "Print a list of releases installed on a system"
@@ -107,8 +106,8 @@ def cms_root(arg):
     gcc_init  = pkg_init('external/gcc')
     root_init = pkg_init('lcg/root')
     pkgs_init = '%s %s %s' % (pcre_init, gcc_init, root_init)
-    cmd_opts  = '%s root -l %s' % (pkgs_init, arg.strip())
-    subprocess.call(cmd_opts, shell=True)
+    cmd = '%s root -l %s' % (pkgs_init, arg.strip())
+    run(cmd)
 
 def cms_xrdcp(arg):
     """
@@ -118,8 +117,8 @@ def cms_xrdcp(arg):
     root_path = os.environ['DEFAULT_ROOT']
     if  dyld_path:
         os.environ['DYLD_LIBRARY_PATH'] = os.path.join(root_path, 'lib')
-    cmd_opts = '%s/xrdcp %s' % (os.path.join(root_path, 'bin'), arg.strip())
-    subprocess.call(cmd_opts, shell=True)
+    cmd = '%s/xrdcp %s' % (os.path.join(root_path, 'bin'), arg.strip())
+    run(cmd)
     if  dyld_path:
         os.environ['DYLD_LIBRARY_PATH'] = dyld_path
 
@@ -179,16 +178,20 @@ def verbose(arg):
 # CMSSW commands
 def bootstrap(arch):
     "Bootstrap new architecture"
-    cmd = 'sh -x $VO_CMS_SW_DIR/bootstrap.sh setup -path $VO_CMS_SW_DIR -arch $SCRAM_ARCH'
+    swdir = os.environ['VO_CMS_SW_DIR']
+    arch  = os.environ['SCRAM_ARCH']
+    cmd = 'sh -x %s/bootstrap.sh setup -path %s -arch %s' % (swdir, swdir, arch)
     if  unsupported_linux():
         cmd += ' -unsupported_distribution_hack'
     sdir  = os.path.join(os.environ['CMSSH_ROOT'], 'CMSSW')
     debug = 0
-    exe_cmd(sdir, cmd, debug, 'Bootstrap %s ...' % arch)
-    cmd   = 'source `find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt -name init.sh | tail -1`; '
+    msg   = 'Bootstrap %s ...' % arch
+    run(cmd, sdir, 'bootstrap.log', msg, debug)
+    cmd   = 'source `find %s/%s/external/apt -name init.sh | tail -1`; ' % (swdir, arch)
     cmd  += 'apt-get install external+fakesystem+1.0; '
     cmd  += 'apt-get update; '
-    exe_cmd(sdir, cmd, debug, 'Initialize %s apt repository ...' % arch)
+    msg   = 'Initialize %s apt repository ...' % arch
+    run(cmd, sdir, msg=msg, debug=debug)
 
 def get_release_arch(rel):
     "Return architecture for given CMSSW release"
@@ -279,14 +282,14 @@ def cms_install(rel):
     print "Searching for %s" % rel
     script = get_apt_init(os.environ['SCRAM_ARCH'])
     cmd = 'source %s; apt-cache search %s | grep -v -i fwlite' % (script, rel)
-    subprocess.call(cmd, shell=True)
+    run(cmd)
     if  rel.lower().find('patch') != -1:
         print "Installing cms+cmssw-patch+%s ..." % rel
         cmd = 'source %s; apt-get install cms+cmssw-patch+%s' % (script, rel)
     else:
         print "Installing cms+cmssw+%s ..." % rel
         cmd = 'source %s; apt-get install cms+cmssw+%s' % (script, rel)
-    subprocess.call(cmd, shell=True)
+    run(cmd)
     print "Create user area for %s release ..." % rel
     cmsrel(rel)
 
@@ -324,7 +327,8 @@ def cmsrel(rel):
         os.chdir(os.path.join(cmssw_dir, rel + '/src'))
     else:
         os.chdir(cmssw_dir)
-        subprocess.call("scramv1 project CMSSW %s" % rel, shell=True)
+        cmd = "scramv1 project CMSSW %s" % rel
+        run(cmd)
         os.chdir(os.path.join(rel, 'src'))
     print "%s is ready, cwd: %s" % (rel, os.getcwd())
 
@@ -341,9 +345,8 @@ def cmsrun(arg):
         msg += '\nInstalled releases: ' + msg_green(', '.join(releases))
         print msg
         return
-    cmd = "eval `scramv1 runtime -sh`; cmsRun"
-    cmd_opts = '%s %s' % (cmd, arg.strip())
-    subprocess.call(cmd_opts, shell=True)
+    cmd = "eval `scramv1 runtime -sh`; cmsRun %s" % arg
+    run(cmd)
 
 def dbs_instance(arg=None):
     """
@@ -448,8 +451,8 @@ def cms_rm(arg):
         print_error("Usage: rm <options> source_file")
     dst = arg.split()[-1]
     if  os.path.exists(dst) or len(glob.glob(dst)):
-        prc = subprocess.Popen("rm " + arg, shell=True)
-        sts = os.waitpid(prc.pid, 0)[1]
+        cmd = "rm %s" % arg
+        run(cmd)
     else:
         if  pat_lfn.match(arg):
             status = rm_lfn(arg, verbose=verbose)
@@ -472,8 +475,7 @@ def cms_rmdir(arg):
     if  not arg:
         print_error("Usage: rmdir <options> dir")
     if  os.path.exists(arg):
-        prc = subprocess.Popen("rmdir " + arg, shell=True)
-        sts = os.waitpid(prc.pid, 0)[1]
+        run("rmdir %s" % arg)
     else:
         try:
             status = rmdir(arg, verbose=verbose)
@@ -496,8 +498,7 @@ def cms_mkdir(arg):
     if  not arg:
         print_error("Usage: mkdir <options> dir")
     if  arg.find(':') == -1: # not a SE:dir pattern
-        prc = subprocess.Popen("mkdir " + arg, shell=True)
-        sts = os.waitpid(prc.pid, 0)[1]
+        run("mkdir %s" % arg)
     else:
         try:
             status = mkdir(arg, verbose=verbose)
@@ -518,18 +519,19 @@ def cms_ls(arg):
         verbose = get_ipython().debug
     except:
         verbose = 0
-    if  not arg:
-        arg = '.'
     orig_arg = arg
     opts = options(arg)
     path = '/'.join(arg.split('/')[:-1])
     if  opts:
-        arg = arg.strip().replace(''.join(opts), '').strip()
+        arg = arg.strip().replace(' '.join(opts), '').strip()
     if  arg and arg[0] == '~':
         arg = os.path.join(os.environ['HOME'], arg.replace('~/', ''))
+    if  not arg:
+        arg = os.getcwd()
+    arg = arg.replace('$PWD', os.getcwd())
     if  os.path.exists(arg) or not arg  or (path and os.path.exists(path)):
-        prc = subprocess.Popen("ls " + " " + ''.join(opts) + " " + arg, shell=True)
-        sts = os.waitpid(prc.pid, 0)[1]
+        cmd = 'ls ' + ' '.join(opts) + ' ' + arg
+        run(cmd)
     else:
         if  orig_arg.find('|') != -1:
             arg, flt = orig_arg.split('|', 1)
@@ -604,8 +606,7 @@ def cms_cp(arg):
         print_error("Usage: cp <options> source_file target_{file,directory}")
     pat = pat_se
     if  os.path.exists(src) and not pat.match(dst):
-        prc = subprocess.Popen("cp %s %s" % (src, dst), shell=True)
-        sts = os.waitpid(prc.pid, 0)[1]
+        run("cp %s %s" % (src, dst))
     else:
         try:
             status = copy_lfn(src, dst, verbose, background)
@@ -669,7 +670,7 @@ def cms_apt(arg=''):
     else:
         msg = 'Not supported apt command'
         raise Exception(msg)
-    subprocess.call(cmd, shell=True)
+    run(cmd)
 
 def cms_das(query):
     "Execute given query in CMS DAS data-service"
@@ -693,10 +694,9 @@ def cms_vomsinit(_arg=None):
     "Execute voms-proxy-init command on behalf of the user"
     cert = os.path.join(os.environ['HOME'], '.globus/usercert.pem')
     with working_pem(PEMMGR.pem) as key:
-        cmd = "voms-proxy-destroy"
-        subprocess.call(cmd.split())
+        run("voms-proxy-destroy")
         cmd = "voms-proxy-init -voms cms:/cms -key %s -cert %s" % (key, cert)
-        subprocess.call(cmd.split())
+        run(cmd)
 
 def results():
     """Return results from recent query"""
