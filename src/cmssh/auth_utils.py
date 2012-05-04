@@ -99,7 +99,7 @@ def get_data(url, key, cert, debug=0):
     #    wtrealm=https%3A%2F%2Fcmswbm.web.cern.ch%2FShibboleth.sso%2FADFS&
     #    wctx=cookie%3Ab6cd5965
     params = {}
-    if  os.environ.get('HTTPDEBUG', 0):
+    if  int(os.environ.get('HTTPDEBUG', 0)):
         print_info('CERN Login output')
         print data
     for line in data.split('\n'):
@@ -113,7 +113,7 @@ def get_data(url, key, cert, debug=0):
     # now, request authentication at CERN login page
     params = urllib.urlencode(params, doseq=True)
     url    = 'https://login.cern.ch/adfs/ls/auth/sslclient/'
-    if  os.environ.get('HTTPDEBUG', 0):
+    if  int(os.environ.get('HTTPDEBUG', 0)):
         print_info('CERN Login parameters')
         print url + '?' + params
     fdesc  = opener.open(url + '?' + params)
@@ -137,5 +137,8 @@ def get_data(url, key, cert, debug=0):
     # request to Shibboleth
     url    = 'https://cmswbm.web.cern.ch/Shibboleth.sso/ADFS'
     params = urllib.urlencode(param_dict)
+    if  int(os.environ.get('HTTPDEBUG', 0)):
+        print_info('WBM parameters')
+        print url + '?' + params
     fdesc  = opener.open(url, params)
     return fdesc
