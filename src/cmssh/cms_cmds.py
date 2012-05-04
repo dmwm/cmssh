@@ -560,7 +560,12 @@ def cms_ls(arg):
             arg = arg.replace('release=', '')
             res = release_info(arg, verbose)
         else:
-            raise Exception('Unsupported input')
+            res = []
+            msg = 'Unsupported input "%s"' % arg
+            print_warning(msg)
+            supported = ['site', 'file', 'block', 'dataset', 'release']
+            msg = 'Usage: info <key=value>, supported keys: %s' % ', '.join(supported)
+            print_info(msg)
         RESMGR.assign(res)
         list_results(res, debug=True, flt=flt)
 
