@@ -22,7 +22,7 @@ from   cmssh.debug import DebugManager
 from   cmssh.cms_cmds import dbs_instance, Magic, cms_find, cms_du
 from   cmssh.cms_cmds import cms_ls, cms_cp, verbose, cms_dqueue
 from   cmssh.cms_cmds import cms_rm, cms_rmdir, cms_mkdir, cms_root, cms_xrdcp
-from   cmssh.cms_cmds import cms_install, cms_releases, cms_info
+from   cmssh.cms_cmds import cms_install, cms_releases, cms_info, debug_http
 from   cmssh.cms_cmds import cmsrel, cmsrun, cms_help, cms_arch, cms_vomsinit
 from   cmssh.cms_cmds import cms_help_msg, results, cms_apt, cms_das, cms_das_json
 
@@ -119,6 +119,7 @@ cmsMagicList = [ \
     ('cp', cms_cp),
     ('dqueue', cms_dqueue),
     ('verbose', verbose),
+    ('debug_http', debug_http),
     ('install', cms_install),
     ('releases', cms_releases),
     ('dbs_instance', dbs_instance),
