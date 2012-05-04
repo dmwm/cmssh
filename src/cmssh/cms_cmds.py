@@ -133,6 +133,17 @@ def debug(arg):
     else:
         print_info("Debug level is %s" % DEBUG.level)
 
+def debug_http(arg):
+    """
+    Set debug HTTP flag. Default is 0 level.
+    """
+    arg = arg.strip()
+    if  arg:
+        print_info("Set HTTP debug level to %s" % arg)
+        os.environ['HTTPDEBUG'] = arg
+    else:
+        print_info("HTTP debug level is %s" % os.environ.get('HTTPDEBUG', 0))
+
 def cms_find(arg):
     """
     Perform lookup of given query in CMS data-services.
@@ -168,7 +179,7 @@ def verbose(arg):
     arg = arg.strip()
     ip = get_ipython()
     if  arg == '':
-        print "verbose", ip.debug
+        print_info("Verbose level is %s" % ip.debug)
     else:
         if  arg == 0 or arg == '0':
             ip.debug = False
