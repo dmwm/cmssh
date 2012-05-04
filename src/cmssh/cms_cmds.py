@@ -135,10 +135,13 @@ def debug(arg):
 
 def debug_http(arg):
     """
-    Set debug HTTP flag. Default is 0 level.
+    Show or set HTTP debug flag. Default is 0.
     """
     arg = arg.strip()
     if  arg:
+        if  arg not in ['0', '1']:
+            print_error('Please provide 0/1 for debug_http command')
+            return
         print_info("Set HTTP debug level to %s" % arg)
         os.environ['HTTPDEBUG'] = arg
     else:
