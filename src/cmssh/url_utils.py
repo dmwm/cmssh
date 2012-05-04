@@ -5,11 +5,15 @@
 URL utils
 """
 
+# system modules
 import os
 import json
 import httplib
 import urllib
 import urllib2
+
+# cmssh modules
+from   cmssh.iprint import print_info
 
 class HTTPSClientAuthHandler(urllib2.HTTPSHandler):
     """
@@ -17,8 +21,10 @@ class HTTPSClientAuthHandler(urllib2.HTTPSHandler):
     key/ca information
     """
     def __init__(self, ckey=None, cert=None):
-#        urllib2.HTTPSHandler.__init__(self, debuglevel=1)
-        urllib2.HTTPSHandler.__init__(self)
+        if  os.environ.get('HTTPDEBUG', 0):
+            urllib2.HTTPSHandler.__init__(self, debuglevel=1)
+        else:
+            urllib2.HTTPSHandler.__init__(self)
         if  ckey != cert:
             self.ckey = ckey
             self.cert = cert
