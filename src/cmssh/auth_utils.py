@@ -19,6 +19,7 @@ import tempfile
 import traceback
 
 # cmssh modules
+from   cmssh.iprint import print_info
 from   cmssh.url_utils import HTTPSClientAuthHandler, get_key_cert
 from   cmssh.utils import run
 
@@ -98,6 +99,9 @@ def get_data(url, key, cert, debug=0):
     #    wtrealm=https%3A%2F%2Fcmswbm.web.cern.ch%2FShibboleth.sso%2FADFS&
     #    wctx=cookie%3Ab6cd5965
     params = {}
+    if  os.environ.get('HTTPDEBUG', 0):
+        print_info('CERN Login output')
+        print data
     for line in data.split('\n'):
         if  line.find('Sign in using your Certificate</a>') != -1:
             args = line.split('href=')[-1].split('"')[1].\
@@ -109,7 +113,10 @@ def get_data(url, key, cert, debug=0):
     # now, request authentication at CERN login page
     params = urllib.urlencode(params, doseq=True)
     url    = 'https://login.cern.ch/adfs/ls/auth/sslclient/'
-    fdesc  = opener.open(url+'?'+params)
+    if  os.environ.get('HTTPDEBUG', 0):
+        print_info('CERN Login parameters')
+        print url + '?' + params
+    fdesc  = opener.open(url + '?' + params)
     data   = fdesc.read()
     fdesc.close()
 
