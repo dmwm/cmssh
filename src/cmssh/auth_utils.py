@@ -20,7 +20,7 @@ import traceback
 
 # cmssh modules
 from   cmssh.iprint import print_info
-from   cmssh.url_utils import HTTPSClientAuthHandler, get_key_cert
+from   cmssh.url_utils import get_key_cert, create_ssh_opener
 from   cmssh.utils import run
 
 class _PEMMgr(object):
@@ -33,6 +33,27 @@ PEMMGR = _PEMMgr()
 
 def read_pem():
     "Create user key pem content"
+    try:
+        read_pem_via_pyopenssl() # the most secure way to load user key
+    except:
+        read_pem_via_openssl() # fallback via openssl shell call
+
+def read_pem_via_pyopenssl():
+    "Create user key pem content via OpenSSL crypto module"
+    from OpenSSL import crypto
+    pkey = os.path.join(os.environ['HOME'], '.globus/userkey.pem')
+    buf  = None
+    with open(pkey, 'r') as key:
+        buf = key.read()
+    ckey = crypto.load_privatekey(crypto.FILETYPE_PEM, buf)
+    PEMMGR.pem = crypto.dump_privatekey(crypto.FILETYPE_PEM, ckey)
+
+def read_pem_via_openssl():
+    """
+    Create user key pem content via passless key (created by openssl).
+    This function creates temporary file in user .globus area in order
+    to load passless key.
+    """
     globus_dir = os.path.join(os.environ['HOME'], '.globus')
     fname = os.path.join(globus_dir, 'cmssh.x509pk_u%s' % os.getuid())
     mode = stat.S_IRUSR
@@ -78,46 +99,28 @@ def get_data(url, key, cert, debug=0):
     Main routine to get data from data service behind CERN SSO.
     Return file-like descriptor object (similar to open).
     """
-    # setup HTTP handlers
-    cookie_handler = urllib2.HTTPCookieProcessor()
-    https_handler  = HTTPSClientAuthHandler(key, cert)
-    opener = urllib2.build_opener(cookie_handler, https_handler)
-    urllib2.install_opener(opener)
-
     # send request to RunSummary, it set the _shibstate_ cookie which 
     # will be used for redirection
+    opener = create_ssh_opener(key, cert)
     fdesc  = opener.open(url)
-    data   = fdesc.read()
+    url    = fdesc.geturl()
+    params = url.split('?')[-1] # redirect parameters
+    if  int(os.environ.get('HTTPDEBUG', 0)):
+        print_info('Response info')
+        print fdesc.info()
+        print fdesc.geturl()
     fdesc.close()
 
-    # extract redirect parameters
-    # Here is an example what should be sent to login.cern.ch via GET method
-    # https://login.cern.ch/adfs/ls/auth/sslclient/?
-    #    wa=wsignin1.0&
-    #    wreply=https%3A%2F%2Fcmswbm.web.cern.ch%2FShibboleth.sso%2FADFS&
-    #    wct=2012-03-13T20%3A21%3A51Z&
-    #    wtrealm=https%3A%2F%2Fcmswbm.web.cern.ch%2FShibboleth.sso%2FADFS&
-    #    wctx=cookie%3Ab6cd5965
-    params = {}
-    if  int(os.environ.get('HTTPDEBUG', 0)):
-        print_info('CERN Login output')
-        print data
-    for line in data.split('\n'):
-        if  line.find('Sign in using your Certificate</a>') != -1:
-            args = line.split('href=')[-1].split('"')[1].\
-                        replace('auth/sslclient/?', '')
-            kwds = urllib.url2pathname(args).split('&amp;')
-            params = dict([i.split('=') for i in kwds])
-            break
-
     # now, request authentication at CERN login page
-    params = urllib.urlencode(params, doseq=True)
     url    = 'https://login.cern.ch/adfs/ls/auth/sslclient/'
     if  int(os.environ.get('HTTPDEBUG', 0)):
         print_info('CERN Login parameters')
         print url + '?' + params
     fdesc  = opener.open(url + '?' + params)
     data   = fdesc.read()
+    if  int(os.environ.get('HTTPDEBUG', 0)):
+        print_info('Response info')
+        print fdesc.info()
     fdesc.close()
 
     # at this point it sends back the XML form to proceed since my client
