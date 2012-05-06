@@ -8,9 +8,10 @@ URL utils
 # system modules
 import os
 import json
-import httplib
 import urllib
 import urllib2
+import httplib
+import cookielib
 
 # cmssh modules
 from   cmssh.iprint import print_info
@@ -45,6 +46,17 @@ class HTTPSClientAuthHandler(urllib2.HTTPSHandler):
             return httplib.HTTPSConnection(host, key_file=self.ckey,
                                                 cert_file=self.cert)
         return httplib.HTTPSConnection(host)
+
+def create_ssh_opener(key, cert):
+    "Create HTTPS url opener with cookie support"
+    cookie_jar = cookielib.CookieJar()
+    cookie_handler = urllib2.HTTPCookieProcessor(cookie_jar)
+    https_handler  = HTTPSClientAuthHandler(key, cert)
+    opener = urllib2.build_opener(cookie_handler, https_handler)
+    agent = 'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.11) Gecko/20101012 Firefox/3.6.11'
+    opener.addheaders = [('User-Agent', agent)]
+    urllib2.install_opener(opener)
+    return opener
 
 def get_data(url, method, kwargs=None, headers=None, verbose=None, decoder='json'):
     """Retrieve data"""
