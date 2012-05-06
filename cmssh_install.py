@@ -513,13 +513,14 @@ make
 cd -
 python setup.py install --prefix=$idir
 """.format(path=path, arch=arch, pver=pver)
-#        rpath = '%s/install/lib/python2.6/site-packages' % path
-#        cmd  = cms_env + 'mkdir -p %s; export PYTHONPATH=$PYTHONPATH:%s;' % (rpath, rpath)
-#        cmd += 'python setup.py install --prefix=%s/install' % path
         exe_cmd(os.path.join(path, 'readline-%s' % ver), cmd, debug)
 
     print "Installing httplib2"
     cmd = cms_env + '%s/install/bin/pip install --upgrade httplib2' % path
+    exe_cmd(path, cmd, debug)
+
+    print "Installing pyOpenSSL"
+    cmd = cms_env + '%s/install/bin/pip install --upgrade pyOpenSSL' % path
     exe_cmd(path, cmd, debug)
 
     print "Installing paramiko"
