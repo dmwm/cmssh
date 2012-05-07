@@ -519,8 +519,10 @@ python setup.py install --prefix=$idir
     cmd = cms_env + '%s/install/bin/pip install --upgrade httplib2' % path
     exe_cmd(path, cmd, debug)
 
+    # use 0.12 version of pyOpenSSL due to
+    # http://stackoverflow.com/questions/7340784/easy-install-pyopenssl-error
     print "Installing pyOpenSSL"
-    cmd = cms_env + '%s/install/bin/pip install --upgrade pyOpenSSL' % path
+    cmd = cms_env + '%s/install/bin/pip install pyOpenSSL==0.12' % path
     exe_cmd(path, cmd, debug)
 
     print "Installing paramiko"
