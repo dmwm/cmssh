@@ -54,9 +54,24 @@ A brief introduction of cmssh capabilities are outlined in this
 
 </p>
 
+<h1>Prerequisites</h1>
+<ul>
+<li>
+cmssh relies on usage of your GRID certificate. Please ensure that
+it is located in usual $HOME/.globus area, e.g. you should have there
+your private key (userkey.pem) and public certificate (usercert.pem).
+</li>
+<li>
+cmssh supports access to RunSummary data-service located at P5. The
+access to this service requires CERN SSO authentication. In order to gain the access
+please check that your user certificate is mapped at
+https://ca.cern.ch/ca/Certificates/MapCertificate.aspx
+</li>
+</ul>
+
 <h1>Installation</h1>
 To install cmssh please download installer
-<a href="https://raw.github.com/vkuznet/cmssh/v0.21/cmssh_install.py">installer script</a>
+<a href="https://raw.github.com/vkuznet/cmssh/v0.23/cmssh_install.py">installer script</a>
 and run it as
 <p>
 <code>
