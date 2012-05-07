@@ -591,6 +591,9 @@ def cms_info(arg):
         cmssh# info dataset=/a/b/c
         cmssh# info /a/b/c
         cmssh# info run=160915
+
+    Please note: to enable access to RunSummary service please ensure that your
+    usercert.pem is mapped at https://ca.cern.ch/ca/Certificates/MapCertificate.aspx
     """
     cms_ls(arg)
 
