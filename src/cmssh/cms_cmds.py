@@ -323,6 +323,7 @@ def cmsrel(rel):
         rel_dir = '%s/cms/cmssw/%s' % (arch, rel)
         if  os.path.isdir(os.path.join(os.environ['VO_CMS_SW_DIR'], rel_dir)):
             rel_arch = arch
+            break
     if  not rel_arch:
         msg  = msg_red('Release %s is not yet installed on your system.\n' % rel)
         msg += 'Use ' + msg_green('releases') + ' command to list available releases.\n'
@@ -344,6 +345,18 @@ def cmsrel(rel):
         cmd = "scramv1 project CMSSW %s" % rel
         run(cmd)
         os.chdir(os.path.join(rel, 'src'))
+
+    # set edm utils for given release
+    ipython = get_ipython()
+    rdir    = '%s/bin/%s' % (rel_dir, rel_arch)
+    reldir  = os.path.join(os.environ['VO_CMS_SW_DIR'], rdir)
+    for name in os.listdir(reldir):
+        if  name.find('edm') == 0 and os.path.isfile(fname):
+            magic_name = 'magic_%s' % name
+            cmd = "eval `scramv1 runtime -sh`; %s" % fname
+            setattr(ipython, magic_name, Magic(cmd).execute)
+
+    # final message
     print "%s is ready, cwd: %s" % (rel, os.getcwd())
 
 def cmsrun(arg):
