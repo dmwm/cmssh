@@ -20,7 +20,7 @@ import cmssh
 from   cmssh.iprint import PrintManager, print_error, print_warning, print_info
 from   cmssh.debug import DebugManager
 from   cmssh.cms_cmds import dbs_instance, Magic, cms_find, cms_du
-from   cmssh.cms_cmds import cms_ls, cms_cp, verbose, cms_dqueue
+from   cmssh.cms_cmds import cms_ls, cms_cp, verbose, cms_dqueue, cmscrab
 from   cmssh.cms_cmds import cms_rm, cms_rmdir, cms_mkdir, cms_root, cms_xrdcp
 from   cmssh.cms_cmds import cms_install, cms_releases, cms_info, debug_http
 from   cmssh.cms_cmds import cmsrel, cmsrun, cms_help, cms_arch, cms_vomsinit
@@ -94,7 +94,6 @@ cmsMagicList = [ \
     ('env', Magic('env').execute),
     ('pip', Magic('pip').execute),
     # CMS commands
-    ('crab', Magic('crab').execute),
     ('cmsenv', Magic('eval `scramv1 runtime -sh`').execute),
     ('scram', Magic('scramv1').execute),
     # grid middleware commands
@@ -104,6 +103,7 @@ cmsMagicList = [ \
     ('vomsinit', cms_vomsinit),
     ('vomsinfo', Magic('voms-proxy-info').execute),
     # specific commands whose execution depends on conditions
+    ('crab', cmdcrab),
     ('das', cms_das),
     ('das_json', cms_das_json),
     ('apt', cms_apt),
