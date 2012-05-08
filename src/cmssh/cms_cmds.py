@@ -378,7 +378,8 @@ def cmsexe(cmd):
 
 def cmscrab(arg):
     """
-    Execute CRAB command
+    Execute CRAB command, help is available at
+    https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideCrabFaq
     """
     cmd = 'source $CRAB_ROOT/crab.sh; crab %s' % arg
     cmsexe(cmd)
