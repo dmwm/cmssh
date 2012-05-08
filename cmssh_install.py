@@ -578,7 +578,7 @@ python setup.py install --prefix=$idir
         msg += 'if [ -f $VO_CMS_SW_DIR/cmsset_default.sh ]; then\n'
         msg += '   source $VO_CMS_SW_DIR/cmsset_default.sh\nfi\n'
         msg += 'export OLD_PATH=$PATH\n'
-        msg += 'export CRAB_ROOT=$CMSSH_ROOT/%s' % crab_ver
+        msg += 'export CRAB_ROOT=$CMSSH_ROOT/%s\n' % crab_ver
         msg += 'apt_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt -name init.sh | tail -1`\n'
         msg += 'pcre_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/pcre -name init.sh | tail -1`\n'
         msg += 'xz_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/xz -name init.sh | tail -1`\n'
