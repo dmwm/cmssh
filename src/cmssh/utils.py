@@ -69,7 +69,8 @@ def run(cmd, cdir=None, log=None, msg=None, debug=None, shell=False):
             if  code < 0:
                 print_error('Child was terminated by signal %s', -code)
     except OSError as err:
-        msg = 'Fail to execute cmd=%a, kwds=%s, error=%s' % (cmd, kwds, err)
+        msg = 'Fail to execute cmd=%s, kwds=%s, error=%s' \
+                % (cmd, kwds, str(err))
         print_error(msg)
 
 class Memoize(object):
