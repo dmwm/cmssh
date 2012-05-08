@@ -198,14 +198,14 @@ def get_file(url, fname, path, debug, check=True):
     tar.close()
     add_url2packages(url, path)
 
-def exe_cmd(idir, cmd, debug, msg=None):
+def exe_cmd(idir, cmd, debug, msg=None, log='install.log'):
     """Execute given command in a given dir"""
     if  msg:
         print msg
     os.chdir(idir)
     if  debug:
         print "cd %s\n%s" % (os.getcwd(), cmd)
-    with open('install.log', 'w') as logstream:
+    with open(log, 'w') as logstream:
         try:
             retcode = subprocess.call(cmd, shell=True, stdout=logstream, stderr=logstream)
             if  retcode < 0:
@@ -467,7 +467,7 @@ def main():
         cmd  = cms_env + './configure --with-java-home=$JAVA_HOME --enable-clientonly'
         cmd += ' --with-globus-location=%s/globus' % path
         cmd += ' --with-cacert-path=%s/certificates' % path
-        exe_cmd(os.path.join(path, 'srmclient2/setup'), cmd, debug)
+        exe_cmd(os.path.join(path, 'srmclient2/setup'), cmd, debug, log='srmclient.log')
 
     print "Installing pip"
     os.chdir(path)
@@ -476,19 +476,19 @@ def main():
         with open('virtualenv.py', 'w') as fname:
             fname.write(getdata(url, {}, debug))
         cmd = cms_env + 'python %s/virtualenv.py %s/install' % (path, path)
-        exe_cmd(path, cmd, debug)
+        exe_cmd(path, cmd, debug, log='pip.log')
 
     print "Installing IPython"
     cmd = cms_env + '%s/install/bin/pip install --upgrade ipython' % path
-    exe_cmd(path, cmd, debug)
+    exe_cmd(path, cmd, debug, log='ipython.log')
 
     print "Installing Routes"
     cmd = cms_env + '%s/install/bin/pip install --upgrade Routes' % path
-    exe_cmd(path, cmd, debug)
+    exe_cmd(path, cmd, debug, log='routes.log')
 
     print "Installing decorator"
     cmd = cms_env + '%s/install/bin/pip install --upgrade decorator' % path
-    exe_cmd(path, cmd, debug)
+    exe_cmd(path, cmd, debug, log='decorator.log')
 
     print "Installing readline"
     ver = '6.2.2'
@@ -513,21 +513,21 @@ make
 cd -
 python setup.py install --prefix=$idir
 """.format(path=path, arch=arch, pver=pver)
-        exe_cmd(os.path.join(path, 'readline-%s' % ver), cmd, debug)
+        exe_cmd(os.path.join(path, 'readline-%s' % ver), cmd, debug, log='readline.log')
 
     print "Installing httplib2"
     cmd = cms_env + '%s/install/bin/pip install --upgrade httplib2' % path
-    exe_cmd(path, cmd, debug)
+    exe_cmd(path, cmd, debug, log='httplib2.log')
 
     # use 0.12 version of pyOpenSSL due to
     # http://stackoverflow.com/questions/7340784/easy-install-pyopenssl-error
     print "Installing pyOpenSSL"
     cmd = cms_env + '%s/install/bin/pip install pyOpenSSL==0.12' % path
-    exe_cmd(path, cmd, debug)
+    exe_cmd(path, cmd, debug, log='pyopenssl.log')
 
     print "Installing paramiko"
     cmd = cms_env + '%s/install/bin/pip install --upgrade paramiko' % path
-    exe_cmd(path, cmd, debug)
+    exe_cmd(path, cmd, debug, log='paramiko.log')
 
     print "Installing cmssh"
     os.chdir(path)
@@ -697,6 +697,8 @@ export IPYTHON_DIR=$ipdir
     print "Clean-up soft area"
     os.chdir(path)
     res = subprocess.call("rm *.tar.gz", shell=True)
+    os.makedirs('logs')
+    res = subprocess.call("mv *.log logs", shell=True)
 
     print "Congratulations, cmssh is available at %s/bin/cmssh" % path
 
