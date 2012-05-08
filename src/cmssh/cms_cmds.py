@@ -351,8 +351,8 @@ def cmsrel(rel):
     rdir    = '%s/bin/%s' % (rel_dir, rel_arch)
     reldir  = os.path.join(os.environ['VO_CMS_SW_DIR'], rdir)
     for name in os.listdir(reldir):
+        fname = os.path.join(reldir, name)
         if  name.find('edm') == 0 and os.path.isfile(fname):
-            fname = os.path.join(reldir, name)
             magic_name = 'magic_%s' % name
             cmd = "eval `scramv1 runtime -sh`; %s" % fname
             setattr(ipython, magic_name, Magic(cmd).execute)
@@ -360,9 +360,9 @@ def cmsrel(rel):
     # final message
     print "%s is ready, cwd: %s" % (rel, os.getcwd())
 
-def cmsrun(arg):
+def cmsexe(cmd):
     """
-    Execute CMSSW cmsRun command
+    Execute given command within CMSSW environment
     """
     vdir = os.environ.get('VO_CMS_SW_DIR', None)
     arch = os.environ.get('SCRAM_ARCH', None)
@@ -373,8 +373,22 @@ def cmsrun(arg):
         msg += '\nInstalled releases: ' + msg_green(', '.join(releases))
         print msg
         return
-    cmd = "eval `scramv1 runtime -sh`; cmsRun %s" % arg
+    cmd = "eval `scramv1 runtime -sh`; %s" % cmd
     run(cmd)
+
+def cmscrab(arg):
+    """
+    Execute CRAB command
+    """
+    cmd = 'source $CRAB_ROOT/crab.sh; crab %s' % arg
+    cmsexe(cmd)
+
+def cmsrun(arg):
+    """
+    Execute CMSSW cmsRun command
+    """
+    cmd = 'cmsRun %s' % arg
+    cmsexe(cmd)
 
 def dbs_instance(arg=None):
     """
