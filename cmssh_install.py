@@ -349,21 +349,21 @@ def main():
             cmd  = 'sh -x $VO_CMS_SW_DIR/bootstrap.sh setup -path $VO_CMS_SW_DIR -arch $SCRAM_ARCH'
             if  unsupported_linux:
                 cmd += ' -unsupported_distribution_hack'
-            exe_cmd(sdir, cmd, debug, 'Bootstrap CMSSW')
+            exe_cmd(sdir, cmd, debug, 'Bootstrap CMSSW', log='bootstrap.log')
             apt  = 'source `find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt -name init.sh | tail -1`; '
             cmd  = apt
             cmd += 'apt-get install external+fakesystem+1.0; '
             cmd += 'apt-get update; '
-            exe_cmd(sdir, cmd, debug, 'Init CMSSW apt repository')
+            exe_cmd(sdir, cmd, debug, 'Init CMSSW apt repository', log='aptget.log')
             root = find_root_package(apt, debug)
             cmd  = apt + 'echo "Y" | apt-get install %s' % root
-            exe_cmd(sdir, cmd, debug, 'Install %s' % root)
+            exe_cmd(sdir, cmd, debug, 'Install %s' % root, log='root.log')
             root = libpng_package(apt, debug)
             cmd  = apt + 'echo "Y" | apt-get install %s' % root 
-            exe_cmd(sdir, cmd, debug, 'Install libpng')
+            exe_cmd(sdir, cmd, debug, 'Install libpng', log='libpng.log')
             root = matplotlib_package(apt, debug)
             cmd  = apt + 'echo "Y" | apt-get install %s' % root 
-            exe_cmd(sdir, cmd, debug, 'Install matplotlib')
+            exe_cmd(sdir, cmd, debug, 'Install matplotlib', log='matplotlib.log')
             use_matplotlib = True
             add_url2packages(url, path)
 
@@ -412,7 +412,7 @@ def main():
         get_file(url, 'expat-%s.tar.gz' % ver, path, debug)
         cmd = 'CFLAGS=-m32 ./configure --prefix=%s/install; make; make install' % path
         os.chdir(os.path.join(path, 'expat-%s' % ver))
-        exe_cmd(os.path.join(path, 'expat-%s' % ver), cmd, debug)
+        exe_cmd(os.path.join(path, 'expat-%s' % ver), cmd, debug, log='expat.log')
 
     print "Installing PythonUtilities"
     url = "http://cmssw.cvs.cern.ch/cgi-bin/cmssw.cgi/CMSSW/FWCore/PythonUtilities.tar.gz?view=tar"
@@ -430,14 +430,13 @@ def main():
 #    if  not is_installed(url, path):
 #        get_file(url, 'crabclient3.tar.gz', path, debug)
 
-#    print "Installing CRAB"
-#    os.chdir(path)
-#    crab_ver = 'CRAB_2_7_9'
-#    url = 'http://cmsdoc.cern.ch/cms/ccs/wm/www/Crab/Docs/%s.tgz' % crab_ver
-#    get_file(url, 'crab.tar.gz', path, debug)
-#    cmd = 'cd %s; ./configure' % crab_ver
-#    exe_cmd(path, cmd, debug)
-
+    print "Installing CRAB"
+    os.chdir(path)
+    crab_ver = 'CRAB_2_7_9'
+    url = 'http://cmsdoc.cern.ch/cms/ccs/wm/www/Crab/Docs/%s.tgz' % crab_ver
+    get_file(url, 'crab.tar.gz', path, debug)
+    cmd = 'cd %s; ./configure' % crab_ver
+    exe_cmd(path, cmd, debug, log='crab.log')
 
     print "Installing WMCore"
     ver = '0.8.21'
@@ -579,6 +578,7 @@ python setup.py install --prefix=$idir
         msg += 'if [ -f $VO_CMS_SW_DIR/cmsset_default.sh ]; then\n'
         msg += '   source $VO_CMS_SW_DIR/cmsset_default.sh\nfi\n'
         msg += 'export OLD_PATH=$PATH\n'
+        msg += 'export CRAB_ROOT=$CMSSH_ROOT/%s' % crab_ver
         msg += 'apt_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt -name init.sh | tail -1`\n'
         msg += 'pcre_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/pcre -name init.sh | tail -1`\n'
         msg += 'xz_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/xz -name init.sh | tail -1`\n'
