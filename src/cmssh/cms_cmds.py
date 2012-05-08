@@ -352,6 +352,7 @@ def cmsrel(rel):
     reldir  = os.path.join(os.environ['VO_CMS_SW_DIR'], rdir)
     for name in os.listdir(reldir):
         if  name.find('edm') == 0 and os.path.isfile(fname):
+            fname = os.path.join(reldir, name)
             magic_name = 'magic_%s' % name
             cmd = "eval `scramv1 runtime -sh`; %s" % fname
             setattr(ipython, magic_name, Magic(cmd).execute)
