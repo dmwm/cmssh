@@ -310,7 +310,7 @@ def srmcp(srmcmd, lfn, dst, verbose=None):
     # finally let's create srmcp commands for each found pfn
     for item in pfnlist:
         ifile = item.split("/")[-1] if not dstfname else dstfname
-        cmd = "%s %s %s/%s -pushmode -statuswaittime 30" \
+        cmd = "%s %s %s/%s -pushmode -statuswaittime 30 -3partycopy -delegation false -dcau false" \
                 % (srmcmd, item, dst, ifile)
         yield cmd
 
