@@ -103,7 +103,7 @@ cmsMagicList = [ \
     ('vomsinit', cms_vomsinit),
     ('vomsinfo', Magic('voms-proxy-info').execute),
     # specific commands whose execution depends on conditions
-    ('crab', cmdcrab),
+    ('crab', cmscrab),
     ('das', cms_das),
     ('das_json', cms_das_json),
     ('apt', cms_apt),
