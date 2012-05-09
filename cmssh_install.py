@@ -204,7 +204,7 @@ def exe_cmd(idir, cmd, debug, msg=None, log='install.log'):
         print msg
     os.chdir(idir)
     if  debug:
-        print "cd %s\n%s" % (os.getcwd(), cmd)
+        print "cd %s\n%s" % (idir, cmd)
     with open(log, 'w') as logstream:
         try:
             retcode = subprocess.call(cmd, shell=True, stdout=logstream, stderr=logstream)
@@ -265,8 +265,7 @@ def main():
         print msg
         sys.exit(0)
     arch   = opts.arch
-    cwd    = os.getcwd()
-    path   = os.path.join(os.getcwd(), 'soft')
+    path   = os.path.join(idir, 'soft')
     # setup install area
     sysver = sys.version_info
     py_ver = '%s.%s' % (sysver[0], sysver[1])
@@ -466,6 +465,7 @@ def main():
         cmd  = cms_env + './configure --with-java-home=$JAVA_HOME --enable-clientonly'
         cmd += ' --with-globus-location=%s/globus' % path
         cmd += ' --with-cacert-path=%s/certificates' % path
+        cmd += ' --with-srm-home=%s/srmclient2' % path
         exe_cmd(os.path.join(path, 'srmclient2/setup'), cmd, debug, log='srmclient.log')
 
     print "Installing pip"
@@ -550,7 +550,7 @@ python setup.py install --prefix=$idir
 
     print "Create matplotlibrc"
     os.chdir(path)
-    ndir = os.path.join(os.getcwd(), 'install/lib/python%s/site-packages/matplotlib/mpl-data' % py_ver)
+    ndir = os.path.join(path, 'install/lib/python%s/site-packages/matplotlib/mpl-data' % py_ver)
     try:
         os.makedirs(ndir)
     except:
