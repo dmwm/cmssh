@@ -54,6 +54,9 @@ dqueue
 # copy user file from T1 tier
 cp T1_US_FNAL_Buffer:/store/user/neggert/TT_TuneZ2_7TeV-mcatnlo/MCTSusy_Skim_Mar2012/7b5af1bfe3424f60f0db5b5f14cf327a/MCTSusySkimMar2012_591_1_cSX.root .
 
+# copy lfn from SE to SE
+cp T1_US_FNAL_Buffer:/store/user/neggert/TT_TuneZ2_7TeV-mcatnlo/MCTSusy_Skim_Mar2012/7b5af1bfe3424f60f0db5b5f14cf327a/MCTSusySkimMar2012_591_1_cSX.root T3_US_Cornell:/store/user/value
+
 # look-up available releases
 releases
 cmsrel CMSSW_5_2_0_pre1
