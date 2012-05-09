@@ -497,7 +497,7 @@ def cms_rm(arg):
         cmd = "rm %s" % arg
         run(cmd)
     else:
-        if  pat_lfn.match(arg.split(':')):
+        if  pat_lfn.match(arg.split(':')[-1]):
             status = rm_lfn(arg, verbose=verbose)
             print_status(status)
         else:
