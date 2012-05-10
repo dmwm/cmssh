@@ -96,10 +96,6 @@ cmsMagicList = [ \
     # CMS commands
     ('cmsenv', Magic('eval `scramv1 runtime -sh`').execute),
     ('scram', Magic('scramv1').execute),
-    # grid middleware commands
-#    ('gridinit', Magic('grid-proxy-init').execute),
-#    ('gridinfo', Magic('grid-proxy-info').execute),
-#    ('vomsinit', Magic('voms-proxy-init').execute),
     ('vomsinit', cms_vomsinit),
     ('vomsinfo', Magic('voms-proxy-info').execute),
     # specific commands whose execution depends on conditions
@@ -189,19 +185,8 @@ def main(ipython):
 
     # Set cmssh prompt
     prompt = 'cms-sh'
-#    ip.displayhook.prompt1.p_template = \
-#        '\C_LightBlue[\C_LightCyan%s\C_LightBlue]|\#> ' % prompt
     ip.prompt_manager.in_template = '%s|\#> ' % prompt
     
-    # define dbsh banner
-    pyver  = sys.version.split('\n')[0]
-    ipyver = release.version
-    ver    = "%s.%s" % (cmssh.__version__, cmssh.__revision__)
-    msg    = "Welcome to cmssh:\n[python %s, ipython %s]\n%s\n" \
-            % (pyver, ipyver ,os.uname()[3])
-    msg   += cms_help_msg()
-    print msg
-
     # check existance and permission of key/cert 
     test_key_cert()
 
