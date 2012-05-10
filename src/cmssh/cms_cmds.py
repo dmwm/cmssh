@@ -572,9 +572,10 @@ def cms_ls(arg):
     if  not arg:
         arg = os.getcwd()
     arg = arg.replace('$PWD', os.getcwd())
-    if  os.path.exists(arg) or not arg  or (path and os.path.exists(path)):
+    if  os.path.exists(arg) or not arg  or (path and os.path.exists(path)) or \
+        (arg and arg[0] == '*'):
         cmd = 'ls ' + ' '.join(opts) + ' ' + arg
-        run(cmd)
+        run(cmd, shell=True)
     else:
         if  orig_arg.find('|') != -1:
             arg, flt = orig_arg.split('|', 1)
