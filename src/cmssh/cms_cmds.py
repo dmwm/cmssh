@@ -551,65 +551,59 @@ def cms_mkdir(arg):
 
 def cms_ls(arg):
     """
-    cmssh ls command lists local files/dirs or CMS storate elements.
+    cmssh ls command lists local files/dirs/CMS storate elements or
+    CMS entities (se, site, dataset, block, run, release, file).
     Examples:
         cmssh# ls local_file
         cmssh# ls -l local_file
-        cmssh# rm T3_US_Cornell:/store/user/valya
+        cmssh# ls T3_US_Cornell:/store/user/valya
+        cmssh# ls run=160915
     """
     arg = arg.strip()
+    res = []
     try:
         verbose = get_ipython().debug
     except:
         verbose = 0
     orig_arg = arg
-    opts = options(arg)
-    path = '/'.join(arg.split('/')[:-1])
-    if  opts:
-        arg = arg.strip().replace(' '.join(opts), '').strip()
-    if  arg and arg[0] == '~':
-        arg = os.path.join(os.environ['HOME'], arg.replace('~/', ''))
-    if  not arg:
-        arg = os.getcwd()
-    arg = arg.replace('$PWD', os.getcwd())
-    if  os.path.exists(arg) or not arg  or (path and os.path.exists(path)) or \
-        (arg and arg[0] == '*'):
-        cmd = 'ls ' + ' '.join(opts) + ' ' + arg
-        run(cmd, shell=True)
+    if  orig_arg.find('|') != -1:
+        arg, flt = orig_arg.split('|', 1)
+        arg = arg.strip()
     else:
-        if  orig_arg.find('|') != -1:
-            arg, flt = orig_arg.split('|', 1)
-            arg = arg.strip()
-        else:
-            flt = None
-        if  pat_se.match(arg):
-            arg = arg.replace('site=', '')
-            res = list_se(arg, verbose)
-        elif  pat_site.match(arg):
-            arg = arg.replace('site=', '')
-            res = site_info(arg, verbose)
-        elif pat_lfn.match(arg):
-            arg = arg.replace('file=', '')
-            res = file_info(arg, verbose)
-        elif pat_block.match(arg):
-            arg = arg.replace('block=', '')
-            res = block_info(arg, verbose)
-        elif pat_dataset.match(arg):
-            arg = arg.replace('dataset=', '')
-            res = dataset_info(arg, verbose)
-        elif pat_run.match(arg):
-            arg = arg.replace('run=', '')
-            res = run_info(arg, verbose)
-        elif pat_release.match(arg):
-            arg = arg.replace('release=', '')
-            res = release_info(arg, verbose)
-        else:
-            res = []
-            msg = 'Unsupported input "%s"' % arg
-            print_warning(msg)
-            supported = ['site', 'file', 'block', 'dataset', 'release']
-            msg = 'Usage: info <key=value>, supported keys: %s' % ', '.join(supported)
-            print_info(msg)
+        flt = None
+    startswith = None
+    entities = ['se', 'site', 'lfn', 'dataset', 'block', 'run', 'release', 'file']
+    for item in entities:
+        if  arg.startswith(item + '='):
+            startswith = item
+    if  pat_se.match(arg):
+        arg = arg.replace('site=', '')
+        res = list_se(arg, verbose)
+    elif  pat_site.match(arg):
+        arg = arg.replace('site=', '')
+        res = site_info(arg, verbose)
+    elif pat_lfn.match(arg):
+        arg = arg.replace('file=', '')
+        res = file_info(arg, verbose)
+    elif pat_block.match(arg):
+        arg = arg.replace('block=', '')
+        res = block_info(arg, verbose)
+    elif pat_dataset.match(arg):
+        arg = arg.replace('dataset=', '')
+        res = dataset_info(arg, verbose)
+    elif pat_run.match(arg):
+        arg = arg.replace('run=', '')
+        res = run_info(arg, verbose)
+    elif pat_release.match(arg):
+        arg = arg.replace('release=', '')
+        res = release_info(arg, verbose)
+    elif startswith:
+        msg = 'No pattern is allowed for %s look-up' % startswith
+        print_error(msg)
+    else:
+        cmd = 'ls ' + orig_arg
+        run(cmd, shell=True)
+    if  res:
         RESMGR.assign(res)
         list_results(res, debug=True, flt=flt)
 
