@@ -480,6 +480,17 @@ def main():
     print "Installing IPython"
     cmd = cms_env + '%s/install/bin/pip install --upgrade ipython' % path
     exe_cmd(path, cmd, debug, log='ipython.log')
+    # fix pylab message
+    fname = '%s/install/lib/python%s/site-packages/IPython/core/pylabtools.py' \
+        % (path, py_ver)
+    content = None
+    with open(fname, 'r') as source:
+        content = source.read()
+        content = content.replace('Welcome to pylab, a matplotlib-based', 'cmssh')
+        content = content.replace("For more information, type 'help(pylab)'.", '')
+    if  content:
+        with open(fname, 'w') as output:
+            output.write(content)
 
     print "Installing Routes"
     cmd = cms_env + '%s/install/bin/pip install --upgrade Routes' % path
@@ -650,6 +661,7 @@ python setup.py install --prefix=$idir
         pass
     with open(os.path.join(path, 'bin/cmssh'), 'w') as cmssh:
         msg  = '#!/bin/bash\n'
+        msg += 'echo "Welcome to cmssh! Loading configuration, please wait ..."\n'
         msg += 'source %s/setup.sh\n' % path
         if  opts.multi_user:
             msg += 'ipdir="/tmp/$USER/.ipython"\nmkdir -p $ipdir\n'
