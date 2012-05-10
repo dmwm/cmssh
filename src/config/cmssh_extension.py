@@ -186,6 +186,7 @@ def main(ipython):
     # Set cmssh prompt
     prompt = 'cms-sh'
     ip.prompt_manager.in_template = '%s|\#> ' % prompt
+    print cms_help_msg()
     
     # check existance and permission of key/cert 
     test_key_cert()
