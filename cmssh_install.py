@@ -712,7 +712,7 @@ export IPYTHON_DIR=$ipdir
             else:
                 flags += ' --pylab'
             flags += ' --InteractiveShellApp.pylab_import_all=False'
-        msg += 'if [ -n `env | grep MATPLOTLIB` ]; then\n'
+        msg += 'if [ -n `env | grep CMSSH_MATPLOTLIB` ]; then\n'
         msg += 'ipython %s --ipython-dir=$ipdir --profile=cmssh' % flags
         msg += '\nelse\nipython --no-banner --ipython-dir=$ipdir --profile=cmssh\nfi\n'
         cmssh.write(msg)
