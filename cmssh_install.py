@@ -591,19 +591,34 @@ python setup.py install --prefix=$idir
         msg += 'export OLD_PATH=$PATH\n'
         msg += 'export CRAB_ROOT=$CMSSH_ROOT/%s\n' % crab_ver
         msg += 'apt_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt -name init.sh | tail -1`\n'
-        msg += 'pcre_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/pcre -name init.sh | tail -1`\n'
-        msg += 'xz_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/xz -name init.sh | tail -1`\n'
-        msg += 'png_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/libpng -name init.sh | tail -1`\n'
-        msg += 'lapack_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/lapack -name init.sh | tail -1`\n'
-        msg += 'numpy_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/py2-numpy -name init.sh | tail -1`\n'
         msg += 'root_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/lcg/root -name init.sh | tail -1`\n'
-        msg += 'matplotlib_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/py2-matplotlib -name init.sh | tail -1`\n'
         msg += 'export PATH=/usr/bin:/bin:/usr/sbin:/sbin\n'
         msg += 'unset PYTHONPATH\n'
-        msg += 'source $apt_init;source $root_init;\n'
+        msg += 'source $apt_init\n'
+        msg += """# load root environment if it exists
+if [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/lcg/root ] && \
+root_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/lcg/root -name init.sh | tail -1`
+source $root_init
+fi
+"""
         msg += 'source %s\n' % cms_python_env.replace(sdir, '$CMSSH_ROOT/CMSSW').replace(arch, '$SCRAM_ARCH')
-        msg += 'source $xz_init;source $pcre_init;\n'
-        msg += 'source $matplotlib_init;source $numpy_init;source $lapack_init;source $png_init\n'
+        msg += """# load matplotlib environment if it exists
+if [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/external/xz ] && \
+   [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/external/pcre ] && \
+   [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/external/py2-matplotlib ] && \
+   [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/external/py2-numpy ] && \
+   [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/external/libpng ] && \
+   [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/external/lapack ]; then
+pcre_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/pcre -name init.sh | tail -1`
+xz_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/xz -name init.sh | tail -1`
+png_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/libpng -name init.sh | tail -1`
+lapack_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/lapack -name init.sh | tail -1`
+numpy_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/py2-numpy -name init.sh | tail -1`
+matplotlib_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/py2-matplotlib -name init.sh | tail -1`
+source $xz_init;source $pcre_init;
+source $matplotlib_init;source $numpy_init;source $lapack_init;source $png_init
+fi
+"""
         msg += 'export DYLD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib\n'
         msg += 'export LD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib:$LD_LIBRARY_PATH\n'
         msg += 'export PATH=$VO_CMS_SW_DIR/bin:$CMSSH_ROOT/install/bin:$PATH\n'
@@ -703,7 +718,9 @@ export IPYTHON_DIR=$ipdir
             else:
                 flags += ' --pylab'
             flags += ' --InteractiveShellApp.pylab_import_all=False'
+        msg += 'if [ -z `env | grep MATPLOTLIB` ]; then\n'
         msg += 'ipython %s --ipython-dir=$ipdir --profile=cmssh' % flags
+        msg += 'else\nipython --no-banner --ipython-dir=$ipdir --profile=cmssh\nfi\n'
         cmssh.write(msg)
     os.chmod('bin/cmssh', 0755)
 
