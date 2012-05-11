@@ -486,7 +486,7 @@ def main():
     content = None
     with open(fname, 'r') as source:
         content = source.read()
-        content = content.replace('Welcome to pylab, a matplotlib-based', 'cmssh')
+        content = content.replace('Welcome to pylab, a matplotlib-based', 'cmssh+pylab')
         content = content.replace("For more information, type 'help(pylab)'.", '')
     if  content:
         with open(fname, 'w') as output:
@@ -581,6 +581,17 @@ python setup.py install --prefix=$idir
     os.chdir(path)
     with open('setup.sh', 'w') as setup:
         msg  = '#!/bin/bash\nexport CMSSH_ROOT=%s\n' % path
+        msg += """cms_init()
+{
+if [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/$1 ]; then
+    pkg_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/$1 -name init.sh | tail -1`
+    source $pkg_init
+    if [ "$1" == "py2-matplotlib" ]; then
+        export CMSSH_MATPLOTLIB=True
+    fi
+fi
+}\n
+"""
         msg += 'export VO_CMS_SW_DIR=$CMSSH_ROOT/CMSSW\n'
         msg += 'export SCRAM_ARCH=%s\n' % arch
         msg += 'export LANG="C"\n'
@@ -590,35 +601,18 @@ python setup.py install --prefix=$idir
         msg += '   source $VO_CMS_SW_DIR/cmsset_default.sh\nfi\n'
         msg += 'export OLD_PATH=$PATH\n'
         msg += 'export CRAB_ROOT=$CMSSH_ROOT/%s\n' % crab_ver
-        msg += 'apt_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt -name init.sh | tail -1`\n'
-        msg += 'root_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/lcg/root -name init.sh | tail -1`\n'
         msg += 'export PATH=/usr/bin:/bin:/usr/sbin:/sbin\n'
         msg += 'unset PYTHONPATH\n'
-        msg += 'source $apt_init\n'
-        msg += """# load root environment if it exists
-if [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/lcg/root ]; then
-root_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/lcg/root -name init.sh | tail -1`
-source $root_init
-fi
-"""
-        msg += 'source %s\n' % cms_python_env.replace(sdir, '$CMSSH_ROOT/CMSSW').replace(arch, '$SCRAM_ARCH')
-        msg += """# load matplotlib environment if it exists
-if [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/external/xz ] && \\
-   [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/external/pcre ] && \\
-   [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/external/py2-matplotlib ] && \\
-   [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/external/py2-numpy ] && \\
-   [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/external/libpng ] && \\
-   [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/external/lapack ]; then
-pcre_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/pcre -name init.sh | tail -1`
-xz_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/xz -name init.sh | tail -1`
-png_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/libpng -name init.sh | tail -1`
-lapack_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/lapack -name init.sh | tail -1`
-numpy_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/py2-numpy -name init.sh | tail -1`
-matplotlib_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/py2-matplotlib -name init.sh | tail -1`
-source $xz_init;source $pcre_init;
-source $matplotlib_init;source $numpy_init;source $lapack_init;source $png_init
-fi
-"""
+        msg += 'cms_init "external/apt"\n'
+        msg += 'cms_init "lcg/root"\n'
+        msg += 'cms_init "external/python"\n'
+#        msg += 'source %s\n' % cms_python_env.replace(sdir, '$CMSSH_ROOT/CMSSW').replace(arch, '$SCRAM_ARCH')
+        msg += 'cms_init "external/xz"\n'
+        msg += 'cms_init "external/pcre"\n'
+        msg += 'cms_init "external/py2-matplotlib"\n'
+        msg += 'cms_init "external/py2-numpy"\n'
+        msg += 'cms_init "external/libpng"\n'
+        msg += 'cms_init "external/lapack"\n'
         msg += 'export DYLD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib\n'
         msg += 'export LD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib:$LD_LIBRARY_PATH\n'
         msg += 'export PATH=$VO_CMS_SW_DIR/bin:$CMSSH_ROOT/install/bin:$PATH\n'
@@ -718,7 +712,7 @@ export IPYTHON_DIR=$ipdir
             else:
                 flags += ' --pylab'
             flags += ' --InteractiveShellApp.pylab_import_all=False'
-        msg += 'if [ -z `env | grep MATPLOTLIB` ]; then\n'
+        msg += 'if [ -n `env | grep MATPLOTLIB` ]; then\n'
         msg += 'ipython %s --ipython-dir=$ipdir --profile=cmssh' % flags
         msg += '\nelse\nipython --no-banner --ipython-dir=$ipdir --profile=cmssh\nfi\n'
         cmssh.write(msg)
