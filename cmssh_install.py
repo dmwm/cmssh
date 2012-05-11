@@ -596,18 +596,18 @@ python setup.py install --prefix=$idir
         msg += 'unset PYTHONPATH\n'
         msg += 'source $apt_init\n'
         msg += """# load root environment if it exists
-if [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/lcg/root ] && \
+if [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/lcg/root ]; then
 root_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/lcg/root -name init.sh | tail -1`
 source $root_init
 fi
 """
         msg += 'source %s\n' % cms_python_env.replace(sdir, '$CMSSH_ROOT/CMSSW').replace(arch, '$SCRAM_ARCH')
         msg += """# load matplotlib environment if it exists
-if [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/external/xz ] && \
-   [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/external/pcre ] && \
-   [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/external/py2-matplotlib ] && \
-   [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/external/py2-numpy ] && \
-   [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/external/libpng ] && \
+if [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/external/xz ] && \\
+   [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/external/pcre ] && \\
+   [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/external/py2-matplotlib ] && \\
+   [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/external/py2-numpy ] && \\
+   [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/external/libpng ] && \\
    [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/external/lapack ]; then
 pcre_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/pcre -name init.sh | tail -1`
 xz_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/xz -name init.sh | tail -1`
@@ -720,7 +720,7 @@ export IPYTHON_DIR=$ipdir
             flags += ' --InteractiveShellApp.pylab_import_all=False'
         msg += 'if [ -z `env | grep MATPLOTLIB` ]; then\n'
         msg += 'ipython %s --ipython-dir=$ipdir --profile=cmssh' % flags
-        msg += 'else\nipython --no-banner --ipython-dir=$ipdir --profile=cmssh\nfi\n'
+        msg += '\nelse\nipython --no-banner --ipython-dir=$ipdir --profile=cmssh\nfi\n'
         cmssh.write(msg)
     os.chmod('bin/cmssh', 0755)
 
