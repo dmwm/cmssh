@@ -496,6 +496,10 @@ def main():
     cmd = cms_env + '%s/install/bin/pip install --upgrade Routes' % path
     exe_cmd(path, cmd, debug, log='routes.log')
 
+    print "Installing dateutil"
+    cmd = cms_env + '%s/install/bin/pip install --upgrade python-dateutil' % path
+    exe_cmd(path, cmd, debug, log='dateutil.log')
+
     print "Installing decorator"
     cmd = cms_env + '%s/install/bin/pip install --upgrade decorator' % path
     exe_cmd(path, cmd, debug, log='decorator.log')
