@@ -588,11 +588,13 @@ python setup.py install --prefix=$idir
         msg += """cms_init()
 {
 if [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/$1 ]; then
+    echo -n "Loading $1 ... "
     pkg_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/$1 -name init.sh | tail -1`
     source $pkg_init
     if [ "$1" == "py2-matplotlib" ]; then
         export CMSSH_MATPLOTLIB=True
     fi
+    echo "DONE"
 fi
 }\n
 """
