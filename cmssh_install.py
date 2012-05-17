@@ -11,11 +11,13 @@ http://www.nikhef.nl/pub/projects/grid/gridwiki/index.php/Using_voms-proxy-init_
 https://twiki.grid.iu.edu/bin/view/ReleaseDocumentation/VomsInstallGuide
 
 """
+import sys
+if sys.version_info < (2, 6):
+    raise Exception("cmssh requires python 2.6 or higher")
 
 # system modules
 import os
 import re
-import sys
 import stat
 import time
 import urllib
@@ -27,10 +29,6 @@ import traceback
 # local modules
 from pprint import pformat
 from optparse import OptionParser
-
-# check system requirements
-if sys.version_info < (2, 6):
-    raise Exception("cmssh requires python 2.6 or higher")
 
 if  os.uname()[0] == 'Darwin':
     DEF_SCRAM_ARCH = 'osx106_amd64_gcc421'
