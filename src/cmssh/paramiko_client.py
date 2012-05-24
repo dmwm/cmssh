@@ -20,10 +20,6 @@ import paramiko
 from   paramiko import Transport
 from   binascii import hexlify
 
-# cmssh modules
-from cmssh.utils import execmd
-from cmssh.iprint import print_error
-
 def agent_auth(transport, username):
     """
     Attempt to authenticate to the given transport using any of
@@ -49,10 +45,11 @@ def manual_auth(transport, username, hostname):
     login/password method
     """
     default_auth = 'p'
-    auth = raw_input(\
-        'Auth by (p)assword, (r)sa key, or (d)sa key? [%s] ' % default_auth)
-    if  len(auth) == 0:
-        auth = default_auth
+#    auth = raw_input(\
+#        'Authenticate by (p)assword, (r)sa key, or (d)sa key? [%s] ' % default_auth)
+#    if  len(auth) == 0:
+#        auth = default_auth
+    auth = default_auth
 
     if  auth == 'r':
         default_path = os.path.join(os.environ['HOME'], '.ssh', 'id_rsa')
@@ -82,7 +79,7 @@ def manual_auth(transport, username, hostname):
 
 def connect(username, hostname='lxplus.cern.ch', port=22):
     "Connect to a given host"
-    print "Connect", username, hostname, port
+    print "Connecting to %s@%s" % (username, hostname)
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((hostname, port))
@@ -145,24 +142,6 @@ def execute(cmd, username, hostname='lxplus.cern.ch'):
     transport.close()
     sock.close()
     return stdout, stderr
-
-def execute_at_cern(cmd):
-    """
-    Execute given command on lxplus. The authentication should be done via
-    kinit
-    """
-    hostname = 'lxplus.cern.ch'
-    exe = 'klist | grep -i "Principal:"'
-    stdout, _stderr = execmd(exe)
-    if  stdout:
-        username = stdout.split()[-1].split('@')[0]
-        print "execute %s on %s@%s" % (cmd, username, hostname)
-        return execute(cmd, username, hostname)
-    else:
-        msg  = 'Unable to acquire your kerberos credential, '
-        msg += 'please run kinit username@CERN.CH'
-        print_error(msg)
-    return None, None
 
 def test():
     "test function"
