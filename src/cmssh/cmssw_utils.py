@@ -9,11 +9,11 @@ Description: CMSSW utilities
 # system modules
 import os
 
-def cmssw_rel(user, rel):
+def remote_script(user, rel):
     "Generate script to setup CMSSW release area"
     script = """echo "Setup user proxy"
 source /afs/cern.ch/cms/LCG/LCG-2/UI/cms_ui_env.sh
-voms-proxy-init -voms cms
+#voms-proxy-init -voms cms
 mkdir -p /tmp/%(user)s
 cd /tmp/%(user)s
 echo "Setup new scram area in $PWD"
