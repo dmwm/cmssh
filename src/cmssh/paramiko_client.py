@@ -20,6 +20,10 @@ import paramiko
 from   paramiko import Transport
 from   binascii import hexlify
 
+# cmssh modules
+from cmssh.utils import execmd
+from cmssh.iprint import print_error
+
 def agent_auth(transport, username):
     """
     Attempt to authenticate to the given transport using any of
@@ -141,6 +145,24 @@ def execute(cmd, username, hostname='lxplus.cern.ch'):
     transport.close()
     sock.close()
     return stdout, stderr
+
+def execute_at_cern(cmd):
+    """
+    Execute given command on lxplus. The authentication should be done via
+    kinit
+    """
+    hostname = 'lxplus.cern.ch'
+    exe = 'klist | grep -i "Principal:"'
+    stdout, _stderr = execmd(exe)
+    if  stdout:
+        username = stdout.split()[-1].split('@')[0]
+        print "execute %s on %s@%s" % (cmd, username, hostname)
+        return execute(cmd, username, hostname)
+    else:
+        msg  = 'Unable to acquire your kerberos credential, '
+        msg += 'please run kinit username@CERN.CH'
+        print_error(msg)
+    return None, None
 
 def test():
     "test function"
