@@ -85,6 +85,7 @@ cmsMagicList = [ \
     ('ssh', Magic('ssh').execute),
     ('kinit', Magic('kinit').execute),
     ('klist', Magic('klist').execute),
+    ('kdestroy', Magic('kdestroy').execute),
     ('git', Magic('git').execute),
     ('echo', Magic('echo').execute),
     ('grep', Magic('grep').execute),
