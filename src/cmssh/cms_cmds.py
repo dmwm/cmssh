@@ -29,7 +29,8 @@ from cmssh.tagcollector import releases as tc_releases
 from cmssh.tagcollector import architectures as tc_architectures
 from cmssh.results import RESMGR
 from cmssh.auth_utils import PEMMGR, working_pem
-from cmssh.paramiko_client import execute_at_cern, get_kerberos_username
+from cmssh.paramiko_client import execute as execute_remotely
+from cmssh.cmssw_utils import remote_script
 
 def options(arg):
     """Extract options from given arg string"""
@@ -382,17 +383,23 @@ def cmscrab(arg):
     Execute CRAB command, help is available at
     https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideCrabFaq
     """
+    rel = os.environ.get('CMSSW_VERSION', None)
+    if  not rel:
+        msg  = 'In order to run crab command you must '
+        msg += 'setup your release area and run cmsrel'
+        print_error(msg)
+        return
     if  os.uname()[0] == 'Darwin':
-        msg = 'You cannot directly submit job from Mac OSX'
+        msg  = 'You cannot directly submit job from Mac OSX, '
+        msg += 'but we will attempt to execute it at lxplus'
         print_warning(msg)
-        if  not get_kerberos_username():
-            print 'Please run kinit <username>@CERN.CH and we will submit it via lxplus'
-            return
-        else:
-            print 'Will attempt to launch your job at lxplus'
-            job = 'ls' # substitute with crab wrapper command
-            execute_at_cern(job)
-            return
+        hostname = 'lxplus.cern.ch'
+        username = raw_input('\nPlease enter your username at lxplus: ')
+        job = remote_script(username, rel)
+        res, err = execute_remotely(job, username, hostname)
+        print "STDOUT", res
+        print "STDERR", err
+        return
     cmd = 'source $CRAB_ROOT/crab.sh; crab %s' % arg
     cmsexe(cmd)
 
