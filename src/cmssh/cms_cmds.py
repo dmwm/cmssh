@@ -29,6 +29,7 @@ from cmssh.tagcollector import releases as tc_releases
 from cmssh.tagcollector import architectures as tc_architectures
 from cmssh.results import RESMGR
 from cmssh.auth_utils import PEMMGR, working_pem
+from cmssh.paramiko_client import execute_at_cern, get_kerberos_username
 
 def options(arg):
     """Extract options from given arg string"""
@@ -381,6 +382,17 @@ def cmscrab(arg):
     Execute CRAB command, help is available at
     https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideCrabFaq
     """
+    if  os.uname()[0] == 'Darwin':
+        msg = 'You cannot directly submit job from Mac OSX'
+        print_warning(msg)
+        if  not get_kerberos_username():
+            print 'Please run kinit <username>@CERN.CH and we will submit it via lxplus'
+            return
+        else:
+            print 'Will attempt to launch your job at lxplus'
+            job = 'ls' # substitute with crab wrapper command
+            execute_at_cern(job)
+            return
     cmd = 'source $CRAB_ROOT/crab.sh; crab %s' % arg
     cmsexe(cmd)
 
