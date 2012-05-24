@@ -266,7 +266,10 @@ def main():
     path   = os.path.join(idir, 'soft')
     # setup install area
     sysver = sys.version_info
-    py_ver = '%s.%s' % (sysver[0], sysver[1])
+# TODO: I need to handle use case when users install cmssh using 2.7
+#       while CMSSW provides 2.6
+#    py_ver = '%s.%s' % (sysver[0], sysver[1])
+    py_ver = '2.6'
     install_dir = '%s/install/lib/python%s/site-packages' % (path, py_ver)
     os.environ['PYTHONPATH'] = install_dir
     try:
