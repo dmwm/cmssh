@@ -386,3 +386,12 @@ def check_voms_proxy():
         msg  = 'Your VOMS proxy will expire in %s sec (< 1 hour). ' % out
         msg += 'Please run ' + msg_green('vomsinit') + ' command to renew it'
         print_warning(msg)
+
+def get_kerberos_username():
+    "Run klist in a shell and get a username from the principal"
+    username = None
+    cmd = 'klist | grep -i "Principal:"'
+    stdout, _stderr = execmd(cmd)
+    if  stdout:
+        username = stdout.split()[-1].split('@')[0]
+    return username
