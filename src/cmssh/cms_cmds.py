@@ -484,6 +484,8 @@ def cms_help(arg=None):
     """
     if  arg:
         ipython = get_ipython()
+        if  arg[0] == '(' and arg[-1] == ')':
+            arg = arg[1:-1]
         if  arg in ipython.lsmagic():
             doc = getattr(ipython, 'magic_%s' % arg).func_doc
         elif 'cms_%s' % arg in ipython.lsmagic():
