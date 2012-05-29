@@ -143,6 +143,78 @@ def execute(cmd, username, hostname='lxplus.cern.ch'):
     sock.close()
     return stdout, stderr
 
+class SSHClient(object):
+    def __init__(self, username, hostname='lxplus.cern.ch', port=22):
+        self.username = username
+        self.hostname = hostname
+        self.port     = port
+        self.password = None
+
+    def execute(self, cmd):
+        "Execute given command on remove host"
+        transport, sock = self.connect()
+        channel = transport.open_session()
+        channel.exec_command(cmd)
+        stdout = [l.replace('\n', '') for l in channel.makefile()]
+        stderr = [l.replace('\n', '') for l in channel.makefile_stderr()]
+        channel.close()
+        transport.close()
+        sock.close()
+        return stdout, stderr
+
+    def connect(self):
+        "Connect to a given host"
+        print "Connecting to %s@%s" % (self.username, self.hostname)
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.connect((self.hostname, self.port))
+        except Exception as err:
+            print '*** Connect failed: ' + str(err)
+            sys.exit(1)
+        transport = Transport(sock)
+        try:
+            transport.start_client()
+        except paramiko.SSHException as err:
+            print "SSH negotiation failed\n%s" % str(err)
+
+        try:
+            keys = paramiko.util.load_host_keys(\
+                    os.path.expanduser('~/.ssh/known_hosts'))
+        except IOError:
+            try:
+                keys = paramiko.util.load_host_keys(\
+                    os.path.expanduser('~/ssh/known_hosts'))
+            except IOError:
+                print '*** Unable to open host keys file'
+                keys = {}
+
+        # check server's host key -- this is important.
+        key = transport.get_remote_server_key()
+        if  not keys.has_key(self.hostname):
+#            print '*** WARNING: Unknown host key!'
+            pass
+        elif not keys[self.hostname].has_key(key.get_name()):
+#            print '*** WARNING: Unknown host key!'
+            pass
+        elif keys[self.hostname][key.get_name()] != key:
+            print '*** WARNING: Host key has changed!!!'
+            sys.exit(1)
+        else:
+            pass
+
+        agent_auth(transport, self.username)
+        if not transport.is_authenticated():
+            if  not self.password:
+                passwd = getpass.getpass('Password for %s@%s: ' \
+                        % (self.username, self.hostname))
+                self.password = passwd
+            transport.auth_password(self.username, self.password)
+        if not transport.is_authenticated():
+            print '*** Authentication failed. :('
+            transport.close()
+            sys.exit(1)
+        return transport, sock
+
 def test():
     "test function"
     username = raw_input('username: ')
