@@ -7,6 +7,7 @@ Description: Paramiko SSH module for cmssh
 
 Some ideas taken from paramiko/demos/demo.py and
 http://code.activestate.com/recipes/576810-copy-files-over-ssh-using-paramiko/
+http://jessenoller.com/2009/02/05/ssh-programming-with-paramiko-completely-different/
 """
 
 # system modules
