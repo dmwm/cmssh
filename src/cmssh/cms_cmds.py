@@ -10,6 +10,7 @@ import re
 import json
 import glob
 import pprint
+import getpass
 import traceback
 
 # cmssh modules
@@ -387,7 +388,7 @@ def cmscrab(arg):
     https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideCrabFaq
     """
     rel = os.environ.get('CMSSW_VERSION', None)
-    rel = 'CMSSW_5_0_1'
+#    rel = 'CMSSW_5_0_1'
     if  not rel:
         msg  = 'In order to run crab command you must '
         msg += 'setup your release area and run cmsrel'
@@ -398,18 +399,15 @@ def cmscrab(arg):
         msg += 'but we will attempt to execute it on lxplus'
         print_warning(msg)
         hostname = 'lxplus.cern.ch'
-        username = raw_input('\nPlease enter your username on lxplus: ')
         # send first hostname command to know which lxplus we will talk too
-        if  CLIENTS.has_key((username, hostname)):
-            client = CLIENTS.get((username, hostname))
+        if  CLIENTS.has_key(hostname):
+            client = CLIENTS.get(hostname)
+            username = client.username
         else:
-            client = SSHClient(username, hostname)
-            CLIENTS[(username, hostname)] = client
-        cmd = 'hostname'
-        res, err = client.execute(cmd)
-        if  not err:
-            client.hostname = res[0]
-        print "Establish connection with", client.hostname
+            username = raw_input('\nPlease enter your username on lxplus: ')
+            password = getpass.getpass('Password for %s@%s: ' % (username, hostname))
+            client = SSHClient(username, password, hostname)
+            CLIENTS[hostname] = client
         cmd = remote_script(username, rel)
         res, err = client.execute(cmd)
         if  isinstance(res, list):
