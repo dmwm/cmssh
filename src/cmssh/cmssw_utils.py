@@ -9,11 +9,23 @@ Description: CMSSW utilities
 # system modules
 import os
 
-def remote_script(user, rel):
+def remote_script(user, rel, cmd='crab -status'):
     "Generate script to setup CMSSW release area"
-    script = """echo "Setup user proxy"
+    cert = ""
+    fname = '/tmp/x509up_u%s' % os.getuid()
+    with open(fname, 'r') as x509:
+        cert = x509.read()
+    script = """node=`uname -n`
+uid=`id -u`
+fname=/tmp/x509up_u$uid
+echo "Launch job on $node, uid=$uid"
 source /afs/cern.ch/cms/LCG/LCG-2/UI/cms_ui_env.sh
+cat > $fname << EOF
+%(cert)s
+EOF
+chmod og-rwx $fname
 #voms-proxy-init -voms cms
+voms-proxy-info
 mkdir -p /tmp/%(user)s
 cd /tmp/%(user)s
 echo "Setup new scram area in $PWD"
@@ -24,7 +36,9 @@ ls
 eval `scramv1 runtime -sh`
 echo "Setup CRAB client environment"
 source /afs/cern.ch/cms/ccs/wm/scripts/Crab/crab.sh
-""" % dict(user=user, rel=rel)
+%(cmd)s
+/bin/rm -f $fname
+""" % dict(cert=cert, user=user, rel=rel, cmd=cmd)
     return script
 
 def edmconfig(release, lfnlist, evtlist, ofname, prefix=None):
