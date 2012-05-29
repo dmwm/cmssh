@@ -144,76 +144,38 @@ def execute(cmd, username, hostname='lxplus.cern.ch'):
     return stdout, stderr
 
 class SSHClient(object):
-    def __init__(self, username, hostname='lxplus.cern.ch', port=22):
+    "SSHClient based on paramiko framework"
+    def __init__(self, username, password, hostname):
         self.username = username
         self.hostname = hostname
-        self.port     = port
-        self.password = None
+        self.password = password
+        self.connections = {} # keep run-time connections
+
+    def connect(self):
+        "Establish connection with our host and return SSH client"
+        if  self.connections.has_key((self.username, self.hostname)):
+            return self.connections[(self.username, self.hostname)]
+        client = paramiko.SSHClient()
+        if  self.hostname.find('cern.ch') != -1:
+            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        client.connect(self.hostname, username=self.username, password=self.password)
+        self.connections[(self.username, self.hostname)] = client
+        return client
 
     def execute(self, cmd):
         "Execute given command on remove host"
-        transport, sock = self.connect()
-        channel = transport.open_session()
-        channel.exec_command(cmd)
-        stdout = [l.replace('\n', '') for l in channel.makefile()]
-        stderr = [l.replace('\n', '') for l in channel.makefile_stderr()]
-        channel.close()
-        transport.close()
-        sock.close()
-        return stdout, stderr
+        client = self.connect()
+        stdin, stdout, stderr = client.exec_command(cmd)
+        return stdout.read(), stderr.read()
 
-    def connect(self):
-        "Connect to a given host"
-        print "Connecting to %s@%s" % (self.username, self.hostname)
-        try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.connect((self.hostname, self.port))
-        except Exception as err:
-            print '*** Connect failed: ' + str(err)
-            sys.exit(1)
-        transport = Transport(sock)
-        try:
-            transport.start_client()
-        except paramiko.SSHException as err:
-            print "SSH negotiation failed\n%s" % str(err)
-
-        try:
-            keys = paramiko.util.load_host_keys(\
-                    os.path.expanduser('~/.ssh/known_hosts'))
-        except IOError:
-            try:
-                keys = paramiko.util.load_host_keys(\
-                    os.path.expanduser('~/ssh/known_hosts'))
-            except IOError:
-                print '*** Unable to open host keys file'
-                keys = {}
-
-        # check server's host key -- this is important.
-        key = transport.get_remote_server_key()
-        if  not keys.has_key(self.hostname):
-#            print '*** WARNING: Unknown host key!'
-            pass
-        elif not keys[self.hostname].has_key(key.get_name()):
-#            print '*** WARNING: Unknown host key!'
-            pass
-        elif keys[self.hostname][key.get_name()] != key:
-            print '*** WARNING: Host key has changed!!!'
-            sys.exit(1)
-        else:
-            pass
-
-        agent_auth(transport, self.username)
-        if not transport.is_authenticated():
-            if  not self.password:
-                passwd = getpass.getpass('Password for %s@%s: ' \
-                        % (self.username, self.hostname))
-                self.password = passwd
-            transport.auth_password(self.username, self.password)
-        if not transport.is_authenticated():
-            print '*** Authentication failed. :('
-            transport.close()
-            sys.exit(1)
-        return transport, sock
+    def transport(self, remote_file, local_file=None):
+        "Perform sftp action"
+        client = self.connect()
+        ftp = client.open_sftp()
+        if  not local_file:
+            local_file = remote_file
+        ftp.get(remote_file, local_file)
+        ftp.close()
 
 def test():
     "test function"
