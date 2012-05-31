@@ -11,14 +11,16 @@ import json
 import glob
 import pprint
 import getpass
+import tarfile
 import traceback
+from   paramiko import AuthenticationException
 
 # cmssh modules
 from cmssh.iprint import msg_red, msg_green, msg_blue
 from cmssh.iprint import print_warning, print_error, print_status, print_info
 from cmssh.filemover import copy_lfn, rm_lfn, mkdir, rmdir, list_se, dqueue
 from cmssh.utils import list_results, check_os, unsupported_linux
-from cmssh.utils import osparameters, check_voms_proxy, run
+from cmssh.utils import osparameters, check_voms_proxy, run, print_res_err
 from cmssh.cmsfs import dataset_info, block_info, file_info, site_info, run_info
 from cmssh.cmsfs import CMSMGR, apply_filter, validate_dbs_instance, release_info
 from cmssh.cms_urls import dbs_instances, tc_url
@@ -413,27 +415,43 @@ def cmscrab(arg):
         msg  = 'You cannot directly submit job from Mac OSX, '
         msg += 'but we will attempt to execute it on lxplus'
         print_warning(msg)
+        # create tarball of local area
+        tar_filename = os.path.join(os.getcwd(), 'cmssh.tar.gz')
+        tar = tarfile.open(tar_filename, "w:gz")
+        for name in os.listdir(os.getcwd()):
+            if  name == tar_filename:
+                continue
+            tar.add(name)
+        tar.close()
+#        hostname = 'lxplus424.cern.ch'
         hostname = 'lxplus.cern.ch'
         # send first hostname command to know which lxplus we will talk too
         if  CLIENTS.has_key(hostname):
             client = CLIENTS.get(hostname)
             username = client.username
         else:
+            # request user name/password
             username = raw_input('\nPlease enter your username on lxplus: ')
             password = getpass.getpass('Password for %s@%s: ' % (username, hostname))
             client = SSHClient(username, password, hostname)
             CLIENTS[hostname] = client
+        # create remote area
+        remote_dir = '/tmp/%s' % username
+        cmd = 'mkdir -p %s && uname -n && echo "Created %s"' % (remote_dir, remote_dir)
+        try:
+            res, err = client.execute(cmd)
+        except AuthenticationException:
+            del CLIENTS[hostname]
+            print_error('Fail to authenticate %s@%s' % (username, hostname))
+            return
+        print_res_err(res, err)
+        # transfer local files
+        remote_file = '/tmp/%s/%s' % (username, tar_filename.split('/')[-1])
+        client.put(tar_filename, remote_file)
+        # execute remote command
         cmd = remote_script(username, rel)
         res, err = client.execute(cmd)
-        if  isinstance(res, list):
-            print "STDOUT:\n", '\n'.join(res)
-        else:
-            print "STDOUT:\n", res
-        if  err:
-            if  isinstance(err, list):
-                print "STDERR:\n", '\n'.join(err)
-            else:
-                print "STDERR:\n", err
+        print_res_err(res, err)
         return
     cmd = 'source $CRAB_ROOT/crab.sh; crab %s' % arg
     cmsexe(cmd)
