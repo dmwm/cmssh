@@ -115,7 +115,7 @@ def print_res_err(res, err):
             msg = '\n'.join(err)
         else:
             msg = err
-        print_error(msg)
+        print_warning(msg)
 
 def size_format(i):
     """
