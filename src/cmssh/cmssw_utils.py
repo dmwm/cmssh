@@ -41,6 +41,43 @@ source /afs/cern.ch/cms/ccs/wm/scripts/Crab/crab.sh
 """ % dict(cert=cert, user=user, rel=rel, cmd=cmd)
     return script
 
+def crabconfig():
+    "Create CRAB2 cfg file"
+    content = """[CRAB]
+jobtype = cmssw
+use_server = 1
+scheduler = glidein
+
+[CMSSW]
+# example of parameters you need to fill out
+#datasetpath = /TT_TuneZ2_7TeV-mcatnlo/Fall11-PU_S6_START42_V14B-v1/AODSIM
+#pycfg_params = outputFile=MCTSusySkimMar2012.root
+#pset = /afs/cern.ch/work/v/valya/public/CMSSW_4_2_8/src/TopDilLikeSelection_cfg.py
+
+total_number_of_events = -1
+events_per_job = 30000
+
+get_edm_output = 1
+
+[USER]
+# please fill out your email
+eMail = YOUR_EMAIL@DOMAIN.COM
+copy_data = 1
+storage_element = T1_US_FNAL_Buffer
+thresholdLevel=95
+check_user_remote_dir = 0
+
+# if you want to publish your data use publish_data = 1 and provide
+# suitable dataset name and DBS instance, otherwise leave as is
+# and it will not be published
+publish_data = 0
+publish_data_name = MCTSusy_Skim_Mar2012
+dbs_url_for_publication = https://cmsdbsprod.cern.ch:8443/cms_dbs_ph_analysis_01_writer/servlet/DBSServlet
+
+[GRID]
+#ce_black_list = T2_ES_IFCA
+"""
+    return content
 def edmconfig(release, lfnlist, evtlist, ofname, prefix=None):
     """
     Generate EDM config file template.
