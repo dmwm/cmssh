@@ -18,8 +18,15 @@ import socket
 import select
 import getpass
 import paramiko
-from   paramiko import Transport
+from   paramiko import Transport, AuthenticationException
 from   binascii import hexlify
+
+try:
+    from cmssh.iprint import print_error
+except:
+    def print_error(msg):
+        "Fallback function"
+        print msg
 
 def agent_auth(transport, username):
     """
@@ -146,27 +153,81 @@ def execute(cmd, username, hostname='lxplus.cern.ch'):
 
 class SSHClient(object):
     "SSHClient based on paramiko framework"
-    def __init__(self, username, password, hostname):
-        self.username = username
+    def __init__(self, hostname):
         self.hostname = hostname
-        self.password = password
-        self.connections = {} # keep run-time connections
+        self.username = None # will be determined at connect call
+        self.client   = None # will be set at run-time
+        self.connect()
 
-    def connect(self):
-        "Establish connection with our host and return SSH client"
-        if  self.connections.has_key((self.username, self.hostname)):
-            return self.connections[(self.username, self.hostname)]
+    def _new_client(self):
+        "Create new SSHClient instance"
+        if  self.client:
+            self.client.close()
         client = paramiko.SSHClient()
         if  self.hostname.find('cern.ch') != -1:
             client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        client.connect(self.hostname, username=self.username, password=self.password)
-        self.connections[(self.username, self.hostname)] = client
         return client
+
+    def _username(self):
+        "Helper function which provides persistent login message"
+        msg = '\nPlease enter your username on %s: ' % self.hostname
+        return raw_input(msg)
+
+    def _password(self, username):
+        "Helper function which provides persistent password message"
+        msg = 'Password for %s@%s: ' % (username, self.hostname)
+        return getpass.getpass(msg)
+
+    def reconnect(self, attempts=2):
+        "Reconnect function"
+        self.username = None
+        self.client = self._new_client()
+        att = 0
+        while att < attempts:
+            msg  = 'Fail to authenticate with %s@%s' \
+                        % (self.username, self.hostname)
+            msg += '\nPlease try again'
+            print_error(msg)
+            try:
+                username = self._username()
+                password = self._password(username)
+                self.client.connect(self.hostname, username=username, \
+                                    password=password)
+                self.username = username
+                return True
+            except AuthenticationException:
+                pass # will retry
+            except:
+                msg = 'Unable to connect to %s' % self.hostname
+                print_error(msg)
+                raise
+            att += 1
+        return False
+
+    def connect(self):
+        "Establish connection with our host and return SSH client"
+        self.client = self._new_client()
+        try:
+            username = self._username()
+            password = self._password(username)
+            self.client.connect(self.hostname, username=username, \
+                                password=password)
+            self.username = username
+        except AuthenticationException:
+            if  not self.reconnect():
+                self.client = None # fail to connect, no client
+                return False
+        except Exception as _err:
+            raise
+        return True
 
     def execute(self, cmd):
         "Execute given command on remove host"
-        client = self.connect()
-        stdin, stdout, stderr = client.exec_command(cmd)
+        if  not self.client:
+            msg = 'Unable to connect to %s@%s' \
+                    % (self.username, self.hostname)
+            return "", msg
+        stdin, stdout, stderr = self.client.exec_command(cmd)
         return stdout.read(), stderr.read()
 
     def get(self, remote_file, local_file=None):
@@ -179,8 +240,12 @@ class SSHClient(object):
 
     def transfer(self, method, file1, file2=None):
         "Perform sftp transfer action"
-        client = self.connect()
-        ftp = client.open_sftp()
+        if  not self.client:
+            msg = 'Unable to connect to %s@%s' \
+                    % (self.username, self.hostname)
+            print_error(msg)
+            return
+        ftp = self.client.open_sftp()
         if  not file2:
             file2 = file1
         getattr(ftp, method)(file1, file2)
