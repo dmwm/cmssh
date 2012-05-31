@@ -363,6 +363,7 @@ def cmsrel(rel):
             cmd = "eval `scramv1 runtime -sh`; %s" % fname
             setattr(ipython, magic_name, Magic(cmd).execute)
 
+    os.environ['CMSSW_VERSION'] = rel
     # final message
     print "%s is ready, cwd: %s" % (rel, os.getcwd())
 
