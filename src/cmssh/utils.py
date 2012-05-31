@@ -104,6 +104,19 @@ def print_progress(progress, msg='Download in progress:'):
         sys.stdout.write("%s %d%%   \r" % (msg, progress) )
     sys.stdout.flush()
 
+def print_res_err(res, err):
+    "Print res/err from remote command execution"
+    if  isinstance(res, list):
+        print "\n", '\n'.join(res)
+    else:
+        print "\n", res
+    if  err:
+        if  isinstance(err, list):
+            msg = '\n'.join(err)
+        else:
+            msg = err
+        print_error(msg)
+
 def size_format(i):
     """
     Format file size utility, it converts file size into KB, MB, GB, TB, PB units
