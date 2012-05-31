@@ -13,7 +13,6 @@ import pprint
 import getpass
 import tarfile
 import traceback
-from   paramiko import AuthenticationException
 
 # cmssh modules
 from cmssh.iprint import msg_red, msg_green, msg_blue
@@ -426,30 +425,22 @@ def cmscrab(arg):
 #        hostname = 'lxplus424.cern.ch'
         hostname = 'lxplus.cern.ch'
         # send first hostname command to know which lxplus we will talk too
-        if  CLIENTS.has_key(hostname):
-            client = CLIENTS.get(hostname)
-            username = client.username
-        else:
-            # request user name/password
-            username = raw_input('\nPlease enter your username on lxplus: ')
-            password = getpass.getpass('Password for %s@%s: ' % (username, hostname))
-            client = SSHClient(username, password, hostname)
-            CLIENTS[hostname] = client
+        if  not CLIENTS.has_key(hostname):
+            CLIENTS.setdefault(hostname, SSHClient(hostname))
+        client = CLIENTS.get(hostname)
+        username = client.username
         # create remote area
         remote_dir = '/tmp/%s' % username
-        cmd = 'mkdir -p %s && uname -n && echo "Created %s"' % (remote_dir, remote_dir)
-        try:
-            res, err = client.execute(cmd)
-        except AuthenticationException:
-            del CLIENTS[hostname]
-            print_error('Fail to authenticate %s@%s' % (username, hostname))
-            return
+        cmd = 'mkdir -p %s && uname -n && echo "Create %s"' \
+                % (remote_dir, remote_dir)
+        res, err = client.execute(cmd)
         print_res_err(res, err)
         # transfer local files
         remote_file = '/tmp/%s/%s' % (username, tar_filename.split('/')[-1])
         client.put(tar_filename, remote_file)
         # execute remote command
-        cmd = remote_script(username, rel)
+        crab_cmd = 'crab %s' % arg
+        cmd = remote_script(username, rel, crab_cmd)
         res, err = client.execute(cmd)
         print_res_err(res, err)
         return
