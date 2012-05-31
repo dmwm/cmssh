@@ -432,7 +432,7 @@ def main():
 
     print "Installing CRAB"
     os.chdir(path)
-    crab_ver = 'CRAB_2_7_9'
+    crab_ver = 'CRAB_2_8_1'
     url = 'http://cmsdoc.cern.ch/cms/ccs/wm/www/Crab/Docs/%s.tgz' % crab_ver
     get_file(url, 'crab.tar.gz', path, debug)
     cmd = 'cd %s; ./configure' % crab_ver
