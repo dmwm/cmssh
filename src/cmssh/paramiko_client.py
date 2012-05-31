@@ -169,13 +169,21 @@ class SSHClient(object):
         stdin, stdout, stderr = client.exec_command(cmd)
         return stdout.read(), stderr.read()
 
-    def transport(self, remote_file, local_file=None):
-        "Perform sftp action"
+    def get(self, remote_file, local_file=None):
+        "FTP get method"
+        self.transfer('get', remote_file, local_file)
+
+    def put(self, local_file, remote_file=None):
+        "FTP put method"
+        self.transfer('put', local_file, remote_file)
+
+    def transfer(self, method, file1, file2=None):
+        "Perform sftp transfer action"
         client = self.connect()
         ftp = client.open_sftp()
-        if  not local_file:
-            local_file = remote_file
-        ftp.get(remote_file, local_file)
+        if  not file2:
+            file2 = file1
+        getattr(ftp, method)(file1, file2)
         ftp.close()
 
 def test():
