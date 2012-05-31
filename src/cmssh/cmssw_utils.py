@@ -30,7 +30,9 @@ mkdir -p /tmp/%(user)s
 cd /tmp/%(user)s
 echo "Setup new scram area in $PWD"
 scramv1 project CMSSW %(rel)s
-cd %(rel)s
+cd %(rel)s/src
+echo "Untar cmssh tarball"
+tar xfz /tmp/%(user)s/cmssh.tar.gz
 echo "Content of work area $PWD"
 ls
 eval `scramv1 runtime -sh`
@@ -51,7 +53,8 @@ scheduler = glidein
 [CMSSW]
 # example of parameters you need to fill out
 #datasetpath = /TT_TuneZ2_7TeV-mcatnlo/Fall11-PU_S6_START42_V14B-v1/AODSIM
-#pycfg_params = outputFile=MCTSusySkimMar2012.root
+#pycfg_params =
+#output_file = myoutput.root
 #pset = /afs/cern.ch/work/v/valya/public/CMSSW_4_2_8/src/TopDilLikeSelection_cfg.py
 
 total_number_of_events = -1
