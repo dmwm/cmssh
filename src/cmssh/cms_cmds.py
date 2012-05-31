@@ -31,7 +31,7 @@ from cmssh.tagcollector import architectures as tc_architectures
 from cmssh.results import RESMGR
 from cmssh.auth_utils import PEMMGR, working_pem
 from cmssh.paramiko_client import SSHClient
-from cmssh.cmssw_utils import remote_script
+from cmssh.cmssw_utils import remote_script, crabconfig
 
 # global SSH clients
 CLIENTS = {}
@@ -387,12 +387,26 @@ def cmscrab(arg):
     Execute CRAB command, help is available at
     https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideCrabFaq
     """
+    msg = 'CRAB FAQ: https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideCrabFaq'
+    print_info(msg)
     rel = os.environ.get('CMSSW_VERSION', None)
 #    rel = 'CMSSW_5_0_1'
     if  not rel:
         msg  = 'In order to run crab command you must '
         msg += 'setup your release area and run cmsrel'
         print_error(msg)
+        return
+    if  not os.path.isfile(os.path.join(os.getcwd(), 'crab.cfg')):
+        msg = 'No crab.cfg file found in %s' % os.getcwd()
+        print_error(msg)
+        msg = 'Would you like to create one: [y/N]'
+        uinput = raw_input(msg)
+        if  uinput.lower() == 'y' or uinput.lower() == 'yes':
+            with open('crab.cfg', 'w') as config:
+                config.write(crabconfig())
+            msg  = 'Your crab.cfg has been created, please edit it '
+            msg += 'appropriately and re-run crab command'
+            print_info(msg)
         return
     if  os.uname()[0] == 'Darwin':
         msg  = 'You cannot directly submit job from Mac OSX, '
