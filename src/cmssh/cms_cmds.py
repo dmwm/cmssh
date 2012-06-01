@@ -344,6 +344,8 @@ def cmsrel(rel):
     cmssw_dir = os.environ.get('CMSSW_RELEASES', os.getcwd())
     if  not os.path.isdir(cmssw_dir):
         os.makedirs(cmssw_dir)
+    os.environ['CMSSW_VERSION'] = rel
+    os.environ['CMSSW_WORKAREA'] = os.path.join(cmssw_dir, rel)
     if  os.path.isdir(os.path.join(cmssw_dir, rel + '/src')):
         os.chdir(os.path.join(cmssw_dir, rel + '/src'))
     else:
@@ -363,8 +365,6 @@ def cmsrel(rel):
             cmd = "eval `scramv1 runtime -sh`; %s" % fname
             setattr(ipython, magic_name, Magic(cmd).execute)
 
-    os.environ['CMSSW_VERSION'] = rel
-    os.environ['CMSSW_WORKAREA'] = os.getcwd()
     # final message
     print "%s is ready, cwd: %s" % (rel, os.getcwd())
 
@@ -396,7 +396,6 @@ def cmscrab(arg):
     # check if release version and work area are set (should be set at cmsrel)
     rel = os.environ.get('CMSSW_VERSION', None)
     work_area = os.environ.get('CMSSW_WORKAREA', None)
-#    rel = 'CMSSW_5_0_1'
     if  not rel or not work_area:
         msg  = 'In order to run crab command you must '
         msg += 'run ' + msg_blue('cmsrel') + ' command'
@@ -410,15 +409,16 @@ def cmscrab(arg):
     os.chdir(crab_dir)
     if  not os.path.isfile(crab_cfg):
         msg = 'No crab.cfg file found in %s' % crab_dir
-        print_error(msg)
-        msg = 'Would you like to create one: [y/N]'
+        print_warning(msg)
+        msg = 'Would you like to create one: [y/N] '
         uinput = raw_input(msg)
         if  uinput.lower() == 'y' or uinput.lower() == 'yes':
             with open('crab.cfg', 'w') as config:
                 config.write(crabconfig())
-            msg  = 'Your %s has been created, please edit it ' % crab_cfg
+            msg  = 'Your crab.cfg has been created, please edit it '
             msg += 'appropriately and re-run crab command'
             print_info(msg)
+            print "cwd:", os.getcwd()
         return
     if  os.uname()[0] == 'Darwin' and arg == '-submit':
         crab_submit_remotely(rel, work_area)
