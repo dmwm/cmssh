@@ -36,6 +36,8 @@ tar xfz /tmp/%(user)s/cmssh.tar.gz
 echo "Content of work area $PWD"
 ls
 eval `scramv1 runtime -sh`
+echo "Build local stuff"
+scram b
 echo "Setup CRAB client environment"
 source /afs/cern.ch/cms/ccs/wm/scripts/Crab/crab.sh
 %(cmd)s
@@ -45,26 +47,25 @@ source /afs/cern.ch/cms/ccs/wm/scripts/Crab/crab.sh
 
 def crabconfig():
     "Create CRAB2 cfg file"
-    content = """[CRAB]
+    content = """# Example of CRAB cfg file, http://bit.ly/JRo4jS
+[CRAB]
 jobtype = cmssw
 use_server = 1
 scheduler = glidein
 
 [CMSSW]
-# example of parameters you need to fill out
-#datasetpath = /TT_TuneZ2_7TeV-mcatnlo/Fall11-PU_S6_START42_V14B-v1/AODSIM
-#pycfg_params =
-#output_file = myoutput.root
-#pset = /afs/cern.ch/work/v/valya/public/CMSSW_4_2_8/src/TopDilLikeSelection_cfg.py
+# mandatory parameters (replace with your settings)
+datasetpath = /TT_TuneZ2_7TeV-mcatnlo/Fall11-PU_S6_START42_V14B-v1/AODSIM
+pycfg_params = outputFile=myoutput.root
+pset = /afs/cern.ch/work/v/valya/public/CMSSW_4_2_8/src/TopDilLikeSelection_cfg.py
 
 total_number_of_events = -1
 events_per_job = 30000
-
 get_edm_output = 1
 
 [USER]
 # please fill out your email
-eMail = YOUR_EMAIL@DOMAIN.COM
+#eMail = YOUR_EMAIL@DOMAIN.COM
 copy_data = 1
 storage_element = T1_US_FNAL_Buffer
 thresholdLevel=95
