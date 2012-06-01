@@ -1,17 +1,14 @@
 #!/usr/bin/env python
 #-*- coding: ISO-8859-1 -*-
+#pylint: disable-msg=W0702
 """
 Set of UNIX commands, e.g. ls, cp, supported in cmssh.
 """
 
 # system modules
 import os
-import re
-import json
 import glob
 import pprint
-import getpass
-import tarfile
 import traceback
 
 # cmssh modules
@@ -19,27 +16,22 @@ from cmssh.iprint import msg_red, msg_green, msg_blue
 from cmssh.iprint import print_warning, print_error, print_status, print_info
 from cmssh.filemover import copy_lfn, rm_lfn, mkdir, rmdir, list_se, dqueue
 from cmssh.utils import list_results, check_os, unsupported_linux
-from cmssh.utils import osparameters, check_voms_proxy, run, print_res_err
+from cmssh.utils import osparameters, check_voms_proxy, run
 from cmssh.cmsfs import dataset_info, block_info, file_info, site_info, run_info
-from cmssh.cmsfs import CMSMGR, apply_filter, validate_dbs_instance, release_info
+from cmssh.cmsfs import CMSMGR, apply_filter, validate_dbs_instance
+from cmssh.cmsfs import release_info
 from cmssh.cms_urls import dbs_instances, tc_url
-from cmssh.das import get_data as das_get_data, das_client
+from cmssh.das import das_client
 from cmssh.url_utils import get_data
 from cmssh.regex import pat_release, pat_site, pat_dataset, pat_block
-from cmssh.regex import pat_lfn, pat_run, pat_se, pat_release
-from cmssh.tagcollector import releases as tc_releases
+from cmssh.regex import pat_lfn, pat_run, pat_se
 from cmssh.tagcollector import architectures as tc_architectures
 from cmssh.results import RESMGR
 from cmssh.auth_utils import PEMMGR, working_pem
-from cmssh.paramiko_client import SSHClient
-from cmssh.cmssw_utils import remote_script, crabconfig
-
-# global SSH clients
-CLIENTS = {}
+from cmssh.cmssw_utils import crab_submit_remotely, crabconfig
 
 def options(arg):
     """Extract options from given arg string"""
-    alist = arg.split()
     opts = []
     for par in arg.split():
         if  len(par) > 0 and par[0] == '-':
@@ -60,11 +52,12 @@ class Magic(object):
 
 def installed_releases():
     "Print a list of releases installed on a system"
-    osname, osarch = osparameters()
+    _osname, osarch = osparameters()
     releases = []
     for idir in os.listdir(os.environ['VO_CMS_SW_DIR']):
         if  idir.find(osarch) != -1:
-            rdir = os.path.join(os.environ['VO_CMS_SW_DIR'], '%s/cms/cmssw' % idir)
+            rdir = os.path.join(\
+                os.environ['VO_CMS_SW_DIR'], '%s/cms/cmssw' % idir)
             if  os.path.isdir(rdir):
                 for rel in os.listdir(rdir):
                     releases.append('%s/%s' % (rel, idir))
@@ -100,10 +93,10 @@ def pkg_init(pkg_dir):
     "Create CMS command to source pkg environment"
     pkg_dir  = '%s/%s/%s' \
         % (os.environ['VO_CMS_SW_DIR'], os.environ['SCRAM_ARCH'], pkg_dir)
-    pkg_init = 'source `find %s -name init.sh | tail -1`;' % pkg_dir
+    cmd = 'source `find %s -name init.sh | tail -1`;' % pkg_dir
     if  not os.path.isdir(pkg_dir):
-        pkg_init = ''
-    return pkg_init
+        cmd = ''
+    return cmd
 
 def cms_root(arg):
     """
@@ -129,16 +122,16 @@ def cms_xrdcp(arg):
     if  dyld_path:
         os.environ['DYLD_LIBRARY_PATH'] = dyld_path
 
-def debug(arg):
-    """
-    debug shell command
-    """
-    arg = arg.strip()
-    if  arg:
-        print_info("Set debug level to %s" % arg)
-        DEBUG.set(arg)
-    else:
-        print_info("Debug level is %s" % DEBUG.level)
+#def debug(arg):
+#    """
+#    debug shell command
+#    """
+#    arg = arg.strip()
+#    if  arg:
+#        print_info("Set debug level to %s" % arg)
+#        DEBUG.set(arg)
+#    else:
+#        print_info("Debug level is %s" % DEBUG.level)
 
 def debug_http(arg):
     """
@@ -187,14 +180,14 @@ def verbose(arg):
     Set/get verbosity level
     """
     arg = arg.strip()
-    ip = get_ipython()
+    ipth = get_ipython()
     if  arg == '':
-        print_info("Verbose level is %s" % ip.debug)
+        print_info("Verbose level is %s" % ipth.debug)
     else:
         if  arg == 0 or arg == '0':
-            ip.debug = False
+            ipth.debug = False
         else:
-            ip.debug = True
+            ipth.debug = True
 
 # CMSSW commands
 def bootstrap(arch):
@@ -208,7 +201,8 @@ def bootstrap(arch):
     debug = 0
     msg   = 'Bootstrap %s ...' % arch
     run(cmd, sdir, 'bootstrap.log', msg, debug)
-    cmd   = 'source `find %s/%s/external/apt -name init.sh | tail -1`; ' % (swdir, arch)
+    cmd   = 'source `find %s/%s/external/apt -name init.sh | tail -1`; ' \
+                % (swdir, arch)
     cmd  += 'apt-get install external+fakesystem+1.0; '
     cmd  += 'apt-get update; '
     msg   = 'Initialize %s apt repository ...' % arch
@@ -248,7 +242,8 @@ def check_release_arch(rel):
         val = raw_input(msg)
         if  val.lower() == 'y' or val.lower() == 'yes':
             os.environ['SCRAM_ARCH'] = arch
-            if  not os.path.isdir(os.path.join(os.environ['VO_CMS_SW_DIR'], arch)):
+            if  not os.path.isdir(\
+                os.path.join(os.environ['VO_CMS_SW_DIR'], arch)):
                 bootstrap(arch)
             return 'ok'
         else:
@@ -265,7 +260,8 @@ def check_release_arch(rel):
 
 def get_apt_init(arch):
     "Return proper apt init.sh for given architecture"
-    apt_dir = os.path.join(os.environ['VO_CMS_SW_DIR'], '%s/external/apt' % arch)
+    apt_dir = os.path.join(\
+        os.environ['VO_CMS_SW_DIR'], '%s/external/apt' % arch)
     dirs = os.listdir(apt_dir)
     dirs.sort()
     name = 'etc/profile.d/init.sh'
@@ -332,9 +328,12 @@ def cmsrel(rel):
             rel_arch = arch
             break
     if  not rel_arch:
-        msg  = msg_red('Release %s is not yet installed on your system.\n' % rel)
-        msg += 'Use ' + msg_green('releases') + ' command to list available releases.\n'
-        msg += 'Use ' + msg_green('install %s' % rel) + ' command to install given release.'
+        msg  = 'Release %s is not yet installed on your system.\n' % rel
+        msg  = msg_red(msg)
+        msg += 'Use ' + msg_green('releases')
+        msg += ' command to list available releases.\n'
+        msg += 'Use ' + msg_green('install %s' % rel)
+        msg += ' command to install given release.'
         print msg
         return
 
@@ -376,7 +375,8 @@ def cmsexe(cmd):
     vdir = os.environ.get('VO_CMS_SW_DIR', None)
     arch = os.environ.get('SCRAM_ARCH', None)
     if  not vdir or not arch:
-        msg  = msg_red('Unable to identify CMSSW environment, please run first: ')
+        msg  = 'Unable to identify CMSSW environment, please run first: '
+        msg  = msg_red(msg)
         msg += msg_blue('cmsrel <rel>\n')
         releases = os.listdir(os.environ['CMSSW_RELEASES'])
         msg += '\nInstalled releases: ' + msg_green(', '.join(releases))
@@ -390,7 +390,8 @@ def cmscrab(arg):
     Execute CRAB command, help is available at
     https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideCrabFaq
     """
-    msg = 'CRAB FAQ: https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideCrabFaq'
+    msg = \
+    'CRAB FAQ: https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideCrabFaq'
     print_info(msg)
     # check if release version and work area are set (should be set at cmsrel)
     rel = os.environ.get('CMSSW_VERSION', None)
@@ -420,38 +421,7 @@ def cmscrab(arg):
             print_info(msg)
         return
     if  os.uname()[0] == 'Darwin' and arg == '-submit':
-        msg  = 'You cannot directly submit job from Mac OSX, '
-        msg += 'but we will attempt to execute it on lxplus'
-        print_warning(msg)
-        # create tarball of local area
-        tar_filename = os.path.join(work_area, 'cmssh.tar.gz')
-        tar = tarfile.open(tar_filename, "w:gz")
-        for name in os.listdir(os.getcwd()):
-            if  name == tar_filename:
-                continue
-            tar.add(name)
-        tar.close()
-#        hostname = 'lxplus424.cern.ch'
-        hostname = 'lxplus.cern.ch'
-        # send first hostname command to know which lxplus we will talk too
-        if  not CLIENTS.has_key(hostname):
-            CLIENTS.setdefault(hostname, SSHClient(hostname))
-        client = CLIENTS.get(hostname)
-        username = client.username
-        # create remote area
-        remote_dir = '/tmp/%s' % username
-        cmd = 'mkdir -p %s && uname -n && echo "Create %s"' \
-                % (remote_dir, remote_dir)
-        res, err = client.execute(cmd)
-        print_res_err(res, err)
-        # transfer local files
-        remote_file = '/tmp/%s/%s' % (username, tar_filename.split('/')[-1])
-        client.put(tar_filename, remote_file)
-        # execute remote command
-        crab_cmd = 'crab %s' % arg
-        cmd = remote_script(username, rel, crab_cmd)
-        res, err = client.execute(cmd)
-        print_res_err(res, err)
+        crab_submit_remotely(rel, work_area)
         return
     cmd = 'source $CRAB_ROOT/crab.sh; crab %s' % arg
     cmsexe(cmd)
@@ -489,18 +459,18 @@ def cms_help_msg():
         + ' search CMS meta-data (query DBS/Phedex/SiteDB)\n'
     msg += msg_green('dbs_instance') \
         + ' show/set DBS instance, default is DBS global instance\n'
-    msg += msg_green('mkdir/rmdir ') \
-        + ' mkdir/rmdir command, e.g. mkdir /path/foo or rmdir T3_US_Cornell:/store/user/foo\n'
+    msg += msg_green('mkdir/rmdir ') + ' mkdir/rmdir command, ' \
+        + 'e.g. mkdir /path/foo or rmdir T3_US_Cornell:/store/user/foo\n'
     msg += msg_green('ls          ') \
         + ' list file/LFN, e.g. ls local.file or ls /store/user/file.root\n'
-    msg += msg_green('rm          ') \
-        + ' remove file/LFN, e.g. rm local.file or rm T3_US_Cornell:/store/user/file.root\n'
+    msg += msg_green('rm          ') + ' remove file/LFN, ' \
+        + 'e.g. rm local.file or rm T3_US_Cornell:/store/user/file.root\n'
     msg += msg_green('cp          ') \
         + ' copy file/LFN, e.g. cp local.file or cp /store/user/file.root .\n'
     msg += msg_green('info        ') \
-        + ' provides detailed info about given CMS entity, e.g. info run=160915\n'
-    msg += msg_green('das         ') \
-        + ' query DAS\n'
+        + ' provides detailed info about given CMS entity, ' \
+        + 'e.g. info run=160915\n'
+    msg += msg_green('das         ') + ' query DAS\n'
     msg += msg_green('das_json    ') \
         + ' query DAS and return data in JSON format\n'
     msg += msg_green('dqueue      ') \
@@ -510,7 +480,7 @@ def cms_help_msg():
         + ' display disk usage for given site, e.g. du T3_US_Cornell\n'
     msg += '\nAvailable CMSSW commands (once you install any CMSSW release):\n'
     msg += msg_green('releases    ') \
-        + ' list available CMSSW releases\n'
+        + ' list available CMSSW releases, accepts <list|all> arguments\n'
     msg += msg_green('install     ') \
         + ' install CMSSW release, e.g. install CMSSW_5_0_0\n'
     msg += msg_green('cmsrel      ') \
@@ -521,9 +491,12 @@ def cms_help_msg():
     msg += msg_green('cmsRun      ') \
         + ' cmsRun command for release in question\n'
     msg += '\nAvailable GRID commands: <cmd> either grid or voms\n'
-    msg += msg_green('vomsinit    ') + ' setup your proxy (aka voms-proxy-init)\n'
-    msg += msg_green('vomsinfo    ') + ' show your proxy info (aka voms-proxy-info)\n'
-    msg += '\nQuery results are accessible via %s function:\n' % msg_blue('results()')
+    msg += msg_green('vomsinit    ') \
+        + ' setup your proxy (aka voms-proxy-init)\n'
+    msg += msg_green('vomsinfo    ') \
+        + ' show your proxy info (aka voms-proxy-info)\n'
+    msg += '\nQuery results are accessible via %s function:\n' \
+        % msg_blue('results()')
     msg += '   find dataset=/*Zee*\n'
     msg += '   for r in results(): print r, type(r)\n'
     msg += '\nHelp is accessible via ' + msg_blue('cmshelp <command>\n')
@@ -561,9 +534,9 @@ def cms_rm(arg):
     """
     arg = arg.strip()
     try:
-        verbose = get_ipython().debug
+        debug = get_ipython().debug
     except:
-        verbose = 0
+        debug = 0
     if  not arg:
         print_error("Usage: rm <options> source_file")
     dst = arg.split()[-1]
@@ -572,7 +545,7 @@ def cms_rm(arg):
         run(cmd)
     else:
         if  pat_lfn.match(arg.split(':')[-1]):
-            status = rm_lfn(arg, verbose=verbose)
+            status = rm_lfn(arg, verbose=debug)
             print_status(status)
         else:
             raise Exception('Not implemented yet')
@@ -586,16 +559,16 @@ def cms_rmdir(arg):
     """
     arg = arg.strip()
     try:
-        verbose = get_ipython().debug
+        debug = get_ipython().debug
     except:
-        verbose = 0
+        debug = 0
     if  not arg:
         print_error("Usage: rmdir <options> dir")
     if  os.path.exists(arg):
         run("rmdir %s" % arg)
     else:
         try:
-            status = rmdir(arg, verbose=verbose)
+            status = rmdir(arg, verbose=debug)
             print_status(status)
         except:
             traceback.print_exc()
@@ -609,16 +582,16 @@ def cms_mkdir(arg):
     """
     arg = arg.strip()
     try:
-        verbose = get_ipython().debug
+        debug = get_ipython().debug
     except:
-        verbose = 0
+        debug = 0
     if  not arg:
         print_error("Usage: mkdir <options> dir")
     if  arg.find(':') == -1: # not a SE:dir pattern
         run("mkdir %s" % arg)
     else:
         try:
-            status = mkdir(arg, verbose=verbose)
+            status = mkdir(arg, verbose=debug)
             print_status(status)
         except:
             traceback.print_exc()
@@ -636,9 +609,9 @@ def cms_ls(arg):
     arg = arg.strip()
     res = []
     try:
-        verbose = get_ipython().debug
+        debug = get_ipython().debug
     except:
-        verbose = 0
+        debug = 0
     orig_arg = arg
     if  orig_arg.find('|') != -1:
         arg, flt = orig_arg.split('|', 1)
@@ -646,31 +619,32 @@ def cms_ls(arg):
     else:
         flt = None
     startswith = None
-    entities = ['se', 'site', 'lfn', 'dataset', 'block', 'run', 'release', 'file']
+    entities = \
+        ['se', 'site', 'lfn', 'dataset', 'block', 'run', 'release', 'file']
     for item in entities:
         if  arg.startswith(item + '='):
             startswith = item
     if  pat_se.match(arg):
         arg = arg.replace('site=', '')
-        res = list_se(arg, verbose)
+        res = list_se(arg, debug)
     elif  pat_site.match(arg):
         arg = arg.replace('site=', '')
-        res = site_info(arg, verbose)
+        res = site_info(arg, debug)
     elif pat_lfn.match(arg):
         arg = arg.replace('file=', '')
-        res = file_info(arg, verbose)
+        res = file_info(arg, debug)
     elif pat_block.match(arg):
         arg = arg.replace('block=', '')
-        res = block_info(arg, verbose)
+        res = block_info(arg, debug)
     elif pat_dataset.match(arg):
         arg = arg.replace('dataset=', '')
-        res = dataset_info(arg, verbose)
+        res = dataset_info(arg, debug)
     elif pat_run.match(arg):
         arg = arg.replace('run=', '')
-        res = run_info(arg, verbose)
+        res = run_info(arg, debug)
     elif pat_release.match(arg):
         arg = arg.replace('release=', '')
-        res = release_info(arg, verbose)
+        res = release_info(arg, debug)
     elif startswith:
         msg = 'No pattern is allowed for %s look-up' % startswith
         print_error(msg)
@@ -719,9 +693,9 @@ def cms_cp(arg):
         traceback.print_exc()
         return
     try:
-        verbose = get_ipython().debug
+        debug = get_ipython().debug
     except:
-        verbose = 0
+        debug = 0
     if  not arg:
         print_error("Usage: cp <options> source_file target_{file,directory}")
     pat = pat_se
@@ -729,7 +703,7 @@ def cms_cp(arg):
         run("cp %s %s" % (src, dst))
     else:
         try:
-            status = copy_lfn(src, dst, verbose, background)
+            status = copy_lfn(src, dst, debug, background)
             print_status(status)
         except:
             traceback.print_exc()
@@ -767,7 +741,8 @@ def cms_arch(arg=None):
         if  arg == 'all':
             print 'CMSSW architectures:'
         else:
-            print 'CMSSW architectures for %s:' % os.uname()[0].replace('Darwin', 'OSX')
+            print 'CMSSW architectures for %s:' \
+                % os.uname()[0].replace('Darwin', 'OSX')
         for name in cms_architectures('all'):
             if  arg == 'all':
                 print name
