@@ -491,7 +491,7 @@ class FileMover(object):
             raise Exception(msg)
         cmd = 'srm-ls'
         dst = [r for r in resolve_user_srm_path(node, ldir)][0]
-        cmd = "srm-ls %s" % dst
+        cmd = "srm-ls %s -fulldetailed" % dst
         if  verbose:
             print cmd
         stdout, stderr = execmd(cmd)
@@ -499,16 +499,29 @@ class FileMover(object):
             print_error(stderr)
         output = []
         row = {}
-        for line in stdout.split():
+        entities = ['file_status', 'filelocality', 'filetype', 'otherpermission']
+        for line in stdout.split('\n'):
+            if  line.find('SRM-CLIENT*') == -1:
+                continue
+            if  line.find('SRM-CLIENT*REQUEST_STATUS') != -1:
+                continue
             if  line.find('SRM-CLIENT*SURL') != -1:
                 if  row:
                     output.append(CMSObj(row))
                     row = {}
-                row['data'] = line.replace('SRM-CLIENT*SURL=', '')
-            if  line.find('SRM-CLIENT*FILETYPE') != -1:
-                row['type'] = line.replace('SRM-CLIENT*FILETYPE=', '').lower()
-            if  line.find('SRM-CLIENT*BYTES') != -1:
-                row['bytes'] = long(line.replace('SRM-CLIENT*BYTES=', ''))
+            key, val = line.split('=')
+            key = key.replace('SRM-CLIENT*', '').lower()
+            if  key == 'bytes':
+                val = long(val)
+            if  key in entities:
+                val = val.lower()
+            if  key.find('.') != -1:
+                att, elem = key.split('.')
+                if  not row.has_key(att) or not isinstance(row[att], dict):
+                    row[att] = {}
+                row[att][elem] = val.lower()
+            else:
+                row[key] = val
         if  row:
             output.append(CMSObj(row))
         return output
