@@ -8,6 +8,15 @@ Description: CMSSW utilities
 
 # system modules
 import os
+import tarfile
+
+# cmssh modules
+from cmssh.iprint import print_warning
+from cmssh.utils import print_res_err
+from cmssh.paramiko_client import SSHClient
+
+# global SSH clients
+CLIENTS = {}
 
 def remote_script(user, rel, cmd='crab -status'):
     "Generate script to setup CMSSW release area"
@@ -82,6 +91,42 @@ dbs_url_for_publication = https://cmsdbsprod.cern.ch:8443/cms_dbs_ph_analysis_01
 #ce_black_list = T2_ES_IFCA
 """
     return content
+
+def crab_submit_remotely(rel, work_area):
+    "Submit crab job remotely"
+    msg  = 'You cannot directly submit job from Mac OSX, '
+    msg += 'but we will attempt to execute it on lxplus'
+    print_warning(msg)
+    # create tarball of local area
+    tar_filename = os.path.join(work_area, 'cmssh.tar.gz')
+    tar = tarfile.open(tar_filename, "w:gz")
+    for name in os.listdir(os.getcwd()):
+        if  name == tar_filename:
+            continue
+        tar.add(name)
+    tar.close()
+#        hostname = 'lxplus424.cern.ch'
+    hostname = 'lxplus.cern.ch'
+    # send first hostname command to know which lxplus we will talk too
+    if  not CLIENTS.has_key(hostname):
+        CLIENTS.setdefault(hostname, SSHClient(hostname))
+    client = CLIENTS.get(hostname)
+    username = client.username
+    # create remote area
+    remote_dir = '/tmp/%s' % username
+    cmd = 'mkdir -p %s && uname -n && echo "Create %s"' \
+            % (remote_dir, remote_dir)
+    res, err = client.execute(cmd)
+    print_res_err(res, err)
+    # transfer local files
+    remote_file = '/tmp/%s/%s' % (username, tar_filename.split('/')[-1])
+    client.put(tar_filename, remote_file)
+    # execute remote command
+    crab_cmd = 'crab -submit'
+    cmd = remote_script(username, rel, crab_cmd)
+    res, err = client.execute(cmd)
+    print_res_err(res, err)
+
 def edmconfig(release, lfnlist, evtlist, ofname, prefix=None):
     """
     Generate EDM config file template.
@@ -112,7 +157,7 @@ def edmconfig(release, lfnlist, evtlist, ofname, prefix=None):
     else:
         files = str(lfnlist).replace('[', '').replace(']', '')
     events = ""
-    for run, event, lumi in evtlist:
+    for run, event, _lumi in evtlist:
         events += "'%s:%s'," % (run, event)
     events = events[:-1] # to remove last comma
     if  release < 'CMSSW_1_6':
