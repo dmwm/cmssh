@@ -365,6 +365,7 @@ def cmsrel(rel):
             setattr(ipython, magic_name, Magic(cmd).execute)
 
     os.environ['CMSSW_VERSION'] = rel
+    os.environ['CMSSW_WORKAREA'] = os.getcwd()
     # final message
     print "%s is ready, cwd: %s" % (rel, os.getcwd())
 
@@ -391,31 +392,39 @@ def cmscrab(arg):
     """
     msg = 'CRAB FAQ: https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideCrabFaq'
     print_info(msg)
+    # check if release version and work area are set (should be set at cmsrel)
     rel = os.environ.get('CMSSW_VERSION', None)
+    work_area = os.environ.get('CMSSW_WORKAREA', None)
 #    rel = 'CMSSW_5_0_1'
-    if  not rel:
+    if  not rel or not work_area:
         msg  = 'In order to run crab command you must '
-        msg += 'setup your release area and run cmsrel'
+        msg += 'run ' + msg_blue('cmsrel') + ' command'
         print_error(msg)
         return
-    if  not os.path.isfile(os.path.join(os.getcwd(), 'crab.cfg')):
-        msg = 'No crab.cfg file found in %s' % os.getcwd()
+    # check existence of crab.cfg
+    crab_dir = os.path.join(work_area, 'crab')
+    crab_cfg = os.path.join(crab_dir, 'crab.cfg')
+    if  not os.path.isdir(crab_dir):
+        os.makedirs(crab_dir)
+    os.chdir(crab_dir)
+    if  not os.path.isfile(crab_cfg):
+        msg = 'No crab.cfg file found in %s' % crab_dir
         print_error(msg)
         msg = 'Would you like to create one: [y/N]'
         uinput = raw_input(msg)
         if  uinput.lower() == 'y' or uinput.lower() == 'yes':
             with open('crab.cfg', 'w') as config:
                 config.write(crabconfig())
-            msg  = 'Your crab.cfg has been created, please edit it '
+            msg  = 'Your %s has been created, please edit it ' % crab_cfg
             msg += 'appropriately and re-run crab command'
             print_info(msg)
         return
-    if  os.uname()[0] == 'Darwin':
+    if  os.uname()[0] == 'Darwin' and arg == '-submit':
         msg  = 'You cannot directly submit job from Mac OSX, '
         msg += 'but we will attempt to execute it on lxplus'
         print_warning(msg)
         # create tarball of local area
-        tar_filename = os.path.join(os.getcwd(), 'cmssh.tar.gz')
+        tar_filename = os.path.join(work_area, 'cmssh.tar.gz')
         tar = tarfile.open(tar_filename, "w:gz")
         for name in os.listdir(os.getcwd()):
             if  name == tar_filename:
