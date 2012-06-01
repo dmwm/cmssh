@@ -731,7 +731,8 @@ export IPYTHON_DIR=$ipdir
     print "Clean-up soft area"
     os.chdir(path)
     res = subprocess.call("rm *.tar.gz", shell=True)
-    os.makedirs('logs')
+    if  not os.path.isdir('logs'):
+        os.makedirs('logs')
     res = subprocess.call("mv *.log logs", shell=True)
 
     print "Congratulations, cmssh is available at %s/bin/cmssh" % path
