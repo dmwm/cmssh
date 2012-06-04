@@ -7,8 +7,13 @@ Set of UNIX commands, e.g. ls, cp, supported in cmssh.
 
 # system modules
 import os
+import re
+import time
+import json
 import glob
+import base64
 import pprint
+import getpass
 import traceback
 
 # cmssh modules
@@ -20,6 +25,7 @@ from cmssh.utils import osparameters, check_voms_proxy, run
 from cmssh.cmsfs import dataset_info, block_info, file_info, site_info, run_info
 from cmssh.cmsfs import CMSMGR, apply_filter, validate_dbs_instance
 from cmssh.cmsfs import release_info
+from cmssh.github import get_tickets, post_ticket
 from cmssh.cms_urls import dbs_instances, tc_url
 from cmssh.das import das_client
 from cmssh.url_utils import get_data
@@ -29,6 +35,7 @@ from cmssh.tagcollector import architectures as tc_architectures
 from cmssh.results import RESMGR
 from cmssh.auth_utils import PEMMGR, working_pem
 from cmssh.cmssw_utils import crab_submit_remotely, crabconfig
+from cmssh.url_utils import send_email
 
 def options(arg):
     """Extract options from given arg string"""
@@ -75,6 +82,7 @@ def installed_releases():
 def cms_releases(arg=None):
     """
     List available CMS releases. Optional parameters either <list> or <all>
+    Examples:
         releases      # show installed CMSSW releases
         releases list # show available CMSSW releases
         releases all  # show all known CMS releases, including online, tests, etc.
@@ -528,9 +536,9 @@ def cms_rm(arg):
     """
     CMS rm command works with local files/dirs and CMS storate elements.
     Examples:
-        cmssh# rm local_file
-        cmssh# rm -rf local_dir
-        cmssh# rm T3_US_Cornell:/xrootdfs/cms/store/user/user_name/file.root
+        cmssh> rm local_file
+        cmssh> rm -rf local_dir
+        cmssh> rm T3_US_Cornell:/xrootdfs/cms/store/user/user_name/file.root
     """
     arg = arg.strip()
     try:
@@ -554,8 +562,8 @@ def cms_rmdir(arg):
     """
     cmssh rmdir command removes directory from local file system or CMS storage element.
     Examples:
-        cmssh# rmdir foo
-        cmssh# rmdir T3_US_Cornell:/store/user/user_name/foo
+        cmssh> rmdir foo
+        cmssh> rmdir T3_US_Cornell:/store/user/user_name/foo
     """
     arg = arg.strip()
     try:
@@ -577,8 +585,8 @@ def cms_mkdir(arg):
     """
     cmssh mkdir command creates directory on local filesystem or remote CMS storage element.
     Examples:
-        cmssh# mkdir foo
-        cmssh# mkdir T3_US_Cornell:/store/user/user_name/foo
+        cmssh> mkdir foo
+        cmssh> mkdir T3_US_Cornell:/store/user/user_name/foo
     """
     arg = arg.strip()
     try:
@@ -601,10 +609,10 @@ def cms_ls(arg):
     cmssh ls command lists local files/dirs/CMS storate elements or
     CMS entities (se, site, dataset, block, run, release, file).
     Examples:
-        cmssh# ls local_file
-        cmssh# ls -l local_file
-        cmssh# ls T3_US_Cornell:/store/user/valya
-        cmssh# ls run=160915
+        cmssh> ls local_file
+        cmssh> ls -l local_file
+        cmssh> ls T3_US_Cornell:/store/user/valya
+        cmssh> ls run=160915
     """
     arg = arg.strip()
     res = []
@@ -660,9 +668,9 @@ def cms_info(arg):
     cmssh info command provides information for given meta-data entity, e.g.
     dataset, block, file, run.
     Examples:
-        cmssh# info dataset=/a/b/c
-        cmssh# info /a/b/c
-        cmssh# info run=160915
+        cmssh> info dataset=/a/b/c
+        cmssh> info /a/b/c
+        cmssh> info run=160915
 
     Please note: to enable access to RunSummary service please ensure that your
     usercert.pem is mapped at https://ca.cern.ch/ca/Certificates/MapCertificate.aspx
@@ -673,10 +681,10 @@ def cms_cp(arg):
     """
     cmssh cp command copies local files/dirs to/from local files/dirs or CMS storate elements.
     Examples:
-        cmssh# cp file1 file2
-        cmssh# cp file.root T3_US_Cornell:/store/user/name
-        cmssh# cp /store/mc/file.root T3_US_Cornell:/store/user/name
-        cmssh# cp T3_US_Cornell:/store/user/name/file.root T3_US_Omaha
+        cmssh> cp file1 file2
+        cmssh> cp file.root T3_US_Cornell:/store/user/name
+        cmssh> cp /store/mc/file.root T3_US_Cornell:/store/user/name
+        cmssh> cp T3_US_Cornell:/store/user/name/file.root T3_US_Omaha
     """
     check_voms_proxy()
     arg = arg.strip()
@@ -723,9 +731,10 @@ def cms_architectures(arch_type=None):
 def cms_arch(arg=None):
     """
     Show or set CMSSW architecture. Optional parameters either <all> or <list>
-        arch      # show current and installed architecture(s)
-        arch all  # show all known CMSSW architectures
-        arch list # show all CMSSW architectures for given platform
+    Examples:
+        cmssh> arch      # show current and installed architecture(s)
+        cmssh> arch all  # show all known CMSSW architectures
+        cmssh> arch list # show all CMSSW architectures for given platform
     """
     if  not arg:
         print "Current architecture: %s" % os.environ['SCRAM_ARCH']
@@ -792,6 +801,31 @@ def cms_vomsinit(_arg=None):
         run("voms-proxy-destroy")
         cmd = "voms-proxy-init -voms cms:/cms -key %s -cert %s" % (key, cert)
         run(cmd)
+
+def github_issues(arg=None):
+    """
+    Retrieve information about cmssh tickets, e.g.
+    Examples:
+        cmssh> tickets     # list all tickets
+        cmssh> ticket 14   # get details for given ticket id
+        cmssh> ticket new  # post new ticket
+    """
+    if  arg == 'new':
+        email = raw_input('Your Email : ')
+        title = raw_input('Subject    : ')
+        desc  = raw_input('Description: ')
+        key   = 'cmssh-%s' % time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(time.time()))
+        files = {key: {'content': desc}}
+#        res   = post_ticket(title, files)
+#        if  res.has_key('html_url'):
+#            print_status('created at %s' % res['html_url'])
+        ticket = 'BLA'
+        to_user = 'vkuznet@gmail.com'
+        send_email(email, to_user, title, ticket)
+    else:
+        res = get_tickets(arg)
+        RESMGR.assign(res)
+        pprint.pprint(res)
 
 def results():
     """Return results from recent query"""
