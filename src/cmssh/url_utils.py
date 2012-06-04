@@ -12,6 +12,8 @@ import urllib
 import urllib2
 import httplib
 import cookielib
+import smtplib
+from   email.mime.text import MIMEText
 
 # cmssh modules
 from   cmssh.iprint import print_info
@@ -58,7 +60,7 @@ def create_ssh_opener(key, cert):
     urllib2.install_opener(opener)
     return opener
 
-def get_data(url, method, kwargs=None, headers=None, verbose=None, decoder='json'):
+def get_data(url, method, kwargs=None, headers=None, verbose=None, decoder='json', post=False):
     """Retrieve data"""
     if  url.find('https') != -1:
         ckey, cert = get_key_cert()
@@ -72,9 +74,11 @@ def get_data(url, method, kwargs=None, headers=None, verbose=None, decoder='json
         params = {}
     if  method == 'datasets':
         params.update({'dataset_access_type':'PRODUCTION', 'detail':'True'})
-    url = url + '?' + urllib.urlencode(params, doseq=True)
+    encoded_data = urllib.urlencode(params, doseq=True)
+    if  not post:
+        url = url + '?' + encoded_data
     if  verbose:
-        print "Request:", url, headers, ckey, cert
+        print "Request:", url, encoded_data, headers, ckey, cert
     req = urllib2.Request(url)
     if  headers:
         for key, val in headers.items():
@@ -85,7 +89,12 @@ def get_data(url, method, kwargs=None, headers=None, verbose=None, decoder='json
         handler = HTTPSClientAuthHandler(ckey, cert)
         opener  = urllib2.build_opener(handler)
         urllib2.install_opener(opener)
-    res  = urllib2.urlopen(req)
+    if  post:
+        print "POST", req, url, encoded_data, params
+#        res = urllib2.urlopen(req, encoded_data)
+        res = urllib2.urlopen(req, json.dumps(params))
+    else:
+        res = urllib2.urlopen(req)
     if  decoder == 'json':
         data = json.load(res)
     else:
@@ -138,3 +147,19 @@ def get_key_cert():
         key = None   # to handle correctly HTTPSHandler call
 
     return key, cert
+
+def send_email(from_user, to_user, subject, ticket):
+    # Create a text/plain message
+    msg = MIMEText(ticket)
+
+    # me == the sender's email address
+    # you == the recipient's email address
+    msg['Subject'] = 'New cmssh gist ticket'
+    msg['From'] = from_user
+    msg['To'] = to_user
+
+    # Send the message via our own SMTP server, but don't include the
+    # envelope header.
+    s = smtplib.SMTP('localhost')
+    s.sendmail(from_user, [to_user], msg.as_string())
+    s.quit()
