@@ -19,13 +19,87 @@ from multiprocessing import Process
 import xml.etree.ElementTree as ET
 
 # cmssh modules
-from cmssh.iprint import print_error, print_info
+from cmssh.iprint import print_error, print_info, print_warning
 from cmssh.utils import size_format
 from cmssh.ddict import DotDict
 from cmssh.cms_urls import phedex_url
 from cmssh.cms_objects import CMSObj
 from cmssh.utils import execmd, print_progress
 from cmssh.url_utils import get_data
+
+def permissions(dfield, ufield, gfield, ofield):
+    "Return UNIX permission string"
+    def helper(field):
+        "Decompose field into dict"
+        out  = 'r' if 'r' in field else '-'
+        out += 'w' if 'w' in field else '-'
+        out += 'x' if 'x' in field else '-'
+        return out
+    return dfield + helper(ufield) + helper(gfield) + helper(ofield)
+
+def check_ls_fields(data):
+    "Helper function to check ls fields"
+    keys   = data.keys()
+    mandatory_keys = ['filetype', 'surl', 'lastaccessed']
+    if  set(keys) & set(mandatory_keys):
+        return True
+    return False
+
+def ls_format(arr, dst=''):
+    "Perform ls format of input rows"
+    output = []
+    size   = 0 # total size
+    lbytes = 1 # length of the bytes field
+    luser  = 1 # length of the user field
+    lgroup = 1 # length of the group field
+    ufield = ''
+    user   = ''
+    ofield = ''
+    group  = ''
+    gfield = ''
+    for rec in arr:
+        row = rec.data
+        if  not check_ls_fields(row):
+            continue
+        if  row.has_key('ownerpermission'):
+            ufield = row['ownerpermission']['mode']
+            user   = row['ownerpermission']['userid']
+        if  row.has_key('ownerpermission'):
+            ofield = row['otherpermission']
+        if  row.has_key('grouppermission'):
+            group  = row['grouppermission']['groupid']
+            gfield = row['grouppermission']['mode']
+        date   = row['lastaccessed']
+        dfield = 'd' if row['filetype'] == 'directory' else '-'
+        mask   = permissions(dfield, ufield, gfield, ofield)
+        date   = row['lastaccessed']
+        name   = row['surl'].replace('//', '/').replace(dst, '')
+        if  not name:
+            name = '.'
+        elif name[0] == '/':
+            name = name[1:]
+        size   = 0 if not row.has_key('bytes') else row['bytes']
+        lbytes = len(str(size)) if len(str(size)) > lbytes else lbytes
+        luser  = len(str(user)) if len(str(user)) > luser else luser
+        lgroup = len(str(group)) if len(str(group)) > lgroup else lgroup
+        fields = (name, mask, user, group, size, date)
+        output.append(fields)
+    output.sort()
+    field_format = '%(mask)s %(user)s %(group)s %s %s %s'
+    out = []
+    for row in output:
+        name, mask, user, group, size, date = row
+        pad    = ' '*(lbytes-len(str(size))) if len(str(size)) < lbytes else ''
+        size   = '%s%s' % (pad, size)
+        pad    = ' '*(luser-len(str(user))) if len(str(user)) < luser else ''
+        user   = '%s%s' % (pad, user)
+        pad    = ' '*(lgroup-len(str(group))) if len(str(group)) < lgroup else ''
+        group  = '%s%s' % (pad, group)
+        fields = '%s %s %s %s %s %s' % (mask, user, group, size, date, name)
+        out.append(fields)
+    if  not out:
+        return arr
+    return out
 
 def file_size(ifile):
     "Return file size"
@@ -524,7 +598,13 @@ class FileMover(object):
                 row[key] = val
         if  row:
             output.append(CMSObj(row))
-        return output
+        try:
+            out = ls_format(output, dst.split('=')[-1])
+        except Exception as err:
+            msg = 'Fail to parse ls output, error=%s' % str(err)
+            print_warning(msg)
+            out = output
+        return out
 
     def rm_lfn(self, arg, verbose=0):
         """Remove user lfn from a node"""
