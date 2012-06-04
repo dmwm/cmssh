@@ -12,8 +12,7 @@ import urllib
 import urllib2
 import httplib
 import cookielib
-import smtplib
-from   email.mime.text import MIMEText
+import subprocess
 
 # cmssh modules
 from   cmssh.iprint import print_info
@@ -148,18 +147,8 @@ def get_key_cert():
 
     return key, cert
 
-def send_email(from_user, to_user, subject, ticket):
-    # Create a text/plain message
-    msg = MIMEText(ticket)
-
-    # me == the sender's email address
-    # you == the recipient's email address
-    msg['Subject'] = 'New cmssh gist ticket'
-    msg['From'] = from_user
-    msg['To'] = to_user
-
-    # Send the message via our own SMTP server, but don't include the
-    # envelope header.
-    s = smtplib.SMTP('localhost')
-    s.sendmail(from_user, [to_user], msg.as_string())
-    s.quit()
+def send_email(to_user, from_user, title, ticket):
+    # we will use mail unix command for that
+    cmd = 'echo "User: %s\nTicket:\n%s" | mail -s "cmssh gist %s" %s'\
+        % (from_user, ticket, title, to_user)
+    subprocess.call(cmd, shell=True)
