@@ -38,7 +38,6 @@ def post_ticket(title, files=None, public=True):
     url  = 'https://api.github.com/gists'
     req  = urllib2.Request(url)
     data = dict(description=title, public=public, files=files)
-    print "### POST", url, data, json.dumps(data)
     try:
         req.add_header("Content-Type", "application/json")
         res = urllib2.urlopen(req, json.dumps(data))
