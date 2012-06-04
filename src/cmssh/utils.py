@@ -176,20 +176,29 @@ def list_results(res, debug, flt=None):
             if  not debug:
                 print row
             else:
-                print repr(row)
+                if  isinstance(row, basestring):
+                    print row
+                else:
+                    print repr(row)
     elif  isinstance(res, set):
         for row in list(res):
             if  not debug:
                 print row
             else:
-                print repr(row)
+                if  isinstance(row, basestring):
+                    print row
+                else:
+                    print repr(row)
     elif isinstance(res, dict):
         print format_dict(res)
     else:
         if  not debug:
             print res
         else:
-            print repr(res)
+            if  isinstance(res, basestring):
+                print res
+            else:
+                print repr(res)
 
     sys.stdout = old_stdout
     if  flt and match:
