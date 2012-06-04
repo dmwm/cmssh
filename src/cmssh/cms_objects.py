@@ -109,3 +109,13 @@ class Release(CMSObj):
             return self.data['release_name']
         return self.data
 
+class Ticket(CMSObj):
+    """docstring for Ticket"""
+    def __init__(self, data):
+        CMSObj.__init__(self, data)
+    def __str__(self):
+        """Ticket string representation"""
+        if  self.data.has_key('title'):
+            return self.data['title']
+        return self.data
+
