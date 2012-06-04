@@ -8,12 +8,12 @@ Set of UNIX commands, e.g. ls, cp, supported in cmssh.
 # system modules
 import os
 import re
+import sys
 import time
 import json
 import glob
 import base64
 import pprint
-import getpass
 import traceback
 
 # cmssh modules
@@ -806,22 +806,49 @@ def github_issues(arg=None):
     """
     Retrieve information about cmssh tickets, e.g.
     Examples:
-        cmssh> tickets     # list all tickets
+        cmssh> tickets     # list all cmssh tickets
         cmssh> ticket 14   # get details for given ticket id
-        cmssh> ticket new  # post new ticket
+        cmssh> ticket new  # post new ticket from cmssh
+        # or post it at https://github.com/vkuznet/cmssh/issues/new
     """
     if  arg == 'new':
         email = raw_input('Your Email : ')
-        title = raw_input('Subject    : ')
-        desc  = raw_input('Description: ')
+        if  not email:
+            msg = "You did your email address"
+            print_error(msg)
+            return
+        desc  = ''
+        msg   = 'Type your problem, attach traceback, etc. Once done print '
+        msg  += msg_blue('EOF') + ' and hit ' + msg_blue('Enter') + '\n' 
+        print msg
+        while True:
+            try:
+                uinput = raw_input()
+                if  uinput.strip() == 'EOF':
+                    break
+                desc += uinput + '\n'
+            except KeyboardInterrupt:
+                break
+        if  not desc:
+            msg = "You did not provide bug description"
+            print_error(msg)
+            return
+        uinput = raw_input('\nSend this ticket [y/N] ')
+        if  not (uinput.lower() == 'y' or uinput.lower() == 'yes'):
+            print_info('Aborting your action')
+            return
         key   = 'cmssh-%s' % time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(time.time()))
         files = {key: {'content': desc}}
-#        res   = post_ticket(title, files)
-#        if  res.has_key('html_url'):
-#            print_status('created at %s' % res['html_url'])
-        ticket = 'BLA'
-        to_user = 'vkuznet@gmail.com'
-        send_email(email, to_user, title, ticket)
+        res   = post_ticket(key, files)
+        if  res.has_key('html_url'):
+            print_status('New gist ticket %s' % res['html_url'])
+            title = 'cmssh gist %s' % res['html_url']
+            if  isinstance(res, dict):
+                ticket = pprint.pformat(res)
+            else:
+                ticket = res
+            to_user = base64.decodestring('dmt1em5ldEBnbWFpbC5jb20=\n')
+            send_email(to_user, email, title, ticket)
     else:
         res = get_tickets(arg)
         RESMGR.assign(res)
