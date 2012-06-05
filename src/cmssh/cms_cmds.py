@@ -21,21 +21,20 @@ from cmssh.iprint import msg_red, msg_green, msg_blue
 from cmssh.iprint import print_warning, print_error, print_status, print_info
 from cmssh.filemover import copy_lfn, rm_lfn, mkdir, rmdir, list_se, dqueue
 from cmssh.utils import list_results, check_os, unsupported_linux
-from cmssh.utils import osparameters, check_voms_proxy, run
+from cmssh.utils import osparameters, check_voms_proxy, run, user_input
 from cmssh.cmsfs import dataset_info, block_info, file_info, site_info, run_info
 from cmssh.cmsfs import CMSMGR, apply_filter, validate_dbs_instance
 from cmssh.cmsfs import release_info
 from cmssh.github import get_tickets, post_ticket
 from cmssh.cms_urls import dbs_instances, tc_url
 from cmssh.das import das_client
-from cmssh.url_utils import get_data
+from cmssh.url_utils import get_data, send_email
 from cmssh.regex import pat_release, pat_site, pat_dataset, pat_block
 from cmssh.regex import pat_lfn, pat_run, pat_se
 from cmssh.tagcollector import architectures as tc_architectures
 from cmssh.results import RESMGR
 from cmssh.auth_utils import PEMMGR, working_pem
 from cmssh.cmssw_utils import crab_submit_remotely, crabconfig
-from cmssh.url_utils import send_email
 
 def options(arg):
     """Extract options from given arg string"""
@@ -247,8 +246,7 @@ def check_release_arch(rel):
             print_warning(msg)
         msg = '\n%s/%s is not installed within cmssh, proceed [y/N] ' \
                 % (rel, arch)
-        val = raw_input(msg)
-        if  val.lower() == 'y' or val.lower() == 'yes':
+        if  user_input(msg):
             os.environ['SCRAM_ARCH'] = arch
             if  not os.path.isdir(\
                 os.path.join(os.environ['VO_CMS_SW_DIR'], arch)):
@@ -419,8 +417,7 @@ def cmscrab(arg):
         msg = 'No crab.cfg file found in %s' % crab_dir
         print_warning(msg)
         msg = 'Would you like to create one: [y/N] '
-        uinput = raw_input(msg)
-        if  uinput.lower() == 'y' or uinput.lower() == 'yes':
+        if  user_input(msg):
             with open('crab.cfg', 'w') as config:
                 config.write(crabconfig())
             msg  = 'Your crab.cfg has been created, please edit it '
@@ -812,6 +809,12 @@ def github_issues(arg=None):
         # or post it at https://github.com/vkuznet/cmssh/issues/new
     """
     if  arg == 'new':
+        msg  = 'You can post new ticket via web interface at\n'
+        msg += 'https://github.com/vkuznet/cmssh/issues/new\n'
+        msg += 'otherwise it will be posted as anonymous gist ticket'
+        print_info(msg)
+        if  not user_input('Proceed [y/N] '):
+            return
         email = raw_input('Your Email : ')
         if  not email:
             msg = "You did your email address"
@@ -833,8 +836,7 @@ def github_issues(arg=None):
             msg = "You did not provide bug description"
             print_error(msg)
             return
-        uinput = raw_input('\nSend this ticket [y/N] ')
-        if  not (uinput.lower() == 'y' or uinput.lower() == 'yes'):
+        if  not user_input('\nSend this ticket [y/N] '):
             print_info('Aborting your action')
             return
         key   = 'cmssh-%s' % time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(time.time()))
