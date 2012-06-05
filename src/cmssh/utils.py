@@ -43,6 +43,13 @@ class working_dir(object):
                 print "cd %s" % self.odir
             os.chdir(self.odir)
 
+def user_input(msg):
+    "Provide raw_input for given message and return True or False"
+    uinput = raw_input(msg)
+    if  uinput.lower() == 'y' or uinput.lower() == 'yes':
+        return True
+    return False
+
 def run(cmd, cdir=None, log=None, msg=None, debug=None, shell=False):
     "Run given command via subprocess call"
     if  msg:
