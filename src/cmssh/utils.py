@@ -43,9 +43,19 @@ class working_dir(object):
                 print "cd %s" % self.odir
             os.chdir(self.odir)
 
-def user_input(msg):
+def user_input(msg, default='N'):
     "Provide raw_input for given message and return True or False"
+    if  default == 'y' or default == 'Y':
+        msg += ' [Y/n] '
+    else:
+        msg += ' [y/N] '
+    if  msg[0] != '\n':
+        msg  = '\n' + msg
     uinput = raw_input(msg)
+    if  (default == 'y' or default == 'Y') and not uinput:
+        uinput = 'y'
+    if  (default == 'n' or default == 'N') and not uinput:
+        uinput = 'n'
     if  uinput.lower() == 'y' or uinput.lower() == 'yes':
         return True
     return False

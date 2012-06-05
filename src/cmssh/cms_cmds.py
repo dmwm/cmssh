@@ -244,9 +244,9 @@ def check_release_arch(rel):
             msg = 'Your SCRAM_ARCH=%s, while found arch=%s' \
                 % (os.environ['SCRAM_ARCH'], arch)
             print_warning(msg)
-        msg = '\n%s/%s is not installed within cmssh, proceed [y/N] ' \
+        msg = '\n%s/%s is not installed within cmssh, proceed' \
                 % (rel, arch)
-        if  user_input(msg):
+        if  user_input(msg, default='N'):
             os.environ['SCRAM_ARCH'] = arch
             if  not os.path.isdir(\
                 os.path.join(os.environ['VO_CMS_SW_DIR'], arch)):
@@ -416,8 +416,8 @@ def cmscrab(arg):
     if  not os.path.isfile(crab_cfg):
         msg = 'No crab.cfg file found in %s' % crab_dir
         print_warning(msg)
-        msg = 'Would you like to create one: [y/N] '
-        if  user_input(msg):
+        msg = 'Would you like to create one'
+        if  user_input(msg, default='N'):
             with open('crab.cfg', 'w') as config:
                 config.write(crabconfig())
             msg  = 'Your crab.cfg has been created, please edit it '
@@ -813,7 +813,7 @@ def github_issues(arg=None):
         msg += 'https://github.com/vkuznet/cmssh/issues/new\n'
         msg += 'otherwise it will be posted as anonymous gist ticket'
         print_info(msg)
-        if  not user_input('Proceed [y/N] '):
+        if  not user_input('Proceed', default='N'):
             return
         email = raw_input('Your Email : ')
         if  not email:
@@ -836,7 +836,7 @@ def github_issues(arg=None):
             msg = "You did not provide bug description"
             print_error(msg)
             return
-        if  not user_input('\nSend this ticket [y/N] '):
+        if  not user_input('Send this ticket', default='N'):
             print_info('Aborting your action')
             return
         key   = 'cmssh-%s' % time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(time.time()))
