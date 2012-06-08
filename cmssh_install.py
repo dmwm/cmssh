@@ -434,9 +434,10 @@ def main():
     os.chdir(path)
     crab_ver = 'CRAB_2_8_1'
     url = 'http://cmsdoc.cern.ch/cms/ccs/wm/www/Crab/Docs/%s.tgz' % crab_ver
-    get_file(url, 'crab.tar.gz', path, debug)
-    cmd = 'cd %s; ./configure' % crab_ver
-    exe_cmd(path, cmd, debug, log='crab.log')
+    if  not is_installed(url, path):
+        get_file(url, 'crab.tar.gz', path, debug)
+        cmd = 'cd %s; ./configure' % crab_ver
+        exe_cmd(path, cmd, debug, log='crab.log')
 
     print "Installing WMCore"
     ver = '0.8.21'
@@ -543,6 +544,25 @@ python setup.py install --prefix=$idir
     print "Installing paramiko"
     cmd = cms_env + '%s/install/bin/pip install --upgrade paramiko' % path
     exe_cmd(path, cmd, debug, log='paramiko.log')
+
+    print "Installing zmq"
+    os.chdir(path)
+    zmq_ver = '2.2.0'
+    url = 'http://download.zeromq.org/zeromq-%s.tar.gz' % zmq_ver
+    if  not is_installed(url, path):
+        get_file(url, 'zmq.tar.gz', path, debug)
+        cmd = 'cd zeromq-%s; ./configure --prefix=%s/install' % (zmq_ver, path)
+        cmd += '; make install'
+        exe_cmd(path, cmd, debug, log='zmq.log')
+
+    print "Installing pyzmq"
+    cmd = cms_env + \
+    '%s/install/bin/pip install --install-option="--zmq=%s/install" --upgrade pyzmq' % (path, path)
+    exe_cmd(path, cmd, debug, log='pyzmq.log')
+
+    print "Installing tornado"
+    cmd = cms_env + '%s/install/bin/pip install --upgrade tornado' % path
+    exe_cmd(path, cmd, debug, log='tornado.log')
 
     print "Installing cmssh"
     os.chdir(path)
@@ -678,6 +698,12 @@ fi
         os.makedirs(os.path.join(path, 'bin'))
     except:
         pass
+    flags = ''
+    if  use_matplotlib:
+        if  platform == 'Darwin':
+            flags += ' --pylab=osx'
+        else:
+            flags += ' --pylab'
     with open(os.path.join(path, 'bin/cmssh'), 'w') as cmssh:
         msg  = '#!/bin/bash\n'
         msg += 'echo "Welcome to cmssh! Loading configuration, please wait ..."\n'
@@ -687,7 +713,7 @@ fi
         else:
             msg += 'ipdir="%s/.ipython"\nmkdir -p $ipdir\n' % path
         msg += """
-soft_dir=%s
+soft_dir=%(path)s
 if [ ! -d $ipdir/extensions ]; then
     mkdir -p $ipdir/extensions
 fi
@@ -714,17 +740,20 @@ if [ ! -f $HOME/.globus/usercert.pem ]; then
     exit -1
 fi
 export IPYTHON_DIR=$ipdir
-""" % path
-        flags = '--no-banner'
-        if  use_matplotlib:
-            if  platform == 'Darwin':
-                flags += ' --pylab=osx'
-            else:
-                flags += ' --pylab'
-            flags += ' --InteractiveShellApp.pylab_import_all=False'
-        msg += 'if [ -n `env | grep CMSSH_MATPLOTLIB` ]; then\n'
-        msg += 'ipython %s --ipython-dir=$ipdir --profile=cmssh' % flags
-        msg += '\nelse\nipython --no-banner --ipython-dir=$ipdir --profile=cmssh\nfi\n'
+if [ -n `env | grep CMSSH_MATPLOTLIB` ]; then
+pylab="%(flags)s"
+else
+pylab=""
+fi
+if  [ $# == 1 ] && [ $1 == "notebook" ]; then
+notebook="notebook"
+pylab="--pylab=inline"
+else
+notebook="--no-banner"
+fi
+opts="$notebook $pylab"
+ipython $opts --ipython-dir=$ipdir --profile=cmssh
+""" % {'flags':flags, 'path':path}
         cmssh.write(msg)
     os.chmod('bin/cmssh', 0755)
 
