@@ -77,14 +77,21 @@ def run(cmd, cdir=None, log=None, msg=None, debug=None, shell=False):
         print_info('Execute cmd=%s, kwds=%s' % (cmd, kwds))
     try:
         with working_dir(cdir):
+            kwds.update({'stdout':subprocess.PIPE,
+                         'stderr':subprocess.PIPE,
+                         'close_fds':True})
             if  log:
                 with open(log, 'w') as logstream:
                     kwds.update({'stdout': logstream, 'stderr': logstream})
-                    code = subprocess.call(cmd, **kwds)
+                    pipe = subprocess.Popen(cmd, **kwds)
             else:
-                code = subprocess.call(cmd, **kwds)
-            if  code < 0:
-                print_error('Child was terminated by signal %s', -code)
+                pipe = subprocess.Popen(cmd, **kwds)
+            (child_stdout, child_stderr) = (pipe.stdout, pipe.stderr)
+            stdout = child_stdout.read()
+            stderr = child_stderr.read()
+            if  stderr:
+                print_error(stderr)
+            print stdout
     except OSError as err:
         msg = 'Fail to execute cmd=%s, kwds=%s, error=%s' \
                 % (cmd, kwds, str(err))
