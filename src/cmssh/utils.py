@@ -90,7 +90,16 @@ def run(cmd, cdir=None, log=None, msg=None, debug=None, shell=False):
             stdout = child_stdout.read()
             stderr = child_stderr.read()
             if  stderr:
-                print_error(stderr)
+                if  isinstance(cmd, list):
+                    cmd_str = ' '.join(cmd)
+                else:
+                    cmd_str = cmd
+                if  cmd_str.find('proxy') != -1: # proxy commands prints . to stderr
+                    sss = stderr.replace(stderr[0], '')
+                    if  not (stderr[0] == '.' and not len(sss)):
+                        print_error(stderr)
+                else:
+                    print_error(stderr)
             print stdout
     except OSError as err:
         msg = 'Fail to execute cmd=%s, kwds=%s, error=%s' \
