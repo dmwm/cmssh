@@ -334,11 +334,12 @@ def main():
             os.makedirs(sdir)
         except:
             pass
-        os.chdir(sdir)
         os.environ['VO_CMS_SW_DIR'] = sdir
         os.environ['SCRAM_ARCH'] = arch
         url  = 'http://cmsrep.cern.ch/cmssw/cms/bootstrap.sh'
+        os.chdir(path)
         if  not is_installed(url, path):
+            os.chdir(sdir)
             with open('bootstrap.sh', 'w') as bootstrap:
                  bootstrap.write(getdata(url, {}, debug))
             if  os.uname()[0].lower() == 'linux':
@@ -349,6 +350,7 @@ def main():
             cmd  = 'sh -x $VO_CMS_SW_DIR/bootstrap.sh setup -path $VO_CMS_SW_DIR -arch $SCRAM_ARCH'
             if  unsupported_linux:
                 cmd += ' -unsupported_distribution_hack'
+            os.chdir(path)
             exe_cmd(sdir, cmd, debug, 'Bootstrap CMSSW', log='bootstrap.log')
             apt  = 'source `find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt -name init.sh | tail -1`; '
             cmd  = apt
