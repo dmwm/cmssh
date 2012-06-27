@@ -137,6 +137,44 @@ def print_progress(progress, msg='Download in progress:'):
         sys.stdout.write("%s %d%%   \r" % (msg, progress) )
     sys.stdout.flush()
 
+class PrintProgress(object):
+    def __init__(self, msg='Download in progress:'):
+        if  os.environ.has_key('CMSSH_NOTEBOOK'):
+            self.return_char = ''
+            init_msg = msg
+            self.msg = '' # in notebook do not re-print
+        else:
+            self.return_char = '\r'
+            init_msg = msg
+            self.msg = init_msg
+        sys.stdout.write(init_msg)
+        sys.stdout.flush()
+        self.init()
+
+    def init(self):
+        "Init bar progress status"
+        self.progress = set(['N/A']) # progress values
+
+    def clear(self):
+        "Clear bar progress status"
+        print '' # to clear stdout
+        self.init()
+
+    def refresh(self, progress):
+        "Update progress bar status"
+        if  isinstance(progress, int) or isinstance(progress, float) or \
+            isinstance(progress, long):
+            progress = int(progress)
+        if  progress in self.progress:
+            return
+        self.progress.add(progress)
+        if  progress == 'N/A' or not progress:
+            sys.stdout.write(self.return_char)
+        else:
+            msg = " %d%%" % progress
+            sys.stdout.write(self.msg + msg + self.return_char)
+        sys.stdout.flush()
+
 def print_res_err(res, err):
     "Print res/err from remote command execution"
     if  isinstance(res, list):
