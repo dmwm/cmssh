@@ -286,6 +286,7 @@ def main():
     parch = 'x86'
     arch  = opts.__dict__.get('arch', None)
     if  platform == 'Linux':
+        parch = 'x86_64'
         if  unsupported_linux:
             ver = 'deb_5.0'
         else:
@@ -370,7 +371,7 @@ def main():
             add_url2packages(url, path)
 
     # command to setup CMSSW python
-    find_python = 'find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/python -name init.sh | tail -1'
+    find_python = 'find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/python -name init.sh | grep %s | tail -1' % py_ver
     res = subprocess.Popen(find_python, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     cms_python_env = res.stdout.read().replace('\n', '').strip()
     if  not cms_python_env.find('init.sh') != -1:
@@ -412,7 +413,11 @@ def main():
     url = 'http://sourceforge.net/projects/expat/files/expat/2.0.1/expat-%s.tar.gz/download?use_mirror=iweb' % ver
     if  not is_installed(url, path):
         get_file(url, 'expat-%s.tar.gz' % ver, path, debug)
-        cmd = 'CFLAGS=-m32 ./configure --prefix=%s/install; make; make install' % path
+        if  parch == 'x86':
+            cflags = 'CFLAGS=-m32'
+        else:
+            cflags = ''
+        cmd = cms_env + '%s ./configure --prefix=%s/install; make; make install' % (cflags, path)
         os.chdir(os.path.join(path, 'expat-%s' % ver))
         exe_cmd(os.path.join(path, 'expat-%s' % ver), cmd, debug, log='expat.log')
 
@@ -647,6 +652,8 @@ fi
         msg += 'cms_init "external/libungif"\n'
         msg += 'export DYLD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib\n'
         msg += 'export LD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib:$LD_LIBRARY_PATH\n'
+        if  parch == 'x86_64':
+            msg += 'export LD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib64:$CMSSH_ROOT/glite/lib64:$CMSSH_ROOT/install/lib64:$LD_LIBRARY_PATH\n'
         msg += 'export PATH=$VO_CMS_SW_DIR/bin:$CMSSH_ROOT/install/bin:$PATH\n'
         msg += 'export PATH=$PATH:$CMSSH_ROOT/globus/bin\n'
         msg += 'export PATH=$PATH:$CMSSH_ROOT/glite/bin\n'
