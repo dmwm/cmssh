@@ -757,6 +757,7 @@ fi
 if  [ $# == 1 ] && [ $1 == "notebook" ]; then
 notebook="notebook"
 pylab="--pylab=inline"
+export CMSSH_NOTEBOOK=1
 else
 notebook="--no-banner"
 fi
