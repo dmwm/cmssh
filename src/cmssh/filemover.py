@@ -24,7 +24,8 @@ from cmssh.utils import size_format
 from cmssh.ddict import DotDict
 from cmssh.cms_urls import phedex_url
 from cmssh.cms_objects import CMSObj
-from cmssh.utils import execmd, print_progress
+from cmssh.utils import execmd
+from cmssh.utils import PrintProgress
 from cmssh.url_utils import get_data
 
 def permissions(dfield, ufield, gfield, ofield):
@@ -525,23 +526,24 @@ class FileMover(object):
                     ifile = arr[2] # targetURL
                     tot_size = float(get_size('srm-ls %s' % pfn))
                     if  tot_size:
-                        print_progress('N/A', 'Download in progress: ...')
+                        bar  = PrintProgress()
                         proc = Process(target=execute, args=(cmd, lfn, verbose))
                         proc.start()
                         while True:
                             if  proc.is_alive():
                                 size = get_size('srm-ls %s' % ifile)
                                 if  not size or size == 'null':
-                                    print_progress('N/A', 'Download in progress: ...')
+                                    bar.refresh('')
+                                    pass
                                 else:
                                     progress = float(size)*100/tot_size
-                                    print_progress(progress)
+                                    bar.refresh(progress)
                                     if  progress == 100:
                                         break
                             else:
                                 break
                             time.sleep(0.5)
-                        print '' # to finish print_progress
+                        bar.clear()
                     else:
                         print_error(err)
                         return 'fail'
