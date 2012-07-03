@@ -261,7 +261,11 @@ def main():
         msg  = "Please specify the install area"
         msg += " (it should have enough space to hold CMSSW releases)"
         print msg
-        sys.exit(0)
+        sys.exit(1)
+    if  idir[0] != '/':
+        msg = "Please specify absolute path for install area, e.g. /path/%s" % idir
+        print msg
+        sys.exit(1)
     arch   = opts.arch
     path   = os.path.join(idir, 'soft')
     # setup install area
