@@ -487,7 +487,7 @@ def main():
         exe_cmd(path, cmd, debug, log='pip.log')
 
     print "Installing IPython"
-    cmd = cms_env + '%s/install/bin/pip install --upgrade ipython' % path
+    cmd = cms_env + '%s/install/bin/pip install ipython==0.12.1' % path
     exe_cmd(path, cmd, debug, log='ipython.log')
     # fix pylab message
     fname = '%s/install/lib/python%s/site-packages/IPython/core/pylabtools.py' \
@@ -637,10 +637,11 @@ fi
         msg += 'export CRAB_ROOT=$CMSSH_ROOT/%s\n' % crab_ver
         msg += 'export PATH=/usr/bin:/bin:/usr/sbin:/sbin\n'
         msg += 'unset PYTHONPATH\n'
+        if  os.environ.has_key('LD_LIBRARY_PATH'):
+            msg += 'export LD_LIBRARY_PATH=%s\n' % os.environ['LD_LIBRARY_PATH']
         msg += 'cms_init "external/apt"\n'
         msg += 'cms_init "lcg/root"\n'
         msg += 'cms_init "external/python"\n'
-#        msg += 'source %s\n' % cms_python_env.replace(sdir, '$CMSSH_ROOT/CMSSW').replace(arch, '$SCRAM_ARCH')
         msg += 'cms_init "external/xz"\n'
         msg += 'cms_init "external/pcre"\n'
         msg += 'cms_init "external/py2-matplotlib"\n'
@@ -748,7 +749,7 @@ if [ ! -f $HOME/.globus/usercert.pem ]; then
     echo "Please install it to proceed"
     exit -1
 fi
-export IPYTHONDIR=$ipdir
+export IPYTHON_DIR=$ipdir
 if [ -n `env | grep CMSSH_MATPLOTLIB` ]; then
 pylab="%(flags)s"
 else
