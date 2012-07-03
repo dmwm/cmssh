@@ -748,7 +748,7 @@ if [ ! -f $HOME/.globus/usercert.pem ]; then
     echo "Please install it to proceed"
     exit -1
 fi
-export IPYTHON_DIR=$ipdir
+export IPYTHONDIR=$ipdir
 if [ -n `env | grep CMSSH_MATPLOTLIB` ]; then
 pylab="%(flags)s"
 else
