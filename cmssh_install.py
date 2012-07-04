@@ -491,7 +491,8 @@ def main():
         exe_cmd(path, cmd, debug, log='pip.log')
 
     print "Installing IPython"
-    cmd = cms_env + '%s/install/bin/pip install ipython==0.12.1' % path
+#    cmd = cms_env + '%s/install/bin/pip install ipython==0.12.1' % path
+    cmd = cms_env + '%s/install/bin/pip install --upgrade ipython' % path
     exe_cmd(path, cmd, debug, log='ipython.log')
     # fix pylab message
     fname = '%s/install/lib/python%s/site-packages/IPython/core/pylabtools.py' \
@@ -753,7 +754,7 @@ if [ ! -f $HOME/.globus/usercert.pem ]; then
     echo "Please install it to proceed"
     exit -1
 fi
-export IPYTHON_DIR=$ipdir
+export IPYTHONDIR=$ipdir
 if [ -n `env | grep CMSSH_MATPLOTLIB` ]; then
 pylab="%(flags)s"
 else
