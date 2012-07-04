@@ -182,7 +182,13 @@ def main(ipython):
     # load cms modules and expose them to the shell
     for m in cmsMagicList:
         magic_name = 'magic_%s' % m[0]
-        setattr(ip, magic_name, m[1])
+        if  hasattr(ip, 'register_magic_function'): # ipython 0.13 and above
+            magic_kind = 'line'
+            func = m[1]
+            name = m[0]
+            ip.register_magic_function(func, magic_kind, name)
+        else: # ipython 0.12 and below
+            setattr(ip, magic_name, m[1])
 
     # import required modules for the shell
     ip.ex("from cmssh.cms_cmds import results, cms_vomsinit")
