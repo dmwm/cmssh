@@ -44,8 +44,9 @@ def get_dbs_se(lfn):
             sename = rec['site']['site']
         except:
             continue
-        default_instance = os.environ.get('DBS_INSTANCE')
+        os.environ['DBS_INSTANCE'] = default_instance
         return sename
+    os.environ['DBS_INSTANCE'] = default_instance
 
 def permissions(dfield, ufield, gfield, ofield):
     "Return UNIX permission string"
