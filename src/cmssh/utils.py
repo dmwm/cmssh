@@ -488,3 +488,100 @@ def get_kerberos_username():
     if  stdout:
         username = stdout.split()[-1].split('@')[0]
     return username
+
+# set of utils for parsing DBS2 output
+def adjust_value(value):
+    """
+    Change null value to None.
+    """
+    pat_float   = re.compile(r'(^[-]?\d+\.\d*$|^\d*\.{1,1}\d+$)')
+    pat_integer = re.compile(r'(^[0-9-]$|^[0-9-][0-9]*$)')
+    if  isinstance(value, str):
+        if  value == 'null' or value == '(null)':
+            return None
+        elif pat_float.match(value):
+            return float(value)
+        elif pat_integer.match(value):
+            return int(value)
+        else:
+            return value
+    else:
+        return value
+
+def dict_helper(idict, notations):
+    """
+    Create new dict for provided notations/dict. Perform implicit conversion
+    of data types, e.g. if we got '123', convert it to integer. The conversion
+    is done based on adjust_value function.
+    """
+    child_dict = {}
+    for kkk, vvv in idict.iteritems():
+        child_dict[notations.get(kkk, kkk)] = adjust_value(vvv)
+    return child_dict
+
+def get_children(elem, event, row, key, notations):
+    """
+    xml_parser helper function. It gets recursively information about
+    children for given element tag. Information is stored into provided
+    row for given key. The change of notations can be applied during
+    parsing step by using provided notations dictionary.
+    """
+    for child in elem.getchildren():
+        child_key  = child.tag
+        child_data = child.attrib
+        if  not child_data:
+            child_dict = adjust_value(child.text)
+        else:
+            child_dict = dict_helper(child_data, notations)
+
+        if  isinstance(row[key], dict) and row[key].has_key(child_key):
+            val = row[key][child_key]
+            if  isinstance(val, list):
+                val.append(child_dict)
+                row[key][child_key] = val
+            else:
+                row[key][child_key] = [val] + [child_dict]
+        else:
+            if  child.getchildren(): # we got grand-children
+                if  child_dict:
+                    row[key][child_key] = child_dict
+                else:
+                    row[key][child_key] = {}
+                if  isinstance(child_dict, dict):
+                    newdict = {child_key: child_dict}
+                else:
+                    newdict = {child_key: {}}
+                get_children(child, event, newdict, child_key, notations) 
+                row[key][child_key] = newdict[child_key]
+            else:
+                if  not isinstance(row[key], dict):
+                    row[key] = {}
+                row[key][child_key] = child_dict
+        if  event == 'end':
+            child.clear()
+
+def qlxml_parser(source, prim_key):
+    "DBS2 QL XML parser"
+    notations = {}
+    context   = ET.iterparse(source, events=("start", "end"))
+
+    root = None
+    row = {}
+    row[prim_key] = {}
+    for item in context:
+        event, elem = item
+        key = elem.tag
+        if key != 'row':
+            continue
+        if event == 'start' :
+            root = elem
+        if  event == 'end':
+            row = {}
+            row[prim_key] = {}
+            get_children(elem, event, row, prim_key, notations)
+            elem.clear()
+            yield row
+    if  root:
+        root.clear()
+    source.close()
+

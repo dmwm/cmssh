@@ -15,108 +15,14 @@ import urllib2
 import traceback
 
 import re
-import xml.etree.cElementTree as ET
 
 # cmssh modules
 from   cmssh.url_utils import get_data
+from   cmssh.utils import qlxml_parser
 from   cmssh.cms_objects import File, Block, Dataset
-from   cmssh.filemover import get_pfns, resolve_user_srm_path
-from   cmssh.cms_urls import dbs_url
-
-def adjust_value(value):
-    """
-    Change null value to None.
-    """
-    pat_float   = re.compile(r'(^[-]?\d+\.\d*$|^\d*\.{1,1}\d+$)')
-    pat_integer = re.compile(r'(^[0-9-]$|^[0-9-][0-9]*$)')
-    if  isinstance(value, str):
-        if  value == 'null' or value == '(null)':
-            return None
-        elif pat_float.match(value):
-            return float(value)
-        elif pat_integer.match(value):
-            return int(value)
-        else:
-            return value
-    else:
-        return value
-
-def dict_helper(idict, notations):
-    """
-    Create new dict for provided notations/dict. Perform implicit conversion
-    of data types, e.g. if we got '123', convert it to integer. The conversion
-    is done based on adjust_value function.
-    """
-    child_dict = {}
-    for kkk, vvv in idict.iteritems():
-        child_dict[notations.get(kkk, kkk)] = adjust_value(vvv)
-    return child_dict
-
-def get_children(elem, event, row, key, notations):
-    """
-    xml_parser helper function. It gets recursively information about
-    children for given element tag. Information is stored into provided
-    row for given key. The change of notations can be applied during
-    parsing step by using provided notations dictionary.
-    """
-    for child in elem.getchildren():
-        child_key  = child.tag
-        child_data = child.attrib
-        if  not child_data:
-            child_dict = adjust_value(child.text)
-        else:
-            child_dict = dict_helper(child_data, notations)
-
-        if  isinstance(row[key], dict) and row[key].has_key(child_key):
-            val = row[key][child_key]
-            if  isinstance(val, list):
-                val.append(child_dict)
-                row[key][child_key] = val
-            else:
-                row[key][child_key] = [val] + [child_dict]
-        else:
-            if  child.getchildren(): # we got grand-children
-                if  child_dict:
-                    row[key][child_key] = child_dict
-                else:
-                    row[key][child_key] = {}
-                if  isinstance(child_dict, dict):
-                    newdict = {child_key: child_dict}
-                else:
-                    newdict = {child_key: {}}
-                get_children(child, event, newdict, child_key, notations) 
-                row[key][child_key] = newdict[child_key]
-            else:
-                if  not isinstance(row[key], dict):
-                    row[key] = {}
-                row[key][child_key] = child_dict
-        if  event == 'end':
-            child.clear()
-
-def qlxml_parser(source, prim_key):
-    "DBS2 QL XML parser"
-    notations = {}
-    context   = ET.iterparse(source, events=("start", "end"))
-
-    root = None
-    row = {}
-    row[prim_key] = {}
-    for item in context:
-        event, elem = item
-        key = elem.tag
-        if key != 'row':
-            continue
-        if event == 'start' :
-            root = elem
-        if  event == 'end':
-            row = {}
-            row[prim_key] = {}
-            get_children(elem, event, row, prim_key, notations)
-            elem.clear()
-            yield row
-    if  root:
-        root.clear()
-    source.close()
+from   cmssh.filemover import get_pfns, resolve_user_srm_path, lfn2pfn
+from   cmssh.cms_urls import dbs_url, dbs_instances
+from   cmssh.iprint import print_error, print_warning
 
 def list_datasets(kwargs):
     """Find sites"""
@@ -188,26 +94,48 @@ def block_info(block, verbose=None):
 def file_info(lfn, verbose=None):
     query  = 'find file.name, file.numevents, file.size, file.createdate, file.createby, file.moddate, file.modby where file=%s' % lfn
     params = {"api":"executeQuery", "apiversion": "DBS_2_0_9", "query":query}
-    data   = urllib2.urlopen(dbs_url(), urllib.urlencode(params))
-    rec    = [f for f in qlxml_parser(data, 'file')][0]
-    rec['logical_file_name'] = rec['file']['file.name']
-    rec['size'] = rec['file']['file.size']
-    rec['nevents'] = rec['file']['file.numevents']
-    rec['created'] = time.strftime("%Y-%m-%d %H:%M:%S GMT", time.gmtime(rec['file']['file.createdate']))
-    rec['createdby'] = rec['file']['file.createby']
-    rec['modified'] = time.strftime("%Y-%m-%d %H:%M:%S GMT", time.gmtime(rec['file']['file.moddate']))
-    rec['modifiedby'] = rec['file']['file.modby']
-    del rec['file']
-    lfnobj = File(rec)
-    try:
-        pfnlist, selist = get_pfns(lfn, verbose)
-        lfnobj.assign('pfn', pfnlist)
-        lfnobj.assign('se', selist)
-    except:
-        traceback.print_exc()
-        lfnobj.assign('pfn', [])
-        lfnobj.assign('se', [])
-    return lfnobj
+    default_instance = os.environ.get('DBS_INSTANCE')
+    for inst in dbs_instances():
+        os.environ['DBS_INSTANCE'] = inst
+        data   = urllib2.urlopen(dbs_url(), urllib.urlencode(params))
+        try:
+            rec = [f for f in qlxml_parser(data, 'file')][0]
+        except:
+            continue
+        rec['logical_file_name'] = rec['file']['file.name']
+        rec['size'] = rec['file']['file.size']
+        rec['nevents'] = rec['file']['file.numevents']
+        rec['created'] = time.strftime("%Y-%m-%d %H:%M:%S GMT", time.gmtime(rec['file']['file.createdate']))
+        rec['createdby'] = rec['file']['file.createby']
+        rec['modified'] = time.strftime("%Y-%m-%d %H:%M:%S GMT", time.gmtime(rec['file']['file.moddate']))
+        rec['modifiedby'] = rec['file']['file.modby']
+        del rec['file']
+        lfnobj = File(rec)
+        try:
+            pfnlist, selist = get_pfns(lfn, verbose)
+            if  not selist:
+                query = 'find site where file=%s' % lfn
+                params.update({"query":query})
+                data  = urllib2.urlopen(dbs_url(), urllib.urlencode(params))
+                try:
+                    rec = [f for f in qlxml_parser(data, 'site')][0]
+                    sename = rec['site']['site']
+                    selist = [sename]
+                    pfnlist = lfn2pfn(lfn, sename)
+                except:
+                    pass
+            lfnobj.assign('pfn', pfnlist)
+            lfnobj.assign('se', selist)
+        except:
+            traceback.print_exc()
+            lfnobj.assign('pfn', [])
+            lfnobj.assign('se', [])
+        os.environ['DBS_INSTANCE'] = default_instance
+        lfnobj.assign('dbs_instance', inst)
+        return lfnobj
+    os.environ['DBS_INSTANCE'] = default_instance
+    msg = 'Fail to look-up LFN in %s DBS instances' % dbs_instances()
+    print_error(msg)
 
 def main():
     "Main function"

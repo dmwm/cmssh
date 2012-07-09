@@ -22,11 +22,30 @@ import xml.etree.ElementTree as ET
 from cmssh.iprint import print_error, print_info, print_warning
 from cmssh.utils import size_format
 from cmssh.ddict import DotDict
-from cmssh.cms_urls import phedex_url
+from cmssh.cms_urls import phedex_url, dbs_url, dbs_instances
 from cmssh.cms_objects import CMSObj
 from cmssh.utils import execmd
-from cmssh.utils import PrintProgress
+from cmssh.utils import PrintProgress, qlxml_parser
 from cmssh.url_utils import get_data
+from cmssh.sitedb import SITEDBMGR
+
+def get_dbs_se(lfn):
+    "Get original SE from DBS for given LFN"
+    # TODO: should have transparent access to DBS2/DBS3
+    query = 'find site where file=%s' % lfn
+    params = {"api":"executeQuery", "apiversion": "DBS_2_0_9", "query":query}
+    default_instance = os.environ.get('DBS_INSTANCE')
+    for inst in dbs_instances():
+        params.update({"query":query})
+        os.environ['DBS_INSTANCE'] = inst
+        data  = urllib2.urlopen(dbs_url(), urllib.urlencode(params))
+        try:
+            rec = [f for f in qlxml_parser(data, 'site')][0]
+            sename = rec['site']['site']
+        except:
+            continue
+        default_instance = os.environ.get('DBS_INSTANCE')
+        return sename
 
 def permissions(dfield, ufield, gfield, ofield):
     "Return UNIX permission string"
@@ -240,17 +259,34 @@ def resolve_user_srm_path(node, ldir='/store/user', verbose=None):
     for row in result['phedex']['mapping']:
         yield row['pfn']
 
+def lfn2pfn(lfn, sename):
+    "Find PFN for given LFN and SE"
+    pfnlist = []
+    cmsname = SITEDBMGR.get_name(sename)
+    if  cmsname:
+        params = {'protocol':'srmv2', 'lfn':lfn, 'node':cmsname}
+        result = get_data(phedex_url(), 'lfn2pfn', params)
+        try:
+            for item in result['phedex']['mapping']:
+                pfn = item['pfn']
+                if  pfn not in pfnlist:
+                    pfnlist.append(pfn)
+        except:
+            msg = "Fail to look-up PFNs in Phedex\n" + str(result)
+            print msg
+    return pfnlist
+
 def get_pfns(lfn, verbose=None):
     """
     Look-up LFN in Phedex and get corresponding list of PFNs
     """
     pfnlist   = []
+    selist    = []
     params    = {'se':'*', 'lfn':lfn}
     json_dict = get_data(phedex_url(), 'fileReplicas', params)
     ddict     = DotDict(json_dict)
     if  not json_dict['phedex']['block']:
-        return pfnlist
-    selist = []
+        return pfnlist, selist
     for fname in ddict.get('phedex.block.file'):
         for replica in fname['replica']:
             cmsname = replica['node']
@@ -350,10 +386,12 @@ def srmcp(srmcmd, lfn, dst, verbose=None):
             for fname in filelist:
                 pfnlist.append(fname)
         elif  phedex.has_key('block') and not phedex['block']:
-            msg  = "LFN: %s\n" % lfn
-            msg += 'No replicas found\n'
-            msg += str(json_dict)
-            raise Exception(msg)
+            msg = 'No replicas found in PhEDEx, will try to get original SE from DBS'
+            print_warning(msg)
+            sename = get_dbs_se(lfn)
+            msg = 'Orignal LFN site %s' % sename
+            print_info(msg)
+            pfnlist = lfn2pfn(lfn, sename)
         filelist = ddict.get('phedex.block.file')
         if  not filelist:
             filelist = []
@@ -524,8 +562,9 @@ class FileMover(object):
                     arr = cmd.split() # srm-copy <sourceURL> <targetURL> <options>
                     pfn = arr[1] # sourceURL
                     ifile = arr[2] # targetURL
-                    tot_size = float(get_size('srm-ls %s' % pfn))
-                    if  tot_size:
+                    pfn_size = get_size('srm-ls %s' % pfn)
+                    if  pfn_size and pfn_size != 'null':
+                        tot_size = float(pfn_size)
                         bar  = PrintProgress()
                         proc = Process(target=execute, args=(cmd, lfn, verbose))
                         proc.start()

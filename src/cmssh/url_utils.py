@@ -13,6 +13,7 @@ import urllib2
 import httplib
 import cookielib
 import subprocess
+from contextlib import contextmanager
 
 # cmssh modules
 from   cmssh.iprint import print_info
@@ -152,3 +153,21 @@ def send_email(to_user, from_user, title, ticket):
     cmd = 'echo "User: %s\nTicket:\n%s" | mail -s "cmssh gist %s" %s'\
         % (from_user, ticket, title, to_user)
     subprocess.call(cmd, shell=True)
+
+@contextmanager
+def get_data_and_close(url, headers={'Accept':'*/*'}):
+    "Context Manager to read data from given URL"
+    ckey, cert = get_key_cert()
+    req = urllib2.Request(url)
+    if  headers:
+        for key, val in headers.items():
+            req.add_header(key, val)
+
+    handler = HTTPSClientAuthHandler(ckey, cert)
+    opener  = urllib2.build_opener(handler)
+    urllib2.install_opener(opener)
+    data    = urllib2.urlopen(req)
+    try:
+        yield data
+    finally:
+        data.close()
