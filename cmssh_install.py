@@ -23,8 +23,9 @@ import time
 import urllib
 import urllib2
 import tarfile
-import subprocess
 import traceback
+import fileinput
+import subprocess
 
 # local modules
 from pprint import pformat
@@ -233,6 +234,13 @@ def check_system(unsupported):
             msg += 'sudo dpkg-reconfigure dash'
             print msg
             sys.exit(1)
+
+def test_R():
+    "Test presence of R on the system"
+    cmd = 'which R'
+    res = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+    rpath = res.stdout.read()
+    return rpath
 
 def main():
     mgr = MyOptionParser()
@@ -506,6 +514,13 @@ def main():
         with open(fname, 'w') as output:
             output.write(content)
 
+    print "Test R"
+    rpath = test_R()
+    if  rpath:
+        print "Installing rpy2"
+        cmd = cms_env + '%s/install/bin/pip install --upgrade rpy2' % path
+        exe_cmd(path, cmd, debug, log='rpy2.log')
+
     print "Installing Routes"
     cmd = cms_env + '%s/install/bin/pip install --upgrade Routes' % path
     exe_cmd(path, cmd, debug, log='routes.log')
@@ -641,6 +656,8 @@ fi
         msg += 'export OLD_PATH=$PATH\n'
         msg += 'export CRAB_ROOT=$CMSSH_ROOT/%s\n' % crab_ver
         msg += 'export PATH=/usr/bin:/bin:/usr/sbin:/sbin\n'
+        if  rpath:
+            msg += 'export PATH=$PATH:%s\n' % '/'.join(rpath.split('/')[:-1])
         msg += 'unset PYTHONPATH\n'
         if  os.environ.has_key('LD_LIBRARY_PATH'):
             msg += 'export LD_LIBRARY_PATH=%s\n' % os.environ['LD_LIBRARY_PATH']
@@ -772,6 +789,16 @@ ipython $opts --ipython-dir=$ipdir --profile=cmssh
 """ % {'flags':flags, 'path':path}
         cmssh.write(msg)
     os.chmod('bin/cmssh', 0755)
+
+    if  rpath: # if R is present on a system
+        print "Account for R in ipython config"
+        config = os.path.join(path, 'cmssh/src/config/ipython_config.py')
+        for line in fileinput.input(config, inplace = 1):
+            # writes redirects STDOUT to the file in question
+            pat = "'cmssh_extension'"
+            if  pat in line:
+                line = line.replace(pat, pat + ",'rmagic'")
+            sys.stdout.write(line)
 
     print "Clean-up soft area"
     os.chdir(path)
