@@ -108,13 +108,16 @@ def get_key_cert():
     key  = None
     cert = None
 
-    # First presendence to HOST Certificate, RARE
-    if  os.environ.has_key('X509_HOST_CERT'):
-        cert = os.environ['X509_HOST_CERT']
-        key  = os.environ['X509_HOST_KEY']
+    # Read user certificate chain from user globus area
+    globus_key  = os.path.join(os.environ['HOME'], '.globus/userkey.pem')
+    globus_cert = os.path.join(os.environ['HOME'], '.globus/usercert.pem')
+    if  os.path.isfile(globus_key):
+        key  = globus_key
+    if  os.path.isfile(globus_cert):
+        cert  = globus_cert
 
     # look for cert at default location /tmp/x509up_u$uid
-    elif not key or not cert:
+    if not key or not cert:
         uid  = os.getuid()
         cert = '/tmp/x509up_u'+str(uid)
         key  = cert
@@ -128,15 +131,6 @@ def get_key_cert():
     elif os.environ.has_key('X509_USER_CERT'):
         cert = os.environ['X509_USER_CERT']
         key  = os.environ['X509_USER_KEY']
-
-    # worse case take user key/cert from .globus
-    else:
-        globus_key  = os.path.join(os.environ['HOME'], '.globus/userkey.pem')
-        globus_cert = os.path.join(os.environ['HOME'], '.globus/usercert.pem')
-        if  os.path.isfile(globus_key):
-            key  = globus_key
-        if  os.path.isfile(globus_cert):
-            cert  = globus_cert
 
     if  not os.path.exists(cert):
         raise Exception("Certificate PEM file %s not found" % key)
