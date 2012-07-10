@@ -485,13 +485,13 @@ def cms_help_msg():
         + ' display disk usage for given site, e.g. du T3_US_Cornell\n'
     msg += '\nAvailable CMSSW commands (once you install any CMSSW release):\n'
     msg += msg_green('releases    ') \
-        + ' list available CMSSW releases, accepts <list|all> arguments\n'
+        + ' list available CMSSW releases, accepts <list|all> args\n'
     msg += msg_green('install     ') \
         + ' install CMSSW release, e.g. install CMSSW_5_0_0\n'
     msg += msg_green('cmsrel      ') \
         + ' switch to given CMSSW release and setup its environment\n'
     msg += msg_green('arch        ') \
-        + ' show or switch to given CMSSW architecture\n'
+        + ' show or switch to given CMSSW architecture, accept <list|all> args\n'
     msg += msg_green('scram       ') + ' CMSSW scram command\n'
     msg += msg_green('cmsRun      ') \
         + ' cmsRun command for release in question\n'
@@ -517,14 +517,13 @@ def cms_help(arg=None):
         ipython = get_ipython()
         if  arg[0] == '(' and arg[-1] == ')':
             arg = arg[1:-1]
-        if  arg in ipython.lsmagic():
-            doc = getattr(ipython, 'magic_%s' % arg).func_doc
-        elif 'cms_%s' % arg in ipython.lsmagic():
-            doc = getattr(ipython, 'magic_cms_%s' % arg).func_doc
-        elif 'cms%s' % arg in ipython.lsmagic():
-            doc = getattr(ipython, 'magic_cms%s' % arg).func_doc
-        else:
-            doc = 'Documentation is not available'
+        for case in [arg, 'cms_'+arg, 'cms'+arg]:
+            func = ipython.find_magic(case)
+            if  func:
+                doc = func.func_doc
+                break
+            else:
+                doc = 'Documentation is not available'
     else:
         doc = cms_help_msg()
     print doc
@@ -737,7 +736,7 @@ def cms_arch(arg=None):
         print "Current architecture: %s" % os.environ['SCRAM_ARCH']
         archs = []
         for name in os.listdir(os.environ['VO_CMS_SW_DIR']):
-            if  check_os(name):
+            if  check_os(name) and name.find('.') == -1:
                 archs.append(name)
         if  archs:
             print '\nInstalled architectures:'
