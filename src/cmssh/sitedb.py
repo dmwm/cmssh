@@ -39,10 +39,10 @@ def parser(data):
 
 class SiteDBManager(object):
     "SiteDB manager"
-    def __init__(self, base_url='https://cmsweb.cern.ch', threshold = 10800):
+    def __init__(self, url='https://cmsweb.cern.ch/sitedb/data/prod', threshold = 10800):
         self.resources = []
         self.names = []
-        self.url = base_url + '/sitedb/data/prod/'
+        self.url = url
         self.mapping = {}
         self.timestamp = time.time()
         self.threshold = threshold # in sec, default 3 hours
@@ -51,13 +51,13 @@ class SiteDBManager(object):
     def init(self):
         "initialize SiteDB connection and retrieve all names"
         # get site names
-        url = self.url + 'site-names'
+        url = self.url + '/site-names'
         names = {}
         with get_data_and_close(url) as data:
             for row in parser(data.read()):
                 names[row['site_name']] = row['alias']
         # get site resources
-        url = self.url + 'site-resources'
+        url = self.url + '/site-resources'
         with get_data_and_close(url) as data:
             for row in parser(data.read()):
                 fqdn = row['fqdn']
