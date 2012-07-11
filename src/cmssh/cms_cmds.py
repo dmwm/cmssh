@@ -440,7 +440,7 @@ def cmsrun(arg):
 
 def dbs_instance(arg=None):
     """
-    Set dbs instance
+    Show or set dbs instance
     """
     arg = arg.strip()
     if  arg:
