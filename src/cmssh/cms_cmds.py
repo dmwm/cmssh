@@ -15,6 +15,7 @@ import glob
 import base64
 import pprint
 import traceback
+import subprocess
 
 # cmssh modules
 from cmssh.iprint import msg_red, msg_green, msg_blue
@@ -312,7 +313,7 @@ def cms_install(rel):
     else:
         print "Installing cms+cmssw+%s ..." % rel
         cmd = 'source %s; apt-get install cms+cmssw+%s' % (script, rel)
-    run(cmd)
+    subprocess.call(cmd) # use subprocess due to apt-get interactive feature
     print "Create user area for %s release ..." % rel
     cmsrel(rel)
 
