@@ -313,7 +313,7 @@ def cms_install(rel):
     else:
         print "Installing cms+cmssw+%s ..." % rel
         cmd = 'source %s; apt-get install cms+cmssw+%s' % (script, rel)
-    subprocess.call(cmd) # use subprocess due to apt-get interactive feature
+    subprocess.call(cmd, shell=True) # use subprocess due to apt-get interactive feature
     print "Create user area for %s release ..." % rel
     cmsrel(rel)
 
@@ -629,7 +629,10 @@ def cms_ls(arg):
     for item in entities:
         if  arg.startswith(item + '='):
             startswith = item
-    if  pat_se.match(arg):
+    if  os.path.isfile(orig_arg) or os.path.isdir(orig_arg):
+        cmd = 'ls ' + orig_arg
+        run(cmd, shell=True)
+    elif pat_se.match(arg):
         arg = arg.replace('site=', '')
         res = list_se(arg, debug)
     elif  pat_site.match(arg):
