@@ -56,6 +56,10 @@ class Magic(object):
         "Execute given command in a shell"
         cmd = '%s %s' % (self.cmd, args.strip())
         run(cmd)
+    def subprocess(self, args=''):
+        "Execute given command in a shell"
+        cmd = '%s %s' % (self.cmd, args.strip())
+        subprocess.call(cmd, shell=True)
 
 def installed_releases():
     "Print a list of releases installed on a system"
@@ -476,7 +480,7 @@ def cms_help_msg():
     msg += msg_green('info        ') \
         + ' provides detailed info about given CMS entity, ' \
         + 'e.g. info run=160915\n'
-    msg += msg_green('das         ') + ' query DAS\n'
+    msg += msg_green('das         ') + ' query DAS service\n'
     msg += msg_green('das_json    ') \
         + ' query DAS and return data in JSON format\n'
     msg += msg_green('dqueue      ') \
