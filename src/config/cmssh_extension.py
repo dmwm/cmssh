@@ -11,6 +11,11 @@ import thread
 import traceback
 from   types import GeneratorType
 
+# change name space
+import __builtin__
+builtin_reload = __builtin__.reload
+del __builtin__.reload
+
 # ipython modules
 import IPython
 from   IPython import release
@@ -34,6 +39,17 @@ class ShellName(object):
         self.name     = 'cmsHelp'
         self.dict     = {}
         self.funcList = []
+
+def reload_module(arg):
+    """
+    Reload given python module
+    Examples:
+        reload_module cmssh.utils
+    """
+    for key, val in sys.modules.items():
+        if  key.find(arg) != -1:
+            print_info('reload %s' % key)
+            builtin_reload(val)
 
 def unregister():
     """Unregister shell"""
@@ -80,6 +96,7 @@ except:
 
 # list of cms-sh magic functions
 cmsMagicList = [ \
+    ('reload', reload_module),
     # generic commands, we use Magic class and its execute function
     ('cvs', Magic('cvs').execute),
     ('svn', Magic('svn').execute),
@@ -94,7 +111,7 @@ cmsMagicList = [ \
     ('tar', Magic('tar').execute),
     ('zip', Magic('zip').execute),
     ('chmod', Magic('chmod').execute),
-    ('vim', Magic('vim').execute),
+    ('vim', Magic('vim').subprocess),
     ('python', Magic('python').execute),
     ('env', Magic('env').execute),
     ('pip', Magic('pip').execute),
