@@ -100,8 +100,8 @@ cmsMagicList = [ \
     # generic commands, we use Magic class and its execute function
     ('cvs', Magic('cvs').execute),
     ('svn', Magic('svn').execute),
-    ('ssh', Magic('ssh').execute),
-    ('kinit', Magic('kinit').execute),
+    ('ssh', Magic('ssh').subprocess),
+    ('kinit', Magic('kinit').subprocess),
     ('klist', Magic('klist').execute),
     ('kdestroy', Magic('kdestroy').execute),
     ('git', Magic('git').execute),
