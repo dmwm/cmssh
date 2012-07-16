@@ -9,7 +9,7 @@ import stat
 import time
 import thread
 import traceback
-from   types import GeneratorType
+from   types import GeneratorType, ModuleType
 
 # change name space
 import __builtin__
@@ -42,14 +42,20 @@ class ShellName(object):
 
 def reload_module(arg):
     """
-    Reload given python module
+    Reload given python module, i.e. you can modify any python code
+    and reload it directly into your current shell.
     Examples:
-        reload_module cmssh.utils
+        Let's say you edit cmssh/utils.py file and add some functionality
+        Just invoke the following command and this functionality will be
+        added into your current session.
+
+        cmssh> reload_module cmssh.utils
     """
     for key, val in sys.modules.items():
         if  key.find(arg) != -1:
-            print_info('reload %s' % key)
-            builtin_reload(val)
+            if  isinstance(val, ModuleType):
+                print_info('reload %s' % key)
+                builtin_reload(val)
 
 def unregister():
     """Unregister shell"""
