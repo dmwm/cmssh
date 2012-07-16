@@ -66,7 +66,8 @@ def run(cmd, cdir=None, log=None, msg=None, debug=None, shell=False):
         print msg
     cmd  = cmd.strip()
     kwds = {}
-    if  shell or cmd.find(';') != -1 or cmd.find('&&') != -1:
+    if  shell or cmd.find(';') != -1 or cmd.find('&&') != -1 or \
+        cmd.find('|') != -1:
         kwds = {'shell': True}
     else:
         if  isinstance(cmd, unicode):
