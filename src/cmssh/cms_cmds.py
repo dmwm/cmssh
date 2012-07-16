@@ -87,9 +87,9 @@ def cms_releases(arg=None):
     """
     List available CMS releases. Optional parameters either <list> or <all>
     Examples:
-        releases      # show installed CMSSW releases
-        releases list # show available CMSSW releases
-        releases all  # show all known CMS releases, including online, tests, etc.
+        cmssh> releases      # show installed CMSSW releases
+        cmssh> releases list # show available CMSSW releases
+        cmssh> releases all  # show all known CMS releases, including online, tests, etc.
     """
     if  arg:
         res = release_info(release=None, rfilter=arg)
