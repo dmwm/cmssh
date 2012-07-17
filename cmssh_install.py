@@ -71,6 +71,32 @@ def find_root_package(apt, debug=None):
         root = 'lcg+root+5.30.02-cms4'
     return root
 
+def find_package(apt, pkg, debug=None):
+    """
+    Find latest version of given package in CMSSW repository.
+    """
+    cmd  = apt + 'apt-cache search %s | grep "%s" | grep -v toolfile ' % (pkg, pkg)
+    cmd += "| grep -v cms | tail -1 | awk '{print $1}'"
+    if  debug:
+        print cmd
+    res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+    name = res.stdout.read().replace('\n', '').strip()
+    return name
+
+def scipy_package(apt, debug=None):
+    """
+    Find latest version of scipy package in CMSSW repository.
+    """
+    cmd  = apt + 'apt-cache search scipy | grep "scipy" | grep -v toolfile '
+    cmd += "| grep -v cms | tail -1 | awk '{print $1}'"
+    if  debug:
+        print cmd
+    res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+    root = res.stdout.read().replace('\n', '').strip()
+    if  os.uname()[0] == 'Darwin': # stay in sync w/ lcg+root and matplotlib/numpy
+        root = 'external+py2-scipy+0.8.0-cms3'
+    return root
+
 def matplotlib_package(apt, debug=None):
     """
     Find latest version of matplotlib package in CMSSW repository.
@@ -89,7 +115,7 @@ def libpng_package(apt, debug=None):
     """
     Find latest version of libpng package in CMSSW repository.
     """
-    cmd  = apt + 'apt-cache search matplotlib | grep "matplotlib" | grep -v toolfile '
+    cmd  = apt + 'apt-cache search libpng | grep "libpng" | grep -v toolfile '
     cmd += "| grep -v cms | tail -1 | awk '{print $1}'"
     if  debug:
         print cmd
@@ -103,7 +129,7 @@ def available_architectures():
     "Fetch CMSSW drivers"
     arch = os.uname()[0]
     pat1 = re.compile('.*-driver.txt</a>.*')
-    pat2 = re.compile('^[osx,slc].*') 
+    pat2 = re.compile('^[osx,slc].*')
     url  = 'http://cmsrep.cern.ch/cmssw/cms/'
     data = urllib2.urlopen(url)
     drivers = []
@@ -120,8 +146,8 @@ class MyOptionParser:
     """option parser"""
     def __init__(self):
         self.parser = OptionParser()
-        self.parser.add_option("-v", "--verbose", action="store", 
-            type="int", default=0, dest="debug", 
+        self.parser.add_option("-v", "--verbose", action="store",
+            type="int", default=0, dest="debug",
             help="verbose output")
         self.parser.add_option("-d", "--dir", action="store",
             type="string", default=None,
@@ -242,6 +268,16 @@ def test_R():
     rpath = res.stdout.read()
     return rpath
 
+def test_Fortran():
+    "Test presence of Fortran on the system"
+    for cmd in ['g95', 'f95', 'f90', 'f77', \
+            'xlf90', 'xlf', 'ifort', 'ifc', \
+            'g77', 'gfortran', 'pgfortran']:
+        cmd = 'which %s' % cmd
+        res = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+        rpath = res.stdout.read()
+        return rpath
+
 def main():
     mgr = MyOptionParser()
     opts, args = mgr.get_opt()
@@ -340,7 +376,7 @@ def main():
                 print 'Will use %s/%s' % (sdir, arch)
         else:
             print "Please supply via --arch the architecture from %s you wish to use"\
-                % opts.cmssh 
+                % opts.cmssh
             sys.exit(1)
     else: # do local CMSSW bootstrap
         try:
@@ -374,12 +410,15 @@ def main():
             cmd  = apt + 'echo "Y" | apt-get install %s' % root
             exe_cmd(sdir, cmd, debug, 'Install %s' % root, log='root.log')
             root = libpng_package(apt, debug)
-            cmd  = apt + 'echo "Y" | apt-get install %s' % root 
+            cmd  = apt + 'echo "Y" | apt-get install %s' % root
             exe_cmd(sdir, cmd, debug, 'Install libpng', log='libpng.log')
             root = matplotlib_package(apt, debug)
-            cmd  = apt + 'echo "Y" | apt-get install %s' % root 
+            cmd  = apt + 'echo "Y" | apt-get install %s' % root
             exe_cmd(sdir, cmd, debug, 'Install matplotlib', log='matplotlib.log')
             use_matplotlib = True
+            root = scipy_package(apt, debug)
+            cmd  = apt + 'echo "Y" | apt-get install %s' % root
+            exe_cmd(sdir, cmd, debug, 'Install scipy', log='scipy.log')
             add_url2packages(url, path)
 
     # command to setup CMSSW python
@@ -393,7 +432,7 @@ def main():
         print msg
         sys.exit(1)
     pver     = '.'.join(cms_python_env.split('/')[-4].split('.')[0:2])
-    cms_env  = 'source `%s`;' % find_python 
+    cms_env  = 'source `%s`;' % find_python
     if  debug:
         print "CMSSW python:", cms_python_env
         print "python version", pver
@@ -668,6 +707,7 @@ fi
         msg += 'cms_init "external/pcre"\n'
         msg += 'cms_init "external/py2-matplotlib"\n'
         msg += 'cms_init "external/py2-numpy"\n'
+        msg += 'cms_init "external/py2-scipy"\n'
         msg += 'cms_init "external/libpng"\n'
         msg += 'cms_init "external/lapack"\n'
         msg += 'cms_init "external/libjpg"\n'
