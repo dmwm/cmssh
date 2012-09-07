@@ -803,7 +803,7 @@ def cms_vomsinit(_arg=None):
     cert = os.path.join(os.environ['HOME'], '.globus/usercert.pem')
     with working_pem(PEMMGR.pem) as key:
         run("voms-proxy-destroy")
-        cmd = "voms-proxy-init -voms cms:/cms -key %s -cert %s" % (key, cert)
+        cmd = "voms-proxy-init -rfc -voms cms:/cms -key %s -cert %s" % (key, cert)
         run(cmd)
 
 def github_issues(arg=None):
