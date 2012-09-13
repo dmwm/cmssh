@@ -120,7 +120,7 @@ cmsMagicList = [ \
     ('vim', Magic('vim').subprocess),
     ('python', Magic('python').execute),
     ('env', Magic('env').execute),
-    ('pip', Magic('pip').execute),
+    ('pip', Magic('pip').subprocess),
     # CMS commands
     ('cmsenv', Magic('eval `scramv1 runtime -sh`').execute),
     ('scram', Magic('scramv1').execute),
@@ -155,6 +155,9 @@ cmsMagicList = [ \
     ('tickets', github_issues),
     ('ticket', github_issues),
 ]
+if  os.environ.get('CMSSH_EOS', 0):
+    eos = '/afs/cern.ch/project/eos/installation/cms/bin/eos.select'
+    cmsMagicList.append(('eos', Magic(eos).execute))
 
 def check_0400(kfile):
     "Check 0400 permission of given file"
