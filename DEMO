@@ -1,4 +1,12 @@
-# search for some data
+#################################
+# cmssh examples
+#################################
+
+# basic UNIX commands
+ls
+mkdir
+
+# search for some dataset
 find dataset=*CRUZET3*RAW
 for r in results(): print r, type(r)
 
@@ -6,6 +14,7 @@ for r in results(): print r, type(r)
 ls /Cosmics/CRUZET3-v1/RAW
 info /Cosmics/CRUZET3-v1/RAW
 
+# find information about file, site, run
 find file dataset=/Cosmics/CRUZET3-v1/RAW
 find site dataset=/Cosmics/CRUZET3-v1/RAW
 find run=160915
@@ -63,10 +72,35 @@ cmsrel CMSSW_5_2_0_pre1
 cmsRun runevt_cfg.py
 #crab -h
 
+#################################
 # usage of magic functions
-# show how to access docstrings
+#################################
 edit test.py
 
 ip = get_ipython()
 ip.magic_find("dataset=*Zee_M20*")
 for r in results(): print r, type(r)
+
+#################################
+# ROOT example
+#################################
+from ROOT import gROOT, TCanvas, TF1
+gROOT.Reset();
+c1 = TCanvas('c1', 'Example', 200, 10, 700, 50);
+fun1 = TF1('fun1', 'abs(sin(x)/x)', 0, 10);
+c1.SetGridx();
+c1.SetGridy();
+fun1.Draw();
+c1.Update();
+
+#################################
+# matplotlib example
+#################################
+import numpy as np
+import matplotlib.pyplot as plt
+
+x = np.arange(0, 5, 0.1);
+y = np.exp(-2*x)
+plt.plot(x, y)
+plt.savefig('test.png', format='png', transparent=True)
+plt.close()
