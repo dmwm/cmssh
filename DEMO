@@ -86,7 +86,7 @@ for r in results(): print r, type(r)
 #################################
 from ROOT import gROOT, TCanvas, TF1
 gROOT.Reset();
-c1 = TCanvas('c1', 'Example', 200, 10, 700, 50);
+c1 = TCanvas('c1', 'Example', 200, 10, 700, 500);
 fun1 = TF1('fun1', 'abs(sin(x)/x)', 0, 10);
 c1.SetGridx();
 c1.SetGridy();
@@ -104,3 +104,15 @@ y = np.exp(-2*x)
 plt.plot(x, y)
 plt.savefig('test.png', format='png', transparent=True)
 plt.close()
+
+#################################
+# R session example
+#################################
+%%R
+mysample <- rnorm(50)
+hist(mysample, prob=TRUE)
+mu <- mean(mysample)
+sigma <- sd(mysample)
+x <- seq(-4, 4, length=500)
+y <- dnorm(x, mu, sigma)
+lines(x, y)
