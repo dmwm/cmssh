@@ -18,9 +18,10 @@ import httplib
 from   optparse import OptionParser
 
 # cmssh modules
-from   cmssh.auth_utils import HTTPSClientAuthHandler, get_key_cert
+from cmssh.auth_utils import HTTPSClientAuthHandler, get_key_cert
+from cmssh.auth_utils import PEMMGR, working_pem
 
-def convert_time(val):
+def convet_time(val):
     "Convert given timestamp into human readable format"
     if  isinstance(val, int) or isinstance(val, float):
         return time.strftime('%d/%b/%Y_%H:%M:%S_GMT', time.gmtime(val))
@@ -108,9 +109,10 @@ def fullpath(path):
         path = os.path.join(os.environ['HOME'], path)
     return path
 
-def get_data(host, query, idx, limit, debug, threshold=300):
+def get_data(host, query, idx, limit, debug, threshold=300, ckey=None, cert=None):
     """Contact DAS server and retrieve data for given DAS query"""
-    ckey, cert = get_key_cert()
+    if  not ckey and not cert:
+        ckey, cert = get_key_cert()
     params  = {'input':query, 'idx':idx, 'limit':limit}
     path    = '/das/cache'
     pat     = re.compile('http[s]{0,1}://')
@@ -181,7 +183,10 @@ def das_client(host, query, idx, limit, debug, dformat):
     "DAS client"
     if  not query:
         raise Exception('You must provide input query')
-    data = get_data(host, query, idx, limit, debug)
+    ckey = None
+    cert = os.path.join(os.environ['HOME'], '.globus/usercert.pem')
+    with working_pem(PEMMGR.pem) as ckey:
+        data = get_data(host, query, idx, limit, debug, ckey, cert)
     if  dformat == 'plain':
         jsondict = json.loads(data)
         if  not jsondict.has_key('status'):
