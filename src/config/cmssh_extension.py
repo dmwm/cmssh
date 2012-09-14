@@ -30,7 +30,7 @@ from   cmssh.cms_cmds import cms_rm, cms_rmdir, cms_mkdir, cms_root, cms_xrdcp
 from   cmssh.cms_cmds import cms_install, cms_releases, cms_info, debug_http
 from   cmssh.cms_cmds import cmsrel, cmsrun, cms_help, cms_arch, cms_vomsinit
 from   cmssh.cms_cmds import cms_help_msg, results, cms_apt, cms_das, cms_das_json
-from   cmssh.cms_cmds import github_issues
+from   cmssh.cms_cmds import github_issues, demo
 
 class ShellName(object):
     def __init__(self):
@@ -154,6 +154,7 @@ cmsMagicList = [ \
     ('arch', cms_arch),
     ('tickets', github_issues),
     ('ticket', github_issues),
+    ('demo', demo),
 ]
 if  os.environ.get('CMSSH_EOS', 0):
     eos = '/afs/cern.ch/project/eos/installation/cms/bin/eos.select'
