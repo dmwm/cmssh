@@ -14,7 +14,8 @@ import time
 import urllib2
 
 # cmssh modules
-from   cmssh.url_utils import HTTPSClientAuthHandler, get_data_and_close
+from   cmssh.url_utils import get_data_and_close
+from   cmssh.auth_utils import PEMMGR, working_pem, HTTPSClientAuthHandler
 
 def rowdict(columns, row):
     """Convert given row list into dict with column keys"""
@@ -53,16 +54,18 @@ class SiteDBManager(object):
         # get site names
         url = self.url + '/site-names'
         names = {}
-        with get_data_and_close(url) as data:
-            for row in parser(data.read()):
-                names[row['site_name']] = row['alias']
-        # get site resources
-        url = self.url + '/site-resources'
-        with get_data_and_close(url) as data:
-            for row in parser(data.read()):
-                fqdn = row['fqdn']
-                for sename in row['fqdn'].split(','):
-                    self.mapping[sename.strip()] = names[row['site_name']]
+        cert = os.path.join(os.environ['HOME'], '.globus/usercert.pem')
+        with working_pem(PEMMGR.pem) as key:
+            with get_data_and_close(url, key, cert) as data:
+                for row in parser(data.read()):
+                    names[row['site_name']] = row['alias']
+            # get site resources
+            url = self.url + '/site-resources'
+            with get_data_and_close(url, key, cert) as data:
+                for row in parser(data.read()):
+                    fqdn = row['fqdn']
+                    for sename in row['fqdn'].split(','):
+                        self.mapping[sename.strip()] = names[row['site_name']]
 
     def get_name(self, sename):
         "Retrieve CMS name for given SE"
@@ -71,6 +74,3 @@ class SiteDBManager(object):
         if  time.time() - self.timestamp > self.threshold:
             self.init() # refresh data from SiteDB
         return self.mapping.get(sename, None)
-
-# Singleton
-SITEDBMGR = SiteDBManager()
