@@ -863,6 +863,13 @@ def github_issues(arg=None):
         RESMGR.assign(res)
         pprint.pprint(res)
 
+def demo(_arg=None):
+    "Show cmssh demo file"
+    root = os.environ.get('CMSSH_ROOT')
+    path = os.path.join(root, 'cmssh/DEMO')
+    with open(path, 'r') as demo_file:
+        print demo_file.read()
+
 def results():
     """Return results from recent query"""
     return RESMGR
