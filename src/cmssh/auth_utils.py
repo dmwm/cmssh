@@ -15,13 +15,55 @@ import stat
 import time
 import urllib
 import urllib2
+import httplib
 import tempfile
 import traceback
 
 # cmssh modules
 from   cmssh.iprint import print_info
-from   cmssh.url_utils import get_key_cert, create_ssh_opener
 from   cmssh.utils import run
+
+class HTTPSClientAuthHandler(urllib2.HTTPSHandler):
+    """
+    Simple HTTPS client authentication class based on provided
+    key/ca information
+    """
+    def __init__(self, ckey=None, cert=None):
+        if  int(os.environ.get('HTTPDEBUG', 0)):
+            urllib2.HTTPSHandler.__init__(self, debuglevel=1)
+        else:
+            urllib2.HTTPSHandler.__init__(self)
+        if  ckey != cert:
+            self.ckey = ckey
+            self.cert = cert
+        else:
+            self.cert = cert
+            self.ckey = None
+
+    def https_open(self, req):
+        """Open request method"""
+        #Rather than pass in a reference to a connection class, we pass in
+        # a reference to a function which, for all intents and purposes,
+        # will behave as a constructor
+        return self.do_open(self.get_connection, req)
+
+    def get_connection(self, host, timeout=300):
+        """Connection method"""
+        if  self.cert:
+            return httplib.HTTPSConnection(host, key_file=self.ckey,
+                                                cert_file=self.cert)
+        return httplib.HTTPSConnection(host)
+
+def create_ssh_opener(key, cert):
+    "Create HTTPS url opener with cookie support"
+    cookie_jar = cookielib.CookieJar()
+    cookie_handler = urllib2.HTTPCookieProcessor(cookie_jar)
+    https_handler  = HTTPSClientAuthHandler(key, cert)
+    opener = urllib2.build_opener(cookie_handler, https_handler)
+    agent = 'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.11) Gecko/20101012 Firefox/3.6.11'
+    opener.addheaders = [('User-Agent', agent)]
+    urllib2.install_opener(opener)
+    return opener
 
 class _PEMMgr(object):
     "PEM content holder"
@@ -99,7 +141,7 @@ def get_data(url, key, cert, debug=0):
     Main routine to get data from data service behind CERN SSO.
     Return file-like descriptor object (similar to open).
     """
-    # send request to RunSummary, it set the _shibstate_ cookie which 
+    # send request to RunSummary, it set the _shibstate_ cookie which
     # will be used for redirection
     opener = create_ssh_opener(key, cert)
     fdesc  = opener.open(url)
@@ -145,3 +187,44 @@ def get_data(url, key, cert, debug=0):
         print url + '?' + params
     fdesc  = opener.open(url, params)
     return fdesc
+
+def get_key_cert():
+    """
+    Get user key/certificate
+    """
+    key  = None
+    cert = None
+
+    # Read user certificate chain from user globus area
+    globus_key  = os.path.join(os.environ['HOME'], '.globus/userkey.pem')
+    globus_cert = os.path.join(os.environ['HOME'], '.globus/usercert.pem')
+    if  os.path.isfile(globus_key):
+        key  = globus_key
+    if  os.path.isfile(globus_cert):
+        cert  = globus_cert
+
+    # look for cert at default location /tmp/x509up_u$uid
+    if not key or not cert:
+        uid  = os.getuid()
+        cert = '/tmp/x509up_u'+str(uid)
+        key  = cert
+
+    # Second preference to User Proxy, very common
+    elif os.environ.has_key('X509_USER_PROXY'):
+        cert = os.environ['X509_USER_PROXY']
+        key  = cert
+
+    # Third preference to User Cert/Proxy combinition
+    elif os.environ.has_key('X509_USER_CERT'):
+        cert = os.environ['X509_USER_CERT']
+        key  = os.environ['X509_USER_KEY']
+
+    if  not os.path.exists(cert):
+        raise Exception("Certificate PEM file %s not found" % key)
+    if  not os.path.exists(key):
+        raise Exception("Key PEM file %s not found" % key)
+
+    if  key == cert: # key/cert in one file, e.g. /tmp/x509up_u<uid>
+        key = None   # to handle correctly HTTPSHandler call
+
+    return key, cert
