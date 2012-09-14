@@ -27,7 +27,7 @@ from cmssh.cms_objects import CMSObj
 from cmssh.utils import execmd
 from cmssh.utils import PrintProgress, qlxml_parser
 from cmssh.url_utils import get_data
-from cmssh.sitedb import SITEDBMGR
+from cmssh.sitedb import SiteDBManager
 
 def get_dbs_se(lfn):
     "Get original SE from DBS for given LFN"
@@ -260,10 +260,12 @@ def resolve_user_srm_path(node, ldir='/store/user', verbose=None):
     for row in result['phedex']['mapping']:
         yield row['pfn']
 
-def lfn2pfn(lfn, sename):
+def lfn2pfn(lfn, sename, mgr=None):
     "Find PFN for given LFN and SE"
     pfnlist = []
-    cmsname = SITEDBMGR.get_name(sename)
+    if  not mgr:
+        mgr = SiteDBManager()
+    cmsname = mgr.get_name(sename)
     if  cmsname:
         params = {'protocol':'srmv2', 'lfn':lfn, 'node':cmsname}
         result = get_data(phedex_url(), 'lfn2pfn', params)
@@ -392,7 +394,8 @@ def srmcp(srmcmd, lfn, dst, verbose=None):
             sename = get_dbs_se(lfn)
             msg = 'Orignal LFN site %s' % sename
             print_info(msg)
-            pfnlist = lfn2pfn(lfn, sename)
+            mgr = SiteDBManager()
+            pfnlist = lfn2pfn(lfn, sename, mgr)
         filelist = ddict.get('phedex.block.file')
         if  not filelist:
             filelist = []
