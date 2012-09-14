@@ -18,7 +18,7 @@ import httplib
 from   optparse import OptionParser
 
 # cmssh modules
-from   cmssh.url_utils import HTTPSClientAuthHandler, get_key_cert
+from   cmssh.auth_utils import HTTPSClientAuthHandler, get_key_cert
 
 def convert_time(val):
     "Convert given timestamp into human readable format"
