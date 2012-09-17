@@ -441,10 +441,18 @@ def release_info(release, rfilter=None):
 
 def run_lumi_info(dataset, verbose=None):
     "Return run-lumi info"
+    try:
+        data = json.loads(arg)
+    except:
+        data = arg # assume it is dataset
     url = dbs_url()
     run_lumi = {}
     if  url.find('cmsdbsprod') != -1: # DBS2
-        run_lumi = dbs2.run_lumi(dataset, verbose)
+        if  isinstance(data, basestring):
+            run_lumi = dbs2.run_lumi(data, verbose)
+        elif isinstance(data, dict):
+            for run, lumis in data.items():
+                run_lumi[int(run)] = lumis
     else:
         run_lumi = {} # need to implement DBS3 call
     lumidb(run_lumi_dict=run_lumi, lumi_report=verbose)
