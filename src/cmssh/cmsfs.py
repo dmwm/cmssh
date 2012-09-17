@@ -25,6 +25,7 @@ from   cmssh.cms_urls import phedex_url, dbs_url, conddb_url, sitedb_url
 from   cmssh.cms_urls import dashboard_url, dbs_instances
 from   cmssh import dbs2
 from   cmssh.runsum import runsum
+from   cmssh.lumidb import lumidb
 
 def rowdict(columns, row):
     """Convert given row list into dict with column keys"""
@@ -437,6 +438,17 @@ def release_info(release, rfilter=None):
     data  = releases(release, rfilter)
     plist = [Release(r) for r in data]
     return plist
+
+def run_lumi_info(dataset, verbose=None):
+    "Return run-lumi info"
+    url = dbs_url()
+    run_lumi = {}
+    if  url.find('cmsdbsprod') != -1: # DBS2
+        run_lumi = dbs2.run_lumi(dataset, verbose)
+    else:
+        run_lumi = {} # need to implement DBS3 call
+    lumidb(run_lumi_dict=run_lumi, lumi_report=verbose)
+    return []
 
 # create instance of CMSFS class (singleton)
 CMSMGR = CMSFS()
