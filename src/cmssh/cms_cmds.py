@@ -25,7 +25,7 @@ from cmssh.utils import list_results, check_os, unsupported_linux
 from cmssh.utils import osparameters, check_voms_proxy, run, user_input
 from cmssh.cmsfs import dataset_info, block_info, file_info, site_info, run_info
 from cmssh.cmsfs import CMSMGR, apply_filter, validate_dbs_instance
-from cmssh.cmsfs import release_info
+from cmssh.cmsfs import release_info, run_lumi_info
 from cmssh.github import get_tickets, post_ticket
 from cmssh.cms_urls import dbs_instances, tc_url
 from cmssh.das import das_client
@@ -666,6 +666,11 @@ def cms_ls(arg):
     if  res:
         RESMGR.assign(res)
         list_results(res, debug=True, flt=flt)
+
+def cms_lumi(arg):
+    "Return lumi info for given dataset"
+    arg = arg.replace('dataset=', '')
+    res = run_lumi_info(arg)
 
 def cms_info(arg):
     """
