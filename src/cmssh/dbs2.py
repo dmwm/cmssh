@@ -137,6 +137,24 @@ def file_info(lfn, verbose=None):
     msg = 'Fail to look-up LFN in %s DBS instances' % dbs_instances()
     print_error(msg)
 
+def run_lumi(dataset, verbose=None):
+    query  = 'find run,lumi where dataset=%s' % dataset
+    params = {"api":"executeQuery", "apiversion": "DBS_2_0_9", "query":query}
+    data   = urllib2.urlopen(dbs_url(), urllib.urlencode(params))
+    run_lumi = {}
+    for row in qlxml_parser(data, 'run'):
+        rec = row['run']
+        run = rec['run']
+        lumi = rec['lumi']
+        if  run_lumi.has_key(run):
+            run_lumi[run].append(lumi)
+        else:
+            run_lumi[run] = [lumi]
+    for key, val in run_lumi.items():
+        val.sort()
+        run_lumi[key] = val
+    return run_lumi
+
 def main():
     "Main function"
 #    res = list_datasets("*Zee*")
