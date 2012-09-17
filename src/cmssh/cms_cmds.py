@@ -650,7 +650,11 @@ def cms_ls(arg):
         res = block_info(arg, debug)
     elif pat_dataset.match(arg):
         arg = arg.replace('dataset=', '')
-        res = dataset_info(arg, debug)
+        try:
+            res = dataset_info(arg, debug)
+        except IndexError:
+            msg = "Given pattern '%s' does not exist on local filesystem or in DBS" % arg
+            print_error(msg)
     elif pat_run.match(arg):
         arg = arg.replace('run=', '')
         res = run_info(arg, debug)
