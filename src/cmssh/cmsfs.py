@@ -444,7 +444,10 @@ def run_lumi_info(dataset, verbose=None):
     try:
         data = json.loads(arg)
     except:
-        data = arg # assume it is dataset
+        if  isinstance(arg, basestring) and arg.find("{") != -1:
+            data = eval(arg, { "__builtins__": None }, {})
+        else:
+            data = arg # assume it is dataset
     url = dbs_url()
     run_lumi = {}
     if  url.find('cmsdbsprod') != -1: # DBS2
