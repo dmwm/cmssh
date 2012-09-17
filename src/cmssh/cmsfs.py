@@ -439,7 +439,7 @@ def release_info(release, rfilter=None):
     plist = [Release(r) for r in data]
     return plist
 
-def run_lumi_info(dataset, verbose=None):
+def run_lumi_info(arg, verbose=None):
     "Return run-lumi info"
     try:
         data = json.loads(arg)
