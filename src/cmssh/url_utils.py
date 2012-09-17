@@ -11,7 +11,6 @@ import json
 import urllib
 import urllib2
 import httplib
-import cookielib
 import subprocess
 from contextlib import contextmanager
 

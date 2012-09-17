@@ -18,6 +18,7 @@ import urllib2
 import httplib
 import tempfile
 import traceback
+import cookielib
 
 # cmssh modules
 from   cmssh.iprint import print_info
