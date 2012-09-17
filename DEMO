@@ -21,6 +21,11 @@ find run=160915
 info run=160915
 for r in results(): print r.initLumi, type(r.initLumi), r.DeliveredLumi, type(r.DeliveredLumi)
 
+# find lumi info
+lumi dataset=/PhotonHad/Run2011A-PromptReco-v1/RECO
+lumi {"190704":[1,2,3]}
+lumi {190704:[1,2,3]}
+
 # list/copy LFN to local disk
 ls /store/data/CRUZET3/Cosmics/RAW/v1/000/050/832/186585EC-024D-DD11-B747-000423D94AA8.root
 cp /store/data/CRUZET3/Cosmics/RAW/v1/000/050/832/186585EC-024D-DD11-B747-000423D94AA8.root .
