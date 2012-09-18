@@ -688,10 +688,16 @@ def integration_tests(arg):
     cmd_list += ['info dataset=%s' % dataset, 'info run=%s' % run, 'info lfn=%s' % lfn]
     cmd_list += ['lumi dataset=%s' % dataset,
                  'lumi {"190704":[1,2,3]}', 'lumi {190704:[1,2,3]}']
-    ipmgr = get_ipython()
+    mgr = get_ipython()
     for item in cmd_list:
         print_info("Execute %s" % item)
-        cmd, args = item.split(' ', 1)
+        split = item.split(' ', 1)
+        if  len(split) == 1:
+            cmd  = item
+            args = ''
+        else:
+            cmd  = split[0]
+            args = split[-1]
         mgr.run_line_magic(cmd, args)
 
 def cms_info(arg):
