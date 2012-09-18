@@ -3,7 +3,7 @@
 
 """
 Set of auth utils:
-- CERN SSO toolkit. Provides get_data method which allow
+- CERN SSO toolkit. Provides get_data_sso method which allow
   to get data begind CERN SSO protected site.
 - get user credential
 """
@@ -137,7 +137,7 @@ def timestamp():
     """Construct timestamp used by Shibboleth"""
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
-def get_data(url, key, cert, debug=0):
+def get_data_sso(url, key, cert, debug=0):
     """
     Main routine to get data from data service behind CERN SSO.
     Return file-like descriptor object (similar to open).

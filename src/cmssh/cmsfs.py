@@ -48,9 +48,9 @@ def sitedb_parser(data):
         for row in data['result']:
             yield row
 
-def find_sites(url, method, params):
+def find_sites(url, params):
     """Find sites"""
-    data = get_data(url, method, params)
+    data = get_data(url, params)
     sites = {}
     for files in data['phedex']['block']:
         for fdict in files['file']:
@@ -177,13 +177,13 @@ class CMSFS(object):
         Controller to get DBS datasets
         """
         url = dbs_url()
-        method = 'datasets'
         if  url.find('cmsdbsprod') != -1: # DBS2
             return dbs2.list_datasets(kwargs)
+        url = dbs_url('datasets')
         params = {'dataset':kwargs['dataset']}
         if  kwargs['dataset'][0] == '*':
             kwargs['dataset'] = '/' + kwargs['dataset']
-        data = get_data(url, method, kwargs)
+        data = get_data(url, kwargs)
         plist = [Dataset(d) for d in data]
         return plist
 
@@ -191,11 +191,10 @@ class CMSFS(object):
         """
         Controller to get runs
         """
-        url = conddb_url()
-        method = 'getLumi'
+        url = conddb_url('getLumi')
         run = kwargs.get('run')
         params = {'Runs':run, 'lumiType':'delivered'}
-        data = get_data(url, method, params)
+        data = get_data(url, params)
         plist = [Run(d) for d in data]
         return plist
 
@@ -208,11 +207,11 @@ class CMSFS(object):
         dataset = kwargs.get('dataset')
         if  url.find('cmsdbsprod') != -1: # DBS2
             return dbs2.list_files(dataset, run)
-        method = 'files'
+        url = dbs_url('files')
         params = {'dataset': dataset, 'detail': 'True'}
         if  run:
             params.update({'run_num': run})
-        data = get_data(url, method, params)
+        data = get_data(url, params)
         plist = [File(f) for f in data]
         return plist
 
@@ -220,33 +219,25 @@ class CMSFS(object):
         """
         Controller to get sites for given dataset
         """
-#        print "list_sites4dataset kwargs", kwargs
-        url = phedex_url()
-        method = 'fileReplicas'
+        url = phedex_url('fileReplicas')
         params = {'dataset': kwargs['dataset']}
-        return find_sites(url, method, params)
+        return find_sites(url, params)
 
     def list_sites4file(self, **kwargs):
         """
         Controller to get sites for given file
         """
-#        print "list_sites4file kwargs", kwargs
-        url = phedex_url()
-        method = 'fileReplicas'
+        url = phedex_url('fileReplicas')
         params = {'lfn': kwargs['filename']}
-        return find_sites(url, method, params)
+        return find_sites(url, params)
 
     def list_sites(self, **kwargs):
         """
         Controller to get site info
         """
-#        print "list_sites kwargs", kwargs
-        url = phedex_url()
-        method = 'nodeusage'
+        url = phedex_url('nodeusage')
         params = {'node': kwargs['sitename']}
-        data = get_data(url, method, params)
-#        for node in data['phedex']['node']:
-#            yield node
+        data = get_data(url, params)
         plist = [Site(s) for s in data['phedex']['node']]
         return plist
 
@@ -254,13 +245,9 @@ class CMSFS(object):
         """
         Controller to get site info
         """
-#        print "list_block4site kwargs", kwargs
-        url = phedex_url()
-        method = 'blockreplicasummary'
+        url = phedex_url('blockreplicasummary')
         params = {'node': kwargs['sitename']}
-        data = get_data(url, method, params)
-#        for node in data['phedex']['block']:
-#            yield node['name']
+        data = get_data(url, params)
         plist = [Block(b) for b in data['phedex']['block']]
         return plist
 
@@ -268,15 +255,13 @@ class CMSFS(object):
         """
         Controller to get site info
         """
-#        print "list_du4site kwargs", kwargs
-        url = phedex_url()
-        method = 'blockreplicas'
-        site = kwargs['sitename']
-        params = {'node': site}
-        data = get_data(url, method, params)
-        nfiles = 0
+        url     = phedex_url('blockReplicas')
+        site    = kwargs['sitename']
+        params  = {'node': site}
+        data    = get_data(url, params)
+        nfiles  = 0
         nblocks = 0
-        size = 0
+        size    = 0
         for row in data['phedex']['block']:
             nblocks += 1
             nfiles += int(row['files'])
@@ -289,13 +274,11 @@ class CMSFS(object):
         """
         Controller to get site info
         """
-#        print "list_block4site kwargs", kwargs
-        url = sitedb_url()
-        method = 'people'
+        url = sitedb_url('people')
         params = {}
         cert = os.path.join(os.environ['HOME'], '.globus/usercert.pem')
         ckey = os.path.join(os.environ['HOME'], '.globus/userkey.pem')
-        data = get_data(url, method, params, ckey, cert)
+        data = get_data(url, params, ckey, cert)
         qname = kwargs['username']
         users = []
         for row in sitedb_parser(data):
@@ -307,15 +290,12 @@ class CMSFS(object):
                 forename and qname.find(forename) != -1 or \
                 surname and qname.find(surname) != -1 or \
                 email and qname.find(email) != -1:
-#                yield dict(user=row)
                 users.append(row)
         return [User(u) for u in users]
 
     def list_jobs(self, **kwargs):
         "Controller for jobs info"
-#        print "list_jobs kwargs", kwargs
-        url = dashboard_url()
-        method = 'jobsummary-plot-or-table2' # JSON API (number 2 :)
+        url = dashboard_url('jobsummary-plot-or-table2') # JSON API (number 2 :)
         params = {
             'user': kwargs.get('user', ''),
             'site': kwargs.get('site', ''),
@@ -332,17 +312,17 @@ class CMSFS(object):
             'tier': '',
             'check': 'submitted',
         }
-        data = get_data(url, method, params)
+        data = get_data(url, params)
         plist = [Job(r) for r in data['summaries']]
         return plist
 
 def dataset_info(dataset, verbose=None):
     """Return dataset info"""
-    url = dbs_url('')
+    url = dbs_url()
     if  url.find('cmsdbsprod') != -1: # DBS2
         return dbs2.dataset_info(dataset, verbose)
     params = {'dataset': dataset, 'detail':'True'}
-    result = get_data(url, 'datasets', params, verbose)
+    result = get_data(dbs_url('datasets'), params, verbose)
     res = [Dataset(r) for r in result]
     if  len(res) != 1:
         msg  = 'The %s dataset yield %s results' % (dataset, len(res))
@@ -355,7 +335,7 @@ def block_info(block, verbose=None):
     if  url.find('cmsdbsprod') != -1: # DBS2
         return dbs2.block_info(block, verbose)
     params = {'block_name': block, 'detail':'True'}
-    result = get_data(url, 'blocks', params, verbose)
+    result = get_data(dbs_url('blocks'), params, verbose)
     res = [Block(r) for r in result][0]
     if  len(res) != 1:
         msg  = 'The %s block yield %s results' % (block, len(res))
@@ -368,7 +348,7 @@ def file_info(lfn, verbose=None):
     if  url.find('cmsdbsprod') != -1: # DBS2
         return dbs2.file_info(lfn, verbose)
     params = {'logical_file_name': lfn, 'detail':'True'}
-    result = get_data(url, 'files', params, verbose)
+    result = get_data(dbs_url('files'), params, verbose)
     res = [File(r) for r in result]
     if  len(res) != 1:
         msg  = 'The %s LFN yield %s results' % (lfn, len(res))
@@ -385,10 +365,9 @@ def file_info(lfn, verbose=None):
 
 def site_info(dst, verbose=None):
     """list files at given destination"""
-    url    = phedex_url()
-    method = 'nodeusage'
+    url    = phedex_url('nodeusage')
     params = {'node': dst}
-    data   = get_data(url, method, params)
+    data   = get_data(url, params)
     res    = [Site(s) for s in data['phedex']['node']]
     paths  = [r for r in resolve_user_srm_path(dst)]
     for site in res:
@@ -419,10 +398,9 @@ def site_info(dst, verbose=None):
 
 def run_info(run, verbose=None):
     """Return run info"""
-    url = conddb_url()
-    method = 'getLumi'
+    url = conddb_url('getLumi')
     params = {'Runs':run, 'lumiType':'delivered'}
-    data = get_data(url, method, params)
+    data = get_data(url, params)
     runinfo = [r for r in runsum(run)]
     runlumi = [r for r in data]
     plist = []
@@ -457,6 +435,10 @@ def run_lumi_info(arg, verbose=None):
             for run, lumis in data.items():
                 run_lumi[int(run)] = lumis
     else:
+        # need DBS3 implementation
+        # for fname in files(dataset)
+        #     for item in filelumis(fname)
+        #     for item in runs(fname)
         run_lumi = {} # need to implement DBS3 call
     lumidb(run_lumi_dict=run_lumi, lumi_report=verbose)
     return []

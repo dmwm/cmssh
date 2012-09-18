@@ -23,7 +23,8 @@ def get_tickets(ticket=None, **kwds):
     path = 'repos/vkuznet/cmssh/issues'
     if  ticket:
         path += '/%s' % ticket
-    res  = get_data(url, path, kwds)
+    url += path
+    res  = get_data(url, kwds)
     if  isinstance(res, dict):
         res = [res]
     res  = [Ticket(t) for t in res]

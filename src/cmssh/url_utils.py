@@ -10,22 +10,24 @@ import os
 import json
 import urllib
 import urllib2
-import httplib
 import subprocess
 from contextlib import contextmanager
 
 # cmssh modules
 from cmssh.iprint import print_info
-from cmssh.auth_utils import PEMMGR, working_pem, get_key_cert, HTTPSClientAuthHandler
+from cmssh.auth_utils import PEMMGR, working_pem
+from cmssh.auth_utils import get_key_cert, HTTPSClientAuthHandler
 
-def get_data(url, method, kwargs=None, headers=None, verbose=None, decoder='json', post=False):
+def get_data(url, kwargs=None, headers=None,
+        verbose=None, decoder='json', post=False):
     "Retrive data"
     ckey = None
     cert = os.path.join(os.environ['HOME'], '.globus/usercert.pem')
     with working_pem(PEMMGR.pem) as ckey:
-        return get_data_helper(url, method, kwargs, headers, verbose, decoder, post, ckey, cert)
+        return get_data_helper(url, kwargs, headers,
+                verbose, decoder, post, ckey, cert)
 
-def get_data_helper(url, method, kwargs=None, headers=None,
+def get_data_helper(url, kwargs=None, headers=None,
         verbose=None, decoder='json', post=False, ckey=None, cert=None):
     """Retrieve data helper function"""
     if  url.find('https') != -1:
@@ -34,12 +36,11 @@ def get_data_helper(url, method, kwargs=None, headers=None,
     else:
         ckey = None
         cert = None
-    url = os.path.join(url, method)
     if  kwargs:
         params = kwargs
     else:
         params = {}
-    if  method == 'datasets':
+    if  url.find('/datasets') != -1: # DBS3 use case
         params.update({'dataset_access_type':'PRODUCTION', 'detail':'True'})
     encoded_data = urllib.urlencode(params, doseq=True)
     if  not post:
@@ -58,7 +59,6 @@ def get_data_helper(url, method, kwargs=None, headers=None,
         urllib2.install_opener(opener)
     if  post:
         print "POST", req, url, encoded_data, params
-#        res = urllib2.urlopen(req, encoded_data)
         res = urllib2.urlopen(req, json.dumps(params))
     else:
         res = urllib2.urlopen(req)
@@ -69,6 +69,7 @@ def get_data_helper(url, method, kwargs=None, headers=None,
     return data
 
 def send_email(to_user, from_user, title, ticket):
+    "Send email about user ticket"
     # we will use mail unix command for that
     cmd = 'echo "User: %s\nTicket:\n%s" | mail -s "cmssh gist %s" %s'\
         % (from_user, ticket, title, to_user)

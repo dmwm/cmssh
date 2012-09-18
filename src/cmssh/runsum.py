@@ -11,7 +11,7 @@ import time
 import urllib
 
 from cmssh.utils import xml_parser
-from cmssh.auth_utils import get_data, PEMMGR, working_pem
+from cmssh.auth_utils import get_data_sso, PEMMGR, working_pem
 
 def run_summary_url(url, params):
     """Construct Run Summary URL from provided parameters"""
@@ -41,6 +41,6 @@ def runsum(run, debug=0):
     key  = None
     cert = os.path.join(os.environ['HOME'], '.globus/usercert.pem')
     with working_pem(PEMMGR.pem) as key:
-        data = get_data(url, key, cert, debug)
+        data = get_data_sso(url, key, cert, debug)
         for row in xml_parser(data, 'runInfo'):
             yield row['runInfo']

@@ -23,7 +23,8 @@ def releases(rel_name=None, rfilter=None):
         args  = {'release_name': rel_name}
     else:
         args  = {}
-    rel_info  = get_data(tc_url(), 'getReleasesInformation', args)
+    url = tc_url('getReleasesInformation')
+    rel_info  = get_data(url, args)
     columns   = rel_info['columns']
     pat = re.compile('CMSSW_[1-9]_[0-9]_X\.*')
     for key, val in rel_info['data'].iteritems():

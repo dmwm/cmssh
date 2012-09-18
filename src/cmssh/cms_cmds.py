@@ -223,7 +223,7 @@ def bootstrap(arch):
 def get_release_arch(rel):
     "Return architecture for given CMSSW release"
     args = {'release': rel}
-    releases = get_data(tc_url(), 'py_getReleaseArchitectures', args)
+    releases = get_data(tc_url('py_getReleaseArchitectures'), args)
     output = []
     for item in releases:
         rel_arch = item[0]
@@ -700,7 +700,9 @@ def integration_tests(_arg):
                  ]
     cmd_list += ['cp %s file.root' % lfn, 'ls',
                  'cp file.root %s' % sename,
-                 'rm %s/file.root' % sename]
+                 'ls %s' % sename,
+                 'rm %s/file.root' % sename,
+                 'ls %s' % sename]
     cmd_list += ['releases list', 'arch list']
     mgr = get_ipython()
     for item in cmd_list:

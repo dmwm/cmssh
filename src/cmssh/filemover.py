@@ -181,16 +181,15 @@ def lfns(run=None, dataset=None):
     """
     Get lfns list for provided run/dataset
     """
-    url  = dbs_url()
+    url    = dbs_url('files') # DBS3
     params = {'detail':'True'}
-    api  = 'files' # DBS3
     if  run:
         args['minrun'] = run
         args['maxrun'] = run
     if  dataset:
         args['dataset'] = dataset
     params.update(args)
-    json_dict = get_data(dbs_url(), api, params)
+    json_dict = get_data(url, params)
     for row in json_dict:
         yield row['logical_file_name']
 
@@ -223,7 +222,7 @@ def nodes(select=True):
     """
     Yield list of Phedex nodes, I only select T2 and below
     """
-    result = get_data(phedex_url(), 'nodes', {})
+    result = get_data(phedex_url('nodes'), {})
     pat    = re.compile('^T[0-1]_[A-Z]+(_)[A-Z]+')
     lnodes = []
     for row in result['phedex']['node']:
@@ -241,7 +240,7 @@ def resolve_srm_path(node, verbose=None):
     Use TFC phedex API to resolve srm path for given node
     """
     params = {'node':node}
-    result = get_data(phedex_url(), 'tfc', params)
+    result = get_data(phedex_url('tfc'), params)
     for row in result['phedex']['storage-mapping']['array']:
         if  row['protocol'] == 'srmv2' and row['element_name'] == 'lfn-to-pfn':
             yield (row['result'], row['path-match'])
@@ -253,7 +252,7 @@ def resolve_user_srm_path(node, ldir='/store/user', verbose=None):
     # change ldir if user supplied full path, e.g. /xrootdfs/cms/store/...
     ldir   = '/store/' + ldir.split('/store/')[-1]
     params = {'node':node, 'lfn':ldir, 'protocol': 'srmv2'}
-    result = get_data(phedex_url(), 'lfn2pfn', params)
+    result = get_data(phedex_url('lfn2pfn'), params)
     for row in result['phedex']['mapping']:
         yield row['pfn']
 
@@ -265,7 +264,7 @@ def lfn2pfn(lfn, sename, mgr=None):
     cmsname = mgr.get_name(sename)
     if  cmsname:
         params = {'protocol':'srmv2', 'lfn':lfn, 'node':cmsname}
-        result = get_data(phedex_url(), 'lfn2pfn', params)
+        result = get_data(phedex_url('lfn2pfn'), params)
         try:
             for item in result['phedex']['mapping']:
                 pfn = item['pfn']
@@ -283,7 +282,7 @@ def get_pfns(lfn, verbose=None):
     pfnlist   = []
     selist    = []
     params    = {'se':'*', 'lfn':lfn}
-    json_dict = get_data(phedex_url(), 'fileReplicas', params)
+    json_dict = get_data(phedex_url('fileReplicas'), params)
     ddict     = DotDict(json_dict)
     if  not json_dict['phedex']['block']:
         return pfnlist, selist
@@ -295,7 +294,7 @@ def get_pfns(lfn, verbose=None):
                 selist.append(se)
             # query Phedex for PFN
             params = {'protocol':'srmv2', 'lfn':lfn, 'node':cmsname}
-            result = get_data(phedex_url(), 'lfn2pfn', params)
+            result = get_data(phedex_url('lfn2pfn'), params)
             try:
                 for item in result['phedex']['mapping']:
                     pfn = item['pfn']
@@ -366,7 +365,7 @@ def srmcp(srmcmd, lfn, dst, verbose=None):
         else:
             params    = {'se':'*', 'lfn':lfn}
             method    = 'fileReplicas'
-        json_dict = get_data(phedex_url(), method, params)
+        json_dict = get_data(phedex_url(method), params)
         ddict     = DotDict(json_dict)
         if  verbose:
             print "Look-up LFN:"
@@ -406,7 +405,7 @@ def srmcp(srmcmd, lfn, dst, verbose=None):
                     continue # skip T0's
                 # query Phedex for PFN
                 params = {'protocol':'srmv2', 'lfn':lfn, 'node':cmsname}
-                result = get_data(phedex_url(), 'lfn2pfn', params)
+                result = get_data(phedex_url('lfn2pfn'), params)
                 try:
                     for item in result['phedex']['mapping']:
                         pfn = item['pfn']
