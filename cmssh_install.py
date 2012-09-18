@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 #-*- coding: ISO-8859-1 -*-
+#pylint: disable-msg=C0301,W0702,C0103,R0903,R0914,R0912,R0915,R0913,C0302,W0141
 """
 File       : cmssh_install.py
 Author     : Valentin Kuznetsov [ vkuznet AT gmail DOT com ]
@@ -19,36 +20,117 @@ if sys.version_info < (2, 6):
 import os
 import re
 import stat
+import copy
 import time
-import urllib
+import shutil
 import urllib2
 import tarfile
-import traceback
 import fileinput
 import subprocess
 
 # local modules
-from pprint import pformat
 from optparse import OptionParser
 
-if  os.uname()[0] == 'Darwin':
-    DEF_SCRAM_ARCH = 'osx106_amd64_gcc421'
-elif os.uname()[0] == 'Linux':
-    if  os.uname()[-1] == 'x86_64':
-        DEF_SCRAM_ARCH = 'slc5_amd64_gcc462'
-    else:
-        DEF_SCRAM_ARCH = 'slc5_ia32_gcc434'
-    # test presence of readline
-    readline = os.path.realpath('/usr/lib/libreadline.so')
-    if  readline.find('so.5') == -1:
-        msg  = 'cmssh on Linux requires readline5. Please verify that'
-        msg += ' you have it installed on your system. So far we found\n'
-        msg += '/usr/lib/libreadline.so -> %s' % readline
-        raise Exception(msg)
-else:
-    print 'Unsupported platform'
-    sys.exit(1)
+def osx_test():
+    "Test XCode presence for OSX"
+    for tool in ['/usr/bin/make', '/usr/include/limits.h']:
+        if  not os.path.isfile(tool):
+            msg = """######## ERROR ########
+Can't locate %s
 
+In order to install and run cmssh on Mac OS X, your system must
+have the following components:
+
+Snow Leopard (OSX version 10.8.x)
+    - Install Xcode from your installation media (CD/DVD)
+
+Lion (OSX version 10.7.x)
+    - Install Xcode 4.2.x from your installation media (CD/DVD) or
+      from the Mac App Store
+
+Mountain Lion (OSX version 10.8.x)
+    - Install Xcode 4.4.x from the Mac App Store
+
+    - drag the Xcode app to your /Applications folder,
+      then run it - It will install almost everything needed
+
+    - Open Xcode preferences to install command line tools, see
+      http://bit.ly/TIdOgS
+
+    - Make sure that Java is installed, see http://bit.ly/NoAmkv
+""" % tool
+            print msg
+            sys.exit(1)
+
+def osx_ver():
+    "Determine OSX version"
+    cmd = 'sw_vers -productVersion'
+    res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+    ver = res.stdout.read().replace('\n', '').strip()
+    return '.'.join(ver.split('.')[:2])
+
+def get_scram_arch():
+    "Determine SCRAM architecture"
+    if  os.uname()[0] == 'Darwin':
+        osx_test()
+        # For OSX Lion I need osx107, but existing packages
+        # have problem with bootstrap, see
+        # https://hypernews.cern.ch/HyperNews/CMS/get/sw-develtools/1743/1/1/1/1/2/1.html
+        # I need to wait until it is fixed, therefore I use arch osx106_amd64_gcc421
+        # which seems to be working
+        arch = 'osx106_amd64_gcc421'
+        if  osx_ver() == '10.7':
+            arch = 'osx107_amd64_gcc462'
+        if  osx_ver() == '10.8':
+            arch = 'osx108_amd64_gcc470'
+    elif os.uname()[0] == 'Linux':
+        if  os.uname()[-1] == 'x86_64':
+            arch = 'slc5_amd64_gcc462'
+        else:
+            arch = 'slc5_ia32_gcc434'
+        # test presence of readline
+        readline = os.path.realpath('/usr/lib/libreadline.so')
+        if  readline.find('so.5') == -1:
+            msg  = 'cmssh on Linux requires readline5. Please verify that'
+            msg += ' you have it installed on your system. So far we found\n'
+            msg += '/usr/lib/libreadline.so -> %s' % readline
+            raise Exception(msg)
+    else:
+        print 'Unsupported platform'
+        sys.exit(1)
+    return arch
+
+# helper function to make natural sort
+def try_int(sss):
+    "Convert to integer if possible."
+    try:
+        return int(sss)
+    except:
+        return sss
+
+def natsort_key(sss):
+    "Used internally to get a tuple by which s is sorted."
+    return map(try_int, re.findall(r'(\d+|\D+)', sss))
+
+def natcmp(aaa, bbb):
+    "Natural string comparison, case sensitive."
+    return cmp(natsort_key(aaa), natsort_key(bbb))
+
+def natsort(seq, compare=natcmp):
+    "In-place natural string sort."
+    seq.sort(compare)
+
+def natsorted(seq, compare=natcmp):
+    "Returns a copy of seq, sorted by natural string sort."
+    temp = copy.copy(seq)
+    natsort(temp, compare)
+    return temp
+
+# Retrieve default scram arch based on OS version and use it globally
+# in the rest of the code
+DEF_SCRAM_ARCH = get_scram_arch()
+
+# IMPORTANT
 # The 2.6.4 version of CMSSW python has bug in OpenSSL
 # see https://hypernews.cern.ch/HyperNews/CMS/get/sw-develtools/1667/1.html
 # We need to avoid it, otherwise usage of HTTPS will be broken
@@ -56,74 +138,43 @@ else:
 # the osx106_amd64_gcc461 has correct python 2.6.4, but broken 2.6.4-cmsX
 # the osx106_amd64_gcc421 has corrent python 2.6.4, but it picks root 5.30.02
 # which does not have pyROOT library
-def find_root_package(apt, debug=None):
-    """
-    Find latest version of root package in CMSSW repository.
-    For time being I veto all -cms packages due to bug in python w/ SSL.
-    """
-    cmd  = apt + 'apt-cache search root | grep "lcg+root" | grep -v toolfile '
-    cmd += "| grep -v cms | tail -1 | awk '{print $1}'"
-    if  debug:
-        print cmd
-    res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-    root = res.stdout.read().replace('\n', '').strip()
-    if  os.uname()[0] == 'Darwin': # OSX python has issues with SSL, will take fixed release
-        root = 'lcg+root+5.30.02-cms4'
-    return root
 
-def find_package(apt, pkg, debug=None):
+def find_cms_package(apt, pkg, debug=None, lookup=None):
     """
     Find latest version of given package in CMSSW repository.
     """
-    cmd  = apt + 'apt-cache search %s | grep "%s" | grep -v toolfile ' % (pkg, pkg)
-    cmd += "| grep -v cms | tail -1 | awk '{print $1}'"
+    if  not lookup:
+        lookup = pkg
+    cmd  = apt + 'apt-cache search %s | grep "%s" | grep -v toolfile ' % (pkg, lookup)
     if  debug:
         print cmd
-    res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-    name = res.stdout.read().replace('\n', '').strip()
+    if  DEF_SCRAM_ARCH == 'osx106_amd64_gcc421': # Snow Leopard
+        if  pkg == 'root':
+            name = 'lcg+root+5.30.02-cms4'
+        elif pkg == 'py2-matplotlib':
+            name = 'external+py2-matplotlib+1.0.1-cms3'
+        elif pkg == 'py2-scipy':
+            name = 'external+py2-scipy+0.8.0-cms3'
+        elif pkg == 'coral':
+            name = 'external+py2-scipy+0.8.0-cms3'
+            name = 'cms+coral+CORAL_2_3_12-cms30'
+        else:
+            res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+            vers = [r.replace('\n', '').split()[0] for r in res.stdout.readlines()]
+            name = natsorted(vers)[-1]
+    else:
+        res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+        vers = [r.replace('\n', '').split()[0] for r in res.stdout.readlines()]
+        name = natsorted(vers)[-1]
     return name
 
-def scipy_package(apt, debug=None):
-    """
-    Find latest version of scipy package in CMSSW repository.
-    """
-    cmd  = apt + 'apt-cache search scipy | grep "scipy" | grep -v toolfile '
-    cmd += "| grep -v cms | tail -1 | awk '{print $1}'"
-    if  debug:
-        print cmd
-    res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-    root = res.stdout.read().replace('\n', '').strip()
-    if  os.uname()[0] == 'Darwin': # stay in sync w/ lcg+root and matplotlib/numpy
-        root = 'external+py2-scipy+0.8.0-cms3'
-    return root
-
-def matplotlib_package(apt, debug=None):
-    """
-    Find latest version of matplotlib package in CMSSW repository.
-    """
-    cmd  = apt + 'apt-cache search matplotlib | grep "matplotlib" | grep -v toolfile '
-    cmd += "| grep -v cms | tail -1 | awk '{print $1}'"
-    if  debug:
-        print cmd
-    res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-    root = res.stdout.read().replace('\n', '').strip()
-    if  os.uname()[0] == 'Darwin': # stay in sync w/ lcg+root on OSX
-        root = 'external+py2-matplotlib+1.0.1-cms3'
-    return root
-
-def libpng_package(apt, debug=None):
-    """
-    Find latest version of libpng package in CMSSW repository.
-    """
-    cmd  = apt + 'apt-cache search libpng | grep "libpng" | grep -v toolfile '
-    cmd += "| grep -v cms | tail -1 | awk '{print $1}'"
-    if  debug:
-        print cmd
-    res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-    root = res.stdout.read().replace('\n', '').strip()
-    if  os.uname()[0] == 'Darwin': # stay in sync w/ lcg+root on OSX
-        root = 'external+libpng+1.2.10'
-    return root
+def find_installed_pkg(name):
+    "Find latest version (via natural sort) of installed package for a given name"
+    cmd  = 'find $VO_CMS_SW_DIR/$SCRAM_ARCH/%s -name init.sh' % name
+    res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    vers = [r.replace('\n', '').split()[0] for r in res.stdout.readlines()]
+    pkg  = natsorted(vers)[-1]
+    return pkg
 
 def available_architectures():
     "Fetch CMSSW drivers"
@@ -132,7 +183,6 @@ def available_architectures():
     pat2 = re.compile('^[osx,slc].*')
     url  = 'http://cmsrep.cern.ch/cmssw/cms/'
     data = urllib2.urlopen(url)
-    drivers = []
     for line in data.readlines():
         if  pat1.match(line):
             line = line.split('</a>')[0].split('">')[-1]
@@ -141,6 +191,68 @@ def available_architectures():
                     yield line.replace('-driver.txt', '')
                 elif arch == 'Darwin' and line[:3] == 'osx':
                     yield line.replace('-driver.txt', '')
+
+def install_pip_pkg(pkgs, cms_env, path, debug, pkg, ver=None, opts=None):
+    "Install pip package"
+    print "Installing", pkg
+    if  not pkgs.has_key(pkg):
+        if  ver:
+            cmd = cms_env + '%s/install/bin/pip install %s==%s' % (path, pkg, ver)
+        else:
+            cmd = cms_env + '%s/install/bin/pip install --upgrade %s' % (path, pkg)
+        # use OSX compiler to properly build back-end
+#        if  pkg == 'matplotlib':
+#            cmd  = cms_env + llvm_compiler()
+#            cmd += c_ld_flags(path)
+#            cmd += '%s/install/bin/pip install --upgrade %s' % (path, pkg)
+        if  opts:
+            cmd += ' ' + opts
+        exe_cmd(path, cmd, debug, log='%s.log' % pkg)
+
+def llvm_compiler():
+    "Check llvm compiler and return CC/CXX or empty string"
+    platform = os.uname()[0]
+    if  platform == 'Darwin':
+        cmd = 'type llvm-gcc-4.2'
+        res = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+        if  ' is ' in res.stdout.read():
+            return 'export CC=llvm-gcc-4.2; export CXX=llvm-g++-4.2;'
+    return ''
+
+def c_ld_flags(path):
+    "Helper function to setup CFLAGS and LDFLAGS"
+    cmd  = 'export LDFLAGS="-L%s/install/lib";' % path
+    cmd += 'export CFLAGS="-I%s/install/include -I%s/install/include/freetype2";' \
+            % (path, path)
+    return cmd
+
+def replace_in_file(fname, pat, new_pat):
+    "Replace given pattern to new one for given file name"
+    new_fname = '%s.%s' % (fname, int(time.time()))
+    with open(fname, 'r') as old_file:
+        with open(new_fname, 'w') as new_file:
+            lines = old_file.read()
+            lines = lines.replace(pat, new_pat)
+            new_file.write(lines)
+    os.remove(fname)
+    shutil.move(new_fname, fname)
+
+def siteconfig():
+    "Generate dummy site config file used by lumiDB"
+    header = """<site-local-config><site name="T3_XX_YYYY"><calib-data><frontier-connect>"""
+    bottom = """</frontier-connect><catalog url=""/></calib-data></site></site-local-config>"""
+    body   = ""
+    idict  = {'proxy': {'host': 'cmst0frontier', 'port': 3128},
+              'backupproxy': {'host': 'cmsbpfrontier', 'port': 3128},
+              'server': {'host': 'cmsfrontier', 'port': 8000, 'api': 'FrontierInt'}}
+    for tag, item in idict.items():
+        for num in ['', '1', '2']:
+            url = "http://%s%s.cern.ch:%s" % (item['host'], num, item['port'])
+            if  item.has_key('api'):
+                url += "/%s" % item['api']
+            entry = '<%s url="%s"/>' % (tag, url)
+            body += entry
+    return header + body + bottom
 
 class MyOptionParser:
     """option parser"""
@@ -174,9 +286,8 @@ class MyOptionParser:
         """Returns parse list of options"""
         return self.parser.parse_args()
 
-def getdata(url, params, verbose=0):
+def getdata(url, verbose=0):
     """Invoke URL call and retrieve data for given url/params/headers"""
-    encoded_data = urllib.urlencode(params)
     headers = {}
     if  verbose:
         print '+++ getdata url=%s' % url
@@ -205,12 +316,12 @@ def add_url2packages(url, path):
     with open(os.path.join(path, '.packages'), 'a') as packages:
         packages.write(url + '\n')
 
-def get_file(url, fname, path, debug, check=True):
+def get_file(url, fname, path, debug, ext='r:gz'):
     """Fetch tarball from given url and store it as fname, untar it into given path"""
     os.chdir(path)
     with open(fname, 'w') as tar_file:
-         tar_file.write(getdata(url, {}, debug))
-    tar = tarfile.open(fname, 'r:gz')
+        tar_file.write(getdata(url, debug))
+    tar = tarfile.open(fname, ext)
     top_names = set([r.split('/')[0] for r in tar.getnames()])
     if  len(top_names) == 1:
         dir_name = top_names.pop()
@@ -248,10 +359,7 @@ def check_system(unsupported):
         sys.exit(1)
 
     # check Ubuntu default shell
-    platform = os.uname()[0]
-    unsupported_linux = False
     if  os.uname()[3].find('Ubuntu') != -1 or unsupported:
-        unsupported_linux = True
         if  os.readlink('/bin/sh') != 'bash':
             msg  = 'The /bin/sh is pointing to %s.\n'
             msg += 'For proper installation of CMSSW software\n'
@@ -279,8 +387,9 @@ def test_Fortran():
         return rpath
 
 def main():
+    "Main function"
     mgr = MyOptionParser()
-    opts, args = mgr.get_opt()
+    opts, _ = mgr.get_opt()
 
     platform = os.uname()[0]
     if  platform == 'Darwin':
@@ -312,18 +421,6 @@ def main():
         sys.exit(1)
     arch   = opts.arch
     path   = os.path.join(idir, 'soft')
-    # setup install area
-    sysver = sys.version_info
-# TODO: I need to handle use case when users install cmssh using 2.7
-#       while CMSSW provides 2.6
-#    py_ver = '%s.%s' % (sysver[0], sysver[1])
-    py_ver = '2.6'
-    install_dir = '%s/install/lib/python%s/site-packages' % (path, py_ver)
-    os.environ['PYTHONPATH'] = install_dir
-    try:
-        os.makedirs(install_dir)
-    except:
-        pass
 
     # setup platform and unsupported flag
     unsupported_linux = False
@@ -355,9 +452,12 @@ def main():
     print 'Checking CMSSW'
     if  debug:
         print 'Probe architecture', arch
+    try:
+        os.makedirs(path)
+    except:
+        pass
     os.chdir(path)
     os.environ['LANG'] = 'C'
-    use_matplotlib = False
     sdir = '%s/CMSSW' % path
 
     if  opts.cmssw:
@@ -366,12 +466,6 @@ def main():
             os.symlink(opts.cmssw, sdir)
             os.environ['SCRAM_ARCH'] = arch
             os.environ['VO_CMS_SW_DIR'] = sdir
-            if  os.path.isdir('%s/%s/external/py2-matplotlib' % (sdir, arch)):
-                cmd = 'find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/py2-matplotlib -name init.sh | tail -1'
-                res = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-                mat = res.stdout.read().replace('\n', '').strip()
-                if  mat.find('init.sh') != -1:
-                    use_matplotlib = True
             if  debug:
                 print 'Will use %s/%s' % (sdir, arch)
         else:
@@ -390,11 +484,11 @@ def main():
         if  not is_installed(url, path):
             os.chdir(sdir)
             with open('bootstrap.sh', 'w') as bootstrap:
-                 bootstrap.write(getdata(url, {}, debug))
+                bootstrap.write(getdata(url, debug))
             if  os.uname()[0].lower() == 'linux':
                 os.rename('bootstrap.sh', 'b.sh')
                 cmd = 'cat b.sh | sed "s,\$seed \$unsupportedSeeds,\$seed \$unsupportedSeeds libreadline5,g" > bootstrap.sh'
-                res = subprocess.call(cmd, shell=True)
+                subprocess.call(cmd, shell=True)
             os.chmod('bootstrap.sh', 0755)
             cmd  = 'sh -x $VO_CMS_SW_DIR/bootstrap.sh setup -path $VO_CMS_SW_DIR -arch $SCRAM_ARCH'
             if  unsupported_linux:
@@ -406,25 +500,25 @@ def main():
             cmd += 'apt-get install external+fakesystem+1.0; '
             cmd += 'apt-get update; '
             exe_cmd(sdir, cmd, debug, 'Init CMSSW apt repository', log='aptget.log')
-            root = find_root_package(apt, debug)
-            cmd  = apt + 'echo "Y" | apt-get install %s' % root
-            exe_cmd(sdir, cmd, debug, 'Install %s' % root, log='root.log')
-            root = libpng_package(apt, debug)
-            cmd  = apt + 'echo "Y" | apt-get install %s' % root
-            exe_cmd(sdir, cmd, debug, 'Install libpng', log='libpng.log')
-            root = matplotlib_package(apt, debug)
-            cmd  = apt + 'echo "Y" | apt-get install %s' % root
-            exe_cmd(sdir, cmd, debug, 'Install matplotlib', log='matplotlib.log')
-            use_matplotlib = True
-            root = scipy_package(apt, debug)
-            cmd  = apt + 'echo "Y" | apt-get install %s' % root
-            exe_cmd(sdir, cmd, debug, 'Install scipy', log='scipy.log')
+            # install useful set of CMS libraries
+            cms_libs = ['root', 'coral', 'py2-matplotlib', 'py2-scipy']
+            for cmspkg in cms_libs:
+                msg  = 'Install CMSSW %s' % cmspkg
+                if  cmspkg == 'root':
+                    lookup = 'lcg+root'
+                elif  cmspkg == 'coral':
+                    lookup = 'coral+CORAL'
+                else:
+                    lookup = ''
+                name = find_cms_package(apt, cmspkg, debug, lookup)
+                cmd  = apt + 'echo "Y" | apt-get install %s' % name
+                exe_cmd(sdir, cmd, debug, msg, log='%s.log' % cmspkg)
+            # add bootstrap url into soft/.packages
             add_url2packages(url, path)
 
     # command to setup CMSSW python
-    find_python = 'find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/python -name init.sh | grep %s | tail -1' % py_ver
-    res = subprocess.Popen(find_python, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    cms_python_env = res.stdout.read().replace('\n', '').strip()
+    coral_env = find_installed_pkg('cms/coral')
+    cms_python_env = find_installed_pkg('external/python')
     if  not cms_python_env.find('init.sh') != -1:
         msg  = '\nUnable to locate python in:'
         msg += '\n%s/%s/external/python' % (os.environ['VO_CMS_SW_DIR'], os.environ['SCRAM_ARCH'])
@@ -432,7 +526,13 @@ def main():
         print msg
         sys.exit(1)
     pver     = '.'.join(cms_python_env.split('/')[-4].split('.')[0:2])
-    cms_env  = 'source `%s`;' % find_python
+    install_dir = '%s/install/lib/python%s/site-packages' % (path, pver)
+    os.environ['PYTHONPATH'] = install_dir
+    try:
+        os.makedirs(install_dir)
+    except:
+        pass
+    cms_env  = 'source %s;' % cms_python_env
     if  debug:
         print "CMSSW python:", cms_python_env
         print "python version", pver
@@ -459,9 +559,21 @@ def main():
     if  not is_installed(url, path):
         get_file(url, 'voms-essentials.tar.gz', path, debug)
 
+    if  osx_ver() == '10.6':
+        # CMSSW pcre is too old and srm software uses grep which linked to newer
+        # pcre library, therefore install pcre 7.9 which is suitable for this case
+        print "Installing pcre"
+        ver = '7.9'
+        url = 'http://downloads.sourceforge.net/pcre/%s/pcre-%s.tar.gz' % (ver, ver)
+        if  not is_installed(url, path):
+            get_file(url, 'expat-%s.tar.gz' % ver, path, debug)
+            cmd = cms_env + './configure --prefix=%s/install; make; make install' % path
+            os.chdir(os.path.join(path, 'pcre-%s' % ver))
+            exe_cmd(os.path.join(path, 'pcre-%s' % ver), cmd, debug, log='pcre.log')
+
     print "Installing expat"
     ver = '2.0.1'
-    url = 'http://sourceforge.net/projects/expat/files/expat/2.0.1/expat-%s.tar.gz/download?use_mirror=iweb' % ver
+    url = 'http://sourceforge.net/projects/expat/files/expat/%s/expat-%s.tar.gz/download?use_mirror=iweb' % (ver, ver)
     if  not is_installed(url, path):
         get_file(url, 'expat-%s.tar.gz' % ver, path, debug)
         if  parch == 'x86':
@@ -527,23 +639,91 @@ def main():
         cmd += ' --with-cacert-path=%s/certificates' % path
         cmd += ' --with-srm-home=%s/srmclient2' % path
         exe_cmd(os.path.join(path, 'srmclient2/setup'), cmd, debug, log='srmclient.log')
+        # fix Lion, Unable to load native library: libjava.jnilib problem
+        # http://stackoverflow.com/questions/1482450/broken-java-mac-10-6
+        if  osx_ver() == '10.6':
+            pat = 'export CLASSPATH'
+            new_pat = pat + '\nunset DYLD_LIBRARY_PATH\n'
+            for fname in os.listdir(os.path.join(path, 'srmclient2/bin')):
+                if  fname.find('srm-') != -1:
+                    filename = os.path.join(path, 'srmclient2/bin/' + fname)
+                    replace_in_file(filename, pat, new_pat)
+                    os.chmod(filename, 0755)
+
+    print "Installing zmq"
+    os.chdir(path)
+    zmq_ver = '2.2.0'
+    url = 'http://download.zeromq.org/zeromq-%s.tar.gz' % zmq_ver
+    if  not is_installed(url, path):
+        get_file(url, 'zmq.tar.gz', path, debug) # it call add_url2packages
+        cmd = 'cd zeromq-%s; ./configure --prefix=%s/install' % (zmq_ver, path)
+        cmd += '; make install'
+        exe_cmd(path, cmd, debug, log='zmq.log')
+
+    print "Installing setuptools"
+    os.chdir(path)
+    s_ver = '0.6c11'
+    url = 'http://pypi.python.org/packages/source/s/setuptools/setuptools-%s.tar.gz' % s_ver
+    if  not is_installed(url, path):
+        get_file(url, 'setuptools.tar.gz', path, debug) # it call add_url2packages
+        cmd = cms_env + 'cd setuptools-%s; python setup.py install --prefix=%s/install' % (s_ver, path)
+        exe_cmd(path, cmd, debug, log='setuptools.log')
+
+#    print "Installing freetype"
+#    ft_ver = '2.4.10'
+#    url = 'http://download.savannah.gnu.org/releases/freetype/freetype-%s.tar.gz' % ft_ver
+#    if  not is_installed(url, path):
+#        get_file(url, 'freetype.tar.gz', path, debug)
+#        cmd  = llvm_compiler()
+#        cmd += 'cd freetype-%s; ./configure --prefix=%s/install' % (ft_ver, path)
+#        cmd += '; make install'
+#        exe_cmd(path, cmd, debug, log='freetype.log')
+
+#    print "Installing libpng"
+#    png_ver = '1.2.50'
+#    url = 'http://downloads.sourceforge.net/libpng/libpng12/%s/libpng-%s.tar.gz' % (png_ver, png_ver)
+#    if  not is_installed(url, path):
+#        get_file(url, 'libpng.tar.gz', path, debug)
+#        cmd  = llvm_compiler()
+#        cmd += 'cd libpng-%s; ./configure --prefix=%s/install' % (png_ver, path)
+#        cmd += '; make install'
+#        exe_cmd(path, cmd, debug, log='libpng.log')
 
     print "Installing pip"
     os.chdir(path)
     url = 'https://raw.github.com/pypa/virtualenv/master/virtualenv.py'
     if  not is_installed(url, path):
         with open('virtualenv.py', 'w') as fname:
-            fname.write(getdata(url, {}, debug))
+            fname.write(getdata(url, debug))
         cmd = cms_env + 'python %s/virtualenv.py %s/install' % (path, path)
+        cmd += '; . %s/install/activate' % path
         exe_cmd(path, cmd, debug, log='pip.log')
+        add_url2packages(url, path)
 
-    print "Installing IPython"
-#    cmd = cms_env + '%s/install/bin/pip install ipython==0.12.1' % path
-    cmd = cms_env + '%s/install/bin/pip install --upgrade ipython' % path
-    exe_cmd(path, cmd, debug, log='ipython.log')
+    # get list of installed packages in pip repository
+    cmd = cms_env + '%s/install/bin/pip freeze' % path
+    exe_cmd(path, cmd, debug, log='installed.pkg')
+    pip_packages = {}
+    logfile = '%s/installed.pkg' % path
+    with open(logfile, 'r') as installed_packages:
+        for line in installed_packages.readlines():
+            if  line.lower().find('warning') != -1 or line.find('#') != -1:
+                continue
+            if  not line:
+                continue
+            try:
+                pkg, ver = line.replace('\n', '').split('==')
+                pip_packages[pkg] = ver
+            except Exception as exp:
+                print "Fail at line '%s'" % line
+                print exp
+                raise
+
+    pkg = 'ipython'
+    install_pip_pkg(pip_packages, cms_env, path, debug, pkg)
     # fix pylab message
     fname = '%s/install/lib/python%s/site-packages/IPython/core/pylabtools.py' \
-        % (path, py_ver)
+        % (path, pver)
     content = None
     with open(fname, 'r') as source:
         content = source.read()
@@ -555,24 +735,41 @@ def main():
 
     print "Test R"
     rpath = test_R()
-    if  rpath:
-        print "Installing rpy2"
-        cmd = cms_env + '%s/install/bin/pip install --upgrade rpy2' % path
-        exe_cmd(path, cmd, debug, log='rpy2.log')
 
-    print "Installing Routes"
-    cmd = cms_env + '%s/install/bin/pip install --upgrade Routes' % path
-    exe_cmd(path, cmd, debug, log='routes.log')
+    # install standard libraries
+    std_pkgs = ['Routes', 'python-dateutil', 'decorator',
+            'pyOpenSSL', 'paramiko', 'pyzmq', 'tornado', 'rpy2',
+    ]
+    for pkg in std_pkgs:
+        ver  = None
+        args = None
+        if  pkg.lower() == 'pyopenssl':
+            # use 0.12 version of pyOpenSSL due to
+            # http://stackoverflow.com/questions/7340784/easy-install-pyopenssl-error
+            ver = '0.12'
+        if  pkg.lower() == 'pyzqm':
+            # add intstall path option for zmq
+            args = '--install-option="--zmq=%s/install"' % path
+        if  pkg == 'rpy2':
+            if  rpath:
+                install_pip_pkg(pip_packages, cms_env, path, debug, pkg, ver, args)
+        else:
+            install_pip_pkg(pip_packages, cms_env, path, debug, pkg, ver, args)
 
-    print "Installing dateutil"
-    cmd = cms_env + '%s/install/bin/pip install --upgrade python-dateutil' % path
-    exe_cmd(path, cmd, debug, log='dateutil.log')
-
-    print "Installing decorator"
-    cmd = cms_env + '%s/install/bin/pip install --upgrade decorator' % path
-    exe_cmd(path, cmd, debug, log='decorator.log')
-
+    # install readline after pip, since it requires setuptools
     print "Installing readline"
+#    if  platform == 'Darwin' and not is_installed(url, path):
+#        if  pver == '2.7':
+#            url = 'http://pypi.python.org/packages/2.7/r/readline/readline-6.2.2-py2.7-macosx-10.7-intel.egg'
+#            md5 = '25383d860632d4a1521961ba68a52fe2'
+#        if  pver == '2.6':
+#            url = 'http://pypi.python.org/packages/2.6/r/readline/readline-6.2.2-py2.6-macosx-10.6-universal.egg'
+#            md5 = '13d63c76be4ff09c5d55fbbe3b6ab2c7'
+#        with open('readline.egg', 'w') as readline:
+#            readline.write(getdata(url, debug))
+#        cmd = 'cd %s/install/lib/python%s/site-packages; unzip -n %s/readline.egg' % (path, pver, path)
+#        exe_cmd(path, cmd, debug, log='readline.log')
+
     ver = '6.2.2'
     url = 'http://pypi.python.org/packages/source/r/readline/readline-%s.tar.gz' % ver
     if  platform == 'Darwin' and not is_installed(url, path):
@@ -597,68 +794,51 @@ python setup.py install --prefix=$idir
 """.format(path=path, arch=arch, pver=pver)
         exe_cmd(os.path.join(path, 'readline-%s' % ver), cmd, debug, log='readline.log')
 
-    print "Installing httplib2"
-    cmd = cms_env + '%s/install/bin/pip install --upgrade httplib2' % path
-    exe_cmd(path, cmd, debug, log='httplib2.log')
-
-    # use 0.12 version of pyOpenSSL due to
-    # http://stackoverflow.com/questions/7340784/easy-install-pyopenssl-error
-    print "Installing pyOpenSSL"
-    cmd = cms_env + '%s/install/bin/pip install pyOpenSSL==0.12' % path
-    exe_cmd(path, cmd, debug, log='pyopenssl.log')
-
-    print "Installing paramiko"
-    cmd = cms_env + '%s/install/bin/pip install --upgrade paramiko' % path
-    exe_cmd(path, cmd, debug, log='paramiko.log')
-
-    print "Installing zmq"
+    print "Installing LumiDB"
     os.chdir(path)
-    zmq_ver = '2.2.0'
-    url = 'http://download.zeromq.org/zeromq-%s.tar.gz' % zmq_ver
+    url = 'http://cmssw.cvs.cern.ch/cgi-bin/cmssw.cgi/CMSSW/RecoLuminosity.tar.gz?view=tar'
     if  not is_installed(url, path):
-        get_file(url, 'zmq.tar.gz', path, debug)
-        cmd = 'cd zeromq-%s; ./configure --prefix=%s/install' % (zmq_ver, path)
-        cmd += '; make install'
-        exe_cmd(path, cmd, debug, log='zmq.log')
-
-    print "Installing pyzmq"
-    cmd = cms_env + \
-    '%s/install/bin/pip install --install-option="--zmq=%s/install" --upgrade pyzmq' % (path, path)
-    exe_cmd(path, cmd, debug, log='pyzmq.log')
-
-    print "Installing tornado"
-    cmd = cms_env + '%s/install/bin/pip install --upgrade tornado' % path
-    exe_cmd(path, cmd, debug, log='tornado.log')
+        get_file(url, 'lumidb.tar.gz', path, debug)
+        dst = os.path.join(path, 'install/lib/python%s/site-packages/RecoLuminosity' % pver)
+        try:
+            os.makedirs(dst)
+        except:
+            pass
+        shutil.copytree('RecoLuminosity/LumiDB/python', os.path.join(dst, 'LumiDB'))
+        with open(os.path.join(dst, '__init__.py'), 'w') as init_file:
+            init_file.write("")
+        shutil.copy(os.path.join(dst, '__init__.py'), os.path.join(dst, 'LumiDB'))
 
     print "Installing cmssh"
     os.chdir(path)
-    try:
-        cmd = 'rm -rf vkuznet-cmssh*; rm -rf cmssh'
-        exe_cmd(path, cmd, debug)
-    except:
-        pass
-    try:
-        cmd = 'rm -rf .ipython'
-        exe_cmd(path, cmd, debug)
-    except:
-        pass
     if  opts.master:
         url = 'http://github.com/vkuznet/cmssh/tarball/master/'
     else:
         url = 'http://github.com/vkuznet/cmssh/tarball/v0.24/'
-    get_file(url, 'cmssh.tar.gz', path, debug, check=False)
-    cmd = 'mv vkuznet-cmssh* %s/cmssh' % path
-    exe_cmd(path, cmd, debug)
+    if  not is_installed(url, path):
+        try:
+            cmd = 'rm -rf vkuznet-cmssh*; rm -rf cmssh'
+            exe_cmd(path, cmd, debug)
+        except:
+            pass
+        try:
+            cmd = 'rm -rf .ipython'
+            exe_cmd(path, cmd, debug)
+        except:
+            pass
+        get_file(url, 'cmssh.tar.gz', path, debug)
+        cmd = 'mv vkuznet-cmssh* %s/cmssh' % path
+        exe_cmd(path, cmd, debug)
 
     print "Create matplotlibrc"
     os.chdir(path)
-    ndir = os.path.join(path, 'install/lib/python%s/site-packages/matplotlib/mpl-data' % py_ver)
+    ndir = os.path.join(path, 'install/lib/python%s/site-packages/matplotlib/mpl-data' % pver)
     try:
         os.makedirs(ndir)
     except:
         pass
     fin  = '%s/cmssh/src/config/matplotlibrc' % path
-    fout = '%s/install/lib/python%s/site-packages/matplotlib/mpl-data/matplotlibrc' % (path, py_ver)
+    fout = '%s/install/lib/python%s/site-packages/matplotlib/mpl-data/matplotlibrc' % (path, pver)
     with open(fout, 'w') as output:
         with open(fin, 'r') as config:
             for line in config.readlines():
@@ -678,12 +858,28 @@ if [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/$1 ]; then
     echo -n "Loading $1 ... "
     pkg_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/$1 -name init.sh | tail -1`
     source $pkg_init
-    if [ "$1" == "py2-matplotlib" ]; then
-        export CMSSH_MATPLOTLIB=True
-    fi
     echo "DONE"
 fi
-}\n
+}
+coral_init()
+{
+coral=$CORAL_DIR/$SCRAM_ARCH
+coral_external=$CORAL_DIR/external/$SCRAM_ARCH/lib
+export PYTHONPATH=$PYTHONPATH:$PWD:$coral/python:$coral/lib:$coral_external
+export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$coral/lib:$coral_external
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$coral/lib:$coral_external
+if [ -f $CORAL_DIR/$SCRAM_ARCH/lib/liblcg_PyCoral.dylib ]; then
+if [ ! -f $CORAL_DIR/$SCRAM_ARCH/lib/liblcg_PyCoral.so ]; then
+    ln -s $CORAL_DIR/$SCRAM_ARCH/lib/liblcg_PyCoral.dylib $CORAL_DIR/$SCRAM_ARCH/lib/liblcg_PyCoral.so
+fi
+fi
+if [ -f $CORAL_DIR/$SCRAM_ARCH/lib/liblcg_ConnectionService.dylib ]; then
+if [ ! -f $CORAL_DIR/$SCRAM_ARCH/lib/liblcg_ConnectionService.so ]; then
+    ln -s $CORAL_DIR/$SCRAM_ARCH/lib/liblcg_ConnectionService.dylib $CORAL_DIR/$SCRAM_ARCH/lib/liblcg_ConnectionService.so
+fi
+fi
+}
+\n
 """
         msg += 'export VO_CMS_SW_DIR=$CMSSH_ROOT/CMSSW\n'
         msg += 'export SCRAM_ARCH=%s\n' % arch
@@ -692,6 +888,10 @@ fi
             msg += 'export CMSSW_RELEASES=$CMSSH_ROOT/Releases\n'
         msg += 'if [ -f $VO_CMS_SW_DIR/cmsset_default.sh ]; then\n'
         msg += '   source $VO_CMS_SW_DIR/cmsset_default.sh\nfi\n'
+        msg += "network=`hostname -d 2> /dev/null`\n"
+        msg += 'if [ X$network == X"cern.ch" ]; then\n'
+        msg += "source /afs/cern.ch/project/eos/installation/pro/etc/setup.sh\n"
+        msg += "export CMSSH_EOS=1\nfi\n"
         msg += 'export OLD_PATH=$PATH\n'
         msg += 'export CRAB_ROOT=$CMSSH_ROOT/%s\n' % crab_ver
         msg += 'export PATH=/usr/bin:/bin:/usr/sbin:/sbin\n'
@@ -705,6 +905,7 @@ fi
         msg += 'cms_init "external/python"\n'
         msg += 'cms_init "external/xz"\n'
         msg += 'cms_init "external/pcre"\n'
+        msg += 'cms_init "external/freetype"\n'
         msg += 'cms_init "external/py2-matplotlib"\n'
         msg += 'cms_init "external/py2-numpy"\n'
         msg += 'cms_init "external/py2-scipy"\n'
@@ -713,6 +914,9 @@ fi
         msg += 'cms_init "external/libjpg"\n'
         msg += 'cms_init "external/libtiff"\n'
         msg += 'cms_init "external/libungif"\n'
+        msg += 'cms_init "external/xrootd"\n'
+        msg += 'cms_init "external/boost"\n'
+        msg += 'cms_init "cms/coral"\n'
         msg += 'export DYLD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib\n'
         msg += 'export LD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib:$LD_LIBRARY_PATH\n'
         if  parch == 'x86_64':
@@ -729,7 +933,7 @@ fi
         msg += 'export PYTHONPATH=$PYTHONPATH:$CMSSH_ROOT\n'
         msg += 'export PYTHONPATH=$PYTHONPATH:$CMSSH_ROOT/CRABClient/src/python\n'
         msg += 'export PYTHONPATH=$PYTHONPATH:$CMSSH_ROOT/WMCore/src/python\n'
-        msg += 'export PYTHONPATH=$PWD/soft/install/lib/python%s/site-packages:$PYTHONPATH\n' % py_ver
+        msg += 'export PYTHONPATH=$PWD/soft/install/lib/python%s/site-packages:$PYTHONPATH\n' % pver
         msg += 'export DBS_INSTANCE=cms_dbs_prod_global\n'
         msg += 'export LCG_GFAL_INFOSYS=lcg-bdii.cern.ch:2170\n'
         msg += 'export VOMS_USERCONF=$CMSSH_ROOT/glite/etc/vomses\n'
@@ -742,11 +946,22 @@ fi
         msg += 'export GLOBUS_PATH=$CMSSH_ROOT/globus\n'
         msg += 'export GLOBUS_LOCATION=$CMSSH_ROOT/globus\n'
         msg += 'export VOMS_PROXY_INFO_DONT_VERIFY_AC=anything_you_want\n'
-        msg += 'export MATPLOTLIBRC=$CMSSH_ROOT/install/lib/python%s/site-packages/matplotlib/mpl-data\n' % py_ver
+        msg += 'export MATPLOTLIBRC=$CMSSH_ROOT/install/lib/python%s/site-packages/matplotlib/mpl-data\n' % pver
+        coral_ver = coral_env.split('/')[-4] # accout for last /etc/profile.d/init.sh
+        msg += 'export CORAL_DIR=$CMSSH_ROOT/CMSSW/$SCRAM_ARCH/cms/coral/%s\n' % coral_ver
+        msg += 'coral_init\n'
         if  debug:
             print "+++ write setup.sh"
         setup.write(msg)
     os.chmod('setup.sh', 0755)
+    if  not os.path.islink(os.path.join(path, 'CMSSW')):
+        sconfig_dir = os.path.join(path, 'CMSSW/SITECONF/local/JobConfig')
+        try:
+            os.makedirs(sconfig_dir)
+        except:
+            pass
+        with open(os.path.join(sconfig_dir, 'site-local-config.xml'), 'w') as sconfig:
+            sconfig.write(siteconfig() + '\n')
 
     vomses = os.path.join(path, 'glite')
     print "Create vomses area"
@@ -756,26 +971,21 @@ fi
     except:
         pass
     fname = os.path.join(vdir, 'vomses')
-    with open(fname, 'w') as fds:
-        msg = '"cms" "voms.fnal.gov" "15015" "/DC=org/DC=doegrids/OU=Services/CN=http/voms.fnal.gov" "cms"'
-        fds.write(msg + '\n')
-        msg = '"cms" "voms.cern.ch" "15002" "/DC=ch/DC=cern/OU=computers/CN=voms.cern.ch" "cms"'
-        fds.write(msg + '\n')
-        msg = '"cms" "lcg-voms.cern.ch" "15002" "/DC=ch/DC=cern/OU=computers/CN=lcg-voms.cern.ch" "cms"'
-        fds.write(msg + '\n')
-    os.chmod(fname, stat.S_IRUSR | stat.S_IROTH | stat.S_IRGRP)
+    if  not os.path.isfile(fname):
+        with open(fname, 'w') as fds:
+            msg = '"cms" "voms.fnal.gov" "15015" "/DC=org/DC=doegrids/OU=Services/CN=http/voms.fnal.gov" "cms"'
+            fds.write(msg + '\n')
+            msg = '"cms" "voms.cern.ch" "15002" "/DC=ch/DC=cern/OU=computers/CN=voms.cern.ch" "cms"'
+            fds.write(msg + '\n')
+            msg = '"cms" "lcg-voms.cern.ch" "15002" "/DC=ch/DC=cern/OU=computers/CN=lcg-voms.cern.ch" "cms"'
+            fds.write(msg + '\n')
+        os.chmod(fname, stat.S_IRUSR | stat.S_IROTH | stat.S_IRGRP)
 
     print "Create cmssh"
     try:
         os.makedirs(os.path.join(path, 'bin'))
     except:
         pass
-    flags = ''
-    if  use_matplotlib:
-        if  platform == 'Darwin':
-            flags += ' --pylab=osx'
-        else:
-            flags += ' --pylab'
     with open(os.path.join(path, 'bin/cmssh'), 'w') as cmssh:
         msg  = '#!/bin/bash\n'
         msg += 'echo "Welcome to cmssh! Loading configuration, please wait ..."\n'
@@ -812,23 +1022,32 @@ if [ ! -f $HOME/.globus/usercert.pem ]; then
     exit -1
 fi
 export IPYTHONDIR=$ipdir
-if [ -n `env | grep CMSSH_MATPLOTLIB` ]; then
-pylab="%(flags)s"
-else
 pylab=""
-fi
-if  [ $# == 1 ] && [ $1 == "notebook" ]; then
-notebook="notebook"
-pylab="--pylab=inline"
-export CMSSH_NOTEBOOK=1
-else
 notebook="--no-banner"
+if  [ $# == 1 ]; then
+    if [ $1 == "notebook" ]; then
+        notebook="notebook"
+        pylab="--pylab=inline"
+        export CMSSH_NOTEBOOK=1
+    fi
+    if  [ $1 == "pylab" ]; then
+        osx_driver=`find $CMSSH_ROOT/CMSSW/$SCRAM_ARCH/external/py2-matplotlib -name _macosx.so`
+        if  [ -f "$osx_driver" ]; then
+            pylab=" --pylab=osx"
+        else
+            pylab=" --pylab=auto"
+        fi
+    fi
 fi
 opts="$notebook $pylab"
 ipython $opts --ipython-dir=$ipdir --profile=cmssh
-""" % {'flags':flags, 'path':path}
+""" % {'path':path}
         cmssh.write(msg)
     os.chmod('bin/cmssh', 0755)
+
+    # copy osx matplotlib driver if it exists
+    if  platform == 'Dawrin':
+        cmd = 'cp %s/cmssh/osx/matplotlib/%s/_macosx.so %s/CMSSW/%s/external/py2-matplotlib/*/lib/python%s/site-packages/matplotlib/backends/' % (path, osx_ver(), path, arch, pver)
 
     if  rpath: # if R is present on a system
         print "Account for R in ipython config"
@@ -840,12 +1059,19 @@ ipython $opts --ipython-dir=$ipdir --profile=cmssh
                 line = line.replace(pat, pat + ",'rmagic'")
             sys.stdout.write(line)
 
+    print "Make links"
+    xrdcp = os.path.join(path, 'install/bin/xrdcp')
+    if  not os.path.islink(xrdcp):
+        xrootd_env  = find_installed_pkg('external/xrootd')
+        xrootd_root = '/'.join(xrootd_env.split('/')[:-3])
+        os.symlink(os.path.join(xrootd_root, 'bin/xrdcp'), xrdcp)
+
     print "Clean-up soft area"
     os.chdir(path)
-    res = subprocess.call("rm *.tar.gz", shell=True)
+    subprocess.call("rm *.tar.gz", shell=True)
     if  not os.path.isdir('logs'):
         os.makedirs('logs')
-    res = subprocess.call("mv *.log logs", shell=True)
+    subprocess.call("mv *.log logs", shell=True)
 
     print "Congratulations, cmssh is available at %s/bin/cmssh" % path
 
