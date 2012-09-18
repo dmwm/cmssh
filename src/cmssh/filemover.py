@@ -533,6 +533,9 @@ class FileMover(object):
             print_error(msg)
             return 'fail'
         cmd = 'xrdcp root://xrootd.unl.edu/%s %s' % (lfn, dst)
+        cmd = 'xrdcp root://cms-xrd-global.cern.ch/%s %s' % (lfn, dst)
+        if  verbose:
+            print_info(cmd)
         stdout, stderr = execmd(cmd)
         if  stderr:
             print_error(stderr)
