@@ -14,6 +14,7 @@ import types
 import readline
 import traceback
 import subprocess
+import functools
 from   types import GeneratorType, InstanceType
 from   cStringIO import StringIO
 import xml.etree.cElementTree as ET
@@ -23,6 +24,16 @@ from   decorator import decorator
 from   cmssh.iprint import format_dict, msg_green
 from   cmssh.iprint import print_warning, print_error, print_info
 from   cmssh.regex import float_number_pattern, int_number_pattern
+
+def memoize(obj):
+    "Keep things in cache"
+    cache = obj.cache = {}
+    @functools.wraps(obj)
+    def memoizer(*args, **kwargs):
+        if args not in cache:
+            cache[args] = obj(*args, **kwargs)
+        return cache[args]
+    return memoizer
 
 class working_dir(object):
     "ContextManager to switch for given directory"
