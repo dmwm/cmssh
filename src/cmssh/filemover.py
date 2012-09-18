@@ -215,12 +215,9 @@ def get_username(verbose=None):
     if  not userdn:
         msg = 'Unable to determine your DN, please run grid-proxy-init'
         raise Exception(msg)
-    # TODO: replace with new SiteDB
-    url    = 'https://cmsweb.cern.ch/sitedb/json/index/dnUserName'
-    params = {'dn': userdn}
-    data   = urllib2.urlopen(url, urllib.urlencode(params, doseq=True))
-    result = eval(data.read()) 
-    return result['user']
+    mgr  = SiteDBManager()
+    user = mgr.get_user(userdn)
+    return user
 
 def nodes(select=True):
     """
