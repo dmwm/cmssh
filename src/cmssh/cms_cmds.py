@@ -644,6 +644,7 @@ def cms_ls(arg):
         res = site_info(arg, debug)
     elif pat_lfn.match(arg):
         arg = arg.replace('file=', '')
+        arg = arg.replace('lfn=', '')
         res = file_info(arg, debug)
     elif pat_block.match(arg):
         arg = arg.replace('block=', '')
@@ -676,18 +677,30 @@ def cms_lumi(arg):
     arg = arg.replace('dataset=', '')
     res = run_lumi_info(arg)
 
-def integration_tests(arg):
+def integration_tests(_arg):
     "Run series of integration tests for cmssh"
     lfn       = \
     '/store/data/CRUZET3/Cosmics/RAW/v1/000/050/832/186585EC-024D-DD11-B747-000423D94AA8.root'
     dataset   = '/PhotonHad/Run2011A-PromptReco-v1/RECO'
     run       = 160915
-    cmd_list  = ['ls', 'ls -l', 'mkdir ttt', 'rmdir ttt']
-    cmd_list += ['ls dataset=%s' % dataset, 'ls run=%s' % run, 'ls lfn=%s' % lfn]
+    sename    = 'T3_US_Cornell:/store/user/valya'
+    cmd_list  = ['ls', 'mkdir ttt', 'ls -l', 'rmdir ttt', 'ls']
+    cmd_list += ['ls dataset=%s' % dataset, 'ls run=%s' % run, 'ls file=%s' % lfn]
+    cmd_list += ['ls %s' % dataset, 'ls %s' % run, 'ls %s' % lfn]
     cmd_list += ['find dataset=/ZMM*', 'das dataset=/ZMM*']
-    cmd_list += ['info dataset=%s' % dataset, 'info run=%s' % run, 'info lfn=%s' % lfn]
+    cmd_list += ['info dataset=%s' % dataset, 'info run=%s' % run]
     cmd_list += ['lumi dataset=%s' % dataset,
                  'lumi {"190704":[1,2,3]}', 'lumi {190704:[1,2,3]}']
+    cmd_list += ['du T3_US_Cornell', 'ls T3_US_Cornell']
+    cmd_list += ['ls %s' % sename,
+                 'mkdir %s/foo' % sename,
+                 'ls %s' % sename,
+                 'rmdir %s/foo' % sename,
+                 'ls %s' % sename,
+                 ]
+    cmd_list += ['cp %s file.root' % lfn, 'ls',
+                 'cp file.root %s' % sename]
+    cmd_list += ['releases all', 'arch all']
     mgr = get_ipython()
     for item in cmd_list:
         print_info("Execute %s" % item)
