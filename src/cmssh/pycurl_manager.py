@@ -97,7 +97,7 @@ class RequestHandler(object):
         """Debug callback implementation"""
         print "debug(%d): %s" % (debug_type, debug_msg)
 
-    def getdata(self, url, params, headers=None, post=None,
+    def get_data(self, url, params, headers=None, post=None,
                 ckey=None, cert=None, doseq=True, verbose=None):
         """Fetch data for given set of parameters"""
         if  self.cache.has_key(thread):
