@@ -700,7 +700,7 @@ def integration_tests(_arg):
                  ]
     cmd_list += ['cp %s file.root' % lfn, 'ls',
                  'cp file.root %s' % sename]
-    cmd_list += ['releases all', 'arch all']
+    cmd_list += ['releases list', 'arch list']
     mgr = get_ipython()
     for item in cmd_list:
         print_info("Execute %s" % item)
