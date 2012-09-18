@@ -676,6 +676,24 @@ def cms_lumi(arg):
     arg = arg.replace('dataset=', '')
     res = run_lumi_info(arg)
 
+def integration_tests(arg):
+    "Run series of integration tests for cmssh"
+    lfn       = \
+    '/store/data/CRUZET3/Cosmics/RAW/v1/000/050/832/186585EC-024D-DD11-B747-000423D94AA8.root'
+    dataset   = '/PhotonHad/Run2011A-PromptReco-v1/RECO'
+    run       = 160915
+    cmd_list  = ['ls', 'ls -l', 'mkdir ttt', 'rmdir ttt']
+    cmd_list += ['ls dataset=%s' % dataset, 'ls run=%s' % run, 'ls lfn=%s' % lfn]
+    cmd_list += ['find dataset=/ZMM*', 'das dataset=/ZMM*']
+    cmd_list += ['info dataset=%s' % dataset, 'info run=%s' % run, 'info lfn=%s' % lfn]
+    cmd_list += ['lumi dataset=%s' % dataset,
+                 'lumi {"190704":[1,2,3]}', 'lumi {190704:[1,2,3]}']
+    ipmgr = get_ipython()
+    for item in cmd_list:
+        print_info("Execute %s" % item)
+        cmd, args = item.split(' ', 1)
+        mgr.run_line_magic(cmd, args)
+
 def cms_info(arg):
     """
     cmssh info command provides information for given meta-data entity, e.g.
