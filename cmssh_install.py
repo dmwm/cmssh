@@ -738,7 +738,7 @@ def main():
 
     # install standard libraries
     std_pkgs = ['Routes', 'python-dateutil', 'decorator',
-            'pyOpenSSL', 'paramiko', 'pyzmq', 'tornado', 'rpy2',
+            'pyOpenSSL', 'pycurl', 'paramiko', 'pyzmq', 'tornado', 'rpy2',
     ]
     for pkg in std_pkgs:
         ver  = None
