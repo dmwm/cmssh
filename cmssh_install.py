@@ -814,7 +814,7 @@ python setup.py install --prefix=$idir
     if  opts.master:
         url = 'http://github.com/vkuznet/cmssh/tarball/master/'
     else:
-        url = 'http://github.com/vkuznet/cmssh/tarball/v0.24/'
+        url = 'http://github.com/vkuznet/cmssh/tarball/v0.25/'
     if  not is_installed(url, path):
         try:
             cmd = 'rm -rf vkuznet-cmssh*; rm -rf cmssh'
