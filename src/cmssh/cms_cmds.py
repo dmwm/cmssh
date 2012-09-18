@@ -699,7 +699,8 @@ def integration_tests(_arg):
                  'ls %s' % sename,
                  ]
     cmd_list += ['cp %s file.root' % lfn, 'ls',
-                 'cp file.root %s' % sename]
+                 'cp file.root %s' % sename,
+                 'rm %s/file.root' % sename]
     cmd_list += ['releases list', 'arch list']
     mgr = get_ipython()
     for item in cmd_list:
