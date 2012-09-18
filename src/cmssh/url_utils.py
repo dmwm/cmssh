@@ -14,7 +14,7 @@ import subprocess
 from contextlib import contextmanager
 
 # cmssh modules
-from cmssh.iprint import print_info
+from cmssh.iprint import print_info, print_warning, print_error
 from cmssh.auth_utils import PEMMGR, working_pem
 from cmssh.auth_utils import get_key_cert, HTTPSClientAuthHandler
 from cmssh.pycurl_manager import RequestHandler
@@ -24,19 +24,24 @@ def get_data(url, kwargs=None, headers=None,
     "Retrive data"
     ckey = None
     cert = os.path.join(os.environ['HOME'], '.globus/usercert.pem')
-    # urllib data look-up
-    with working_pem(PEMMGR.pem) as ckey:
-        return get_data_helper(url, kwargs, headers,
-                verbose, decoder, post, ckey, cert)
-    # pycurl data look-up
-#    mgr = RequestHandler()
-#    with working_pem(PEMMGR.pem) as ckey:
-#        res = mgr.get_data(url, kwargs, headers, post, ckey, cert, verbose=verbose)
-#        if  decoder == 'json':
-#            data = json.load(res)
-#        else:
-#            data = res.read()
-#        return data
+    try:
+        # pycurl data look-up, primary way to get the data
+        mgr = RequestHandler()
+        with working_pem(PEMMGR.pem) as ckey:
+            res = mgr.get_data(url, kwargs, headers, post, ckey, cert, verbose=verbose)
+            if  decoder == 'json':
+                data = json.load(res)
+            else:
+                data = res.read()
+            return data
+    except Exception as exc:
+        print_error(exc)
+        msg = 'Fall back to urllib'
+        print_warning(msg)
+        # urllib data look-up, fallback mechanism
+        with working_pem(PEMMGR.pem) as ckey:
+            return get_data_helper(url, kwargs, headers,
+                    verbose, decoder, post, ckey, cert)
 
 def get_data_helper(url, kwargs=None, headers=None,
         verbose=None, decoder='json', post=False, ckey=None, cert=None):
