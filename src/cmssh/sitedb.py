@@ -14,6 +14,7 @@ import time
 import urllib2
 
 # cmssh modules
+from   cmssh.utils import memoize
 from   cmssh.url_utils import get_data_and_close
 from   cmssh.auth_utils import PEMMGR, working_pem, HTTPSClientAuthHandler
 
@@ -42,9 +43,10 @@ class SiteDBManager(object):
     "SiteDB manager"
     def __init__(self, url='https://cmsweb.cern.ch/sitedb/data/prod', threshold = 10800):
         self.resources = []
-        self.names = []
-        self.url = url
-        self.mapping = {}
+        self.names     = []
+        self.url       = url
+        self.mapping   = {} # fill at run time
+        self.users     = {} # fill at run time
         self.timestamp = time.time()
         self.threshold = threshold # in sec, default 3 hours
         self.init()
@@ -66,6 +68,11 @@ class SiteDBManager(object):
                     fqdn = row['fqdn']
                     for sename in row['fqdn'].split(','):
                         self.mapping[sename.strip()] = names[row['site_name']]
+            # get people info
+            url = self.url + '/people'
+            with get_data_and_close(url, key, cert) as data:
+                for row in parser(data.read()):
+                    self.users[row['dn']] = row['username']
 
     def get_name(self, sename):
         "Retrieve CMS name for given SE"
@@ -74,3 +81,10 @@ class SiteDBManager(object):
         if  time.time() - self.timestamp > self.threshold:
             self.init() # refresh data from SiteDB
         return self.mapping.get(sename, None)
+
+    @memoize
+    def get_user(self, dnname):
+        "Get user name for given DN"
+        if  time.time() - self.timestamp > self.threshold:
+            self.init() # refresh data from SiteDB
+        return self.users.get(dnname, None)
