@@ -25,7 +25,6 @@ import time
 import shutil
 import urllib2
 import tarfile
-import fileinput
 import subprocess
 
 # local modules
@@ -173,8 +172,10 @@ def find_installed_pkg(name):
     cmd  = 'find $VO_CMS_SW_DIR/$SCRAM_ARCH/%s -name init.sh' % name
     res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     vers = [r.replace('\n', '').split()[0] for r in res.stdout.readlines()]
-    pkg  = natsorted(vers)[-1]
-    return pkg
+    init = natsorted(vers)[-1]
+    root = '/'.join(init.split('/')[:-3])
+    ver  = init.split('/')[-4]
+    return init, root, ver
 
 def available_architectures():
     "Fetch CMSSW drivers"
@@ -192,39 +193,34 @@ def available_architectures():
                 elif arch == 'Darwin' and line[:3] == 'osx':
                     yield line.replace('-driver.txt', '')
 
-def install_pip_pkg(pkgs, cms_env, path, debug, pkg, ver=None, opts=None):
-    "Install pip package"
+def install_pip_pkg(pkgs, cms_env, path, debug, pkg, ver=None, opts=None, env_list=None):
+    """
+    Install pip package. User must provide:
+        - pkgs, installed package list
+        - cms_env, cms_environment source string
+        - path, cmssh install path
+        - debug flag
+        - pkg to be installed
+        - optional: version, options and environment list (key-value tuple)
+    """
     print "Installing", pkg
+    cmd = cms_env
+    if  env_list:
+        for key, val in env_list:
+            os.environ[key] = val
+            if  debug:
+                print "os.environ[%s]=%s" % (key, val)
     if  not pkgs.has_key(pkg):
         if  ver:
-            cmd = cms_env + '%s/install/bin/pip install %s==%s' % (path, pkg, ver)
+            cmd += '%s/install/bin/pip install %s==%s' % (path, pkg, ver)
         else:
-            cmd = cms_env + '%s/install/bin/pip install --upgrade %s' % (path, pkg)
-        # use OSX compiler to properly build back-end
-#        if  pkg == 'matplotlib':
-#            cmd  = cms_env + llvm_compiler()
-#            cmd += c_ld_flags(path)
-#            cmd += '%s/install/bin/pip install --upgrade %s' % (path, pkg)
+            cmd += '%s/install/bin/pip install --upgrade %s' % (path, pkg)
         if  opts:
             cmd += ' ' + opts
         exe_cmd(path, cmd, debug, log='%s.log' % pkg)
-
-def llvm_compiler():
-    "Check llvm compiler and return CC/CXX or empty string"
-    platform = os.uname()[0]
-    if  platform == 'Darwin':
-        cmd = 'type llvm-gcc-4.2'
-        res = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-        if  ' is ' in res.stdout.read():
-            return 'export CC=llvm-gcc-4.2; export CXX=llvm-g++-4.2;'
-    return ''
-
-def c_ld_flags(path):
-    "Helper function to setup CFLAGS and LDFLAGS"
-    cmd  = 'export LDFLAGS="-L%s/install/lib";' % path
-    cmd += 'export CFLAGS="-I%s/install/include -I%s/install/include/freetype2";' \
-            % (path, path)
-    return cmd
+    if  env_list:
+        for key, val in env_list:
+            del os.environ[key] # clean-up env settings
 
 def replace_in_file(fname, pat, new_pat):
     "Replace given pattern to new one for given file name"
@@ -369,13 +365,6 @@ def check_system(unsupported):
             print msg
             sys.exit(1)
 
-def test_R():
-    "Test presence of R on the system"
-    cmd = 'which R'
-    res = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-    rpath = res.stdout.read()
-    return rpath
-
 def test_Fortran():
     "Test presence of Fortran on the system"
     for cmd in ['g95', 'f95', 'f90', 'f77', \
@@ -517,24 +506,24 @@ def main():
             add_url2packages(url, path)
 
     # command to setup CMSSW python
-    coral_env = find_installed_pkg('cms/coral')
-    cms_python_env = find_installed_pkg('external/python')
-    if  not cms_python_env.find('init.sh') != -1:
+    _coral_init, _coral_root, coral_ver = find_installed_pkg('cms/coral')
+    python_init, python_root, python_ver = find_installed_pkg('external/python')
+    if  not python_init.find('init.sh') != -1:
         msg  = '\nUnable to locate python in:'
         msg += '\n%s/%s/external/python' % (os.environ['VO_CMS_SW_DIR'], os.environ['SCRAM_ARCH'])
         msg += '\nPlease check CMSSW area and/or choose another architecture\n'
         print msg
         sys.exit(1)
-    pver     = '.'.join(cms_python_env.split('/')[-4].split('.')[0:2])
+    pver     = '.'.join(python_ver.split('.')[0:2])
     install_dir = '%s/install/lib/python%s/site-packages' % (path, pver)
     os.environ['PYTHONPATH'] = install_dir
     try:
         os.makedirs(install_dir)
     except:
         pass
-    cms_env  = 'source %s;' % cms_python_env
+    cms_env  = 'source %s;' % python_init
     if  debug:
-        print "CMSSW python:", cms_python_env
+        print "CMSSW python: %s/%s" % (python_root, python_ver)
         print "python version", pver
 
     print "Installing Globus"
@@ -669,26 +658,6 @@ def main():
         cmd = cms_env + 'cd setuptools-%s; python setup.py install --prefix=%s/install' % (s_ver, path)
         exe_cmd(path, cmd, debug, log='setuptools.log')
 
-#    print "Installing freetype"
-#    ft_ver = '2.4.10'
-#    url = 'http://download.savannah.gnu.org/releases/freetype/freetype-%s.tar.gz' % ft_ver
-#    if  not is_installed(url, path):
-#        get_file(url, 'freetype.tar.gz', path, debug)
-#        cmd  = llvm_compiler()
-#        cmd += 'cd freetype-%s; ./configure --prefix=%s/install' % (ft_ver, path)
-#        cmd += '; make install'
-#        exe_cmd(path, cmd, debug, log='freetype.log')
-
-#    print "Installing libpng"
-#    png_ver = '1.2.50'
-#    url = 'http://downloads.sourceforge.net/libpng/libpng12/%s/libpng-%s.tar.gz' % (png_ver, png_ver)
-#    if  not is_installed(url, path):
-#        get_file(url, 'libpng.tar.gz', path, debug)
-#        cmd  = llvm_compiler()
-#        cmd += 'cd libpng-%s; ./configure --prefix=%s/install' % (png_ver, path)
-#        cmd += '; make install'
-#        exe_cmd(path, cmd, debug, log='libpng.log')
-
     print "Installing pip"
     os.chdir(path)
     url = 'https://raw.github.com/pypa/virtualenv/master/virtualenv.py'
@@ -733,16 +702,15 @@ def main():
         with open(fname, 'w') as output:
             output.write(content)
 
-    print "Test R"
-    rpath = test_R()
-
     # install standard libraries
     std_pkgs = ['Routes', 'python-dateutil', 'decorator',
-            'pyOpenSSL', 'pycurl', 'paramiko', 'pyzmq', 'tornado', 'rpy2',
+            'pyOpenSSL', 'pycurl', 'paramiko', 'pyzmq', 'tornado',
+            'numpy', 'matplotlib',
     ]
     for pkg in std_pkgs:
         ver  = None
         args = None
+        env_list = []
         if  pkg.lower() == 'pyopenssl':
             # use 0.12 version of pyOpenSSL due to
             # http://stackoverflow.com/questions/7340784/easy-install-pyopenssl-error
@@ -750,11 +718,24 @@ def main():
         if  pkg.lower() == 'pyzqm':
             # add intstall path option for zmq
             args = '--install-option="--zmq=%s/install"' % path
-        if  pkg == 'rpy2':
-            if  rpath:
-                install_pip_pkg(pip_packages, cms_env, path, debug, pkg, ver, args)
+        if pkg == 'matplotlib':
+            try:
+                if  os.path.isfile('/usr/bin/llvm-gcc') and \
+                    os.path.isfile('/usr/bin/llvm-g++'):
+                    env_list = [('CC', 'llvm-gcc'), ('CXX', 'llvm-g++')]
+                    ft_init, ft_root, _   = find_installed_pkg('external/freetype')
+                    png_init, png_root, _ = find_installed_pkg('external/libpng')
+                    cms_env2 = 'source %s; source %s; source %s;' \
+                            % (python_init, ft_init, png_init)
+                    cflags  = '-I%s/include -I%s/include/freetype2 -I%s/include' \
+                            % (ft_root, ft_root, png_root)
+                    ldflags = '-L%s/lib -L%s/lib' % (ft_root, png_root)
+                    env_list += [('CFLAGS', cflags), ('LDFLAGS', ldflags)]
+                    install_pip_pkg(pip_packages, cms_env2, path, debug, pkg, ver, args, env_list)
+            except:
+                pass
         else:
-            install_pip_pkg(pip_packages, cms_env, path, debug, pkg, ver, args)
+            install_pip_pkg(pip_packages, cms_env, path, debug, pkg, ver, args, env_list)
 
     # install readline after pip, since it requires setuptools
     print "Installing readline"
@@ -830,24 +811,6 @@ python setup.py install --prefix=$idir
         cmd = 'mv vkuznet-cmssh* %s/cmssh' % path
         exe_cmd(path, cmd, debug)
 
-    print "Create matplotlibrc"
-    os.chdir(path)
-    ndir = os.path.join(path, 'install/lib/python%s/site-packages/matplotlib/mpl-data' % pver)
-    try:
-        os.makedirs(ndir)
-    except:
-        pass
-    fin  = '%s/cmssh/src/config/matplotlibrc' % path
-    fout = '%s/install/lib/python%s/site-packages/matplotlib/mpl-data/matplotlibrc' % (path, pver)
-    with open(fout, 'w') as output:
-        with open(fin, 'r') as config:
-            for line in config.readlines():
-                if  line.find('backend : MacOSX') != -1:
-                    if  platform == 'Linux':
-                        output.write('#backend : GTK')
-                else:
-                    output.write(line)
-
     print "Create configuration"
     os.chdir(path)
     with open('setup.sh', 'w') as setup:
@@ -895,8 +858,6 @@ fi
         msg += 'export OLD_PATH=$PATH\n'
         msg += 'export CRAB_ROOT=$CMSSH_ROOT/%s\n' % crab_ver
         msg += 'export PATH=/usr/bin:/bin:/usr/sbin:/sbin\n'
-        if  rpath:
-            msg += 'export PATH=$PATH:%s\n' % '/'.join(rpath.split('/')[:-1])
         msg += 'unset PYTHONPATH\n'
         if  os.environ.has_key('LD_LIBRARY_PATH'):
             msg += 'export LD_LIBRARY_PATH=%s\n' % os.environ['LD_LIBRARY_PATH']
@@ -948,8 +909,7 @@ fi
         msg += 'export GLOBUS_PATH=$CMSSH_ROOT/globus\n'
         msg += 'export GLOBUS_LOCATION=$CMSSH_ROOT/globus\n'
         msg += 'export VOMS_PROXY_INFO_DONT_VERIFY_AC=anything_you_want\n'
-        msg += 'export MATPLOTLIBRC=$CMSSH_ROOT/install/lib/python%s/site-packages/matplotlib/mpl-data\n' % pver
-        coral_ver = coral_env.split('/')[-4] # accout for last /etc/profile.d/init.sh
+        msg += 'export MATPLOTLIBRC=$CMSSH_ROOT/cmssh/src/config\n'
         msg += 'export CORAL_DIR=$CMSSH_ROOT/CMSSW/$SCRAM_ARCH/cms/coral/%s\n' % coral_ver
         msg += 'coral_init\n'
         if  debug:
@@ -1065,21 +1025,10 @@ ipython $opts --ipython-dir=$ipdir --profile=cmssh
     if  platform == 'Dawrin':
         cmd = 'cp %s/cmssh/osx/matplotlib/%s/_macosx.so %s/CMSSW/%s/external/py2-matplotlib/*/lib/python%s/site-packages/matplotlib/backends/' % (path, osx_ver(), path, arch, pver)
 
-    if  rpath: # if R is present on a system
-        print "Account for R in ipython config"
-        config = os.path.join(path, 'cmssh/src/config/ipython_config.py')
-        for line in fileinput.input(config, inplace = 1):
-            # writes redirects STDOUT to the file in question
-            pat = "'cmssh_extension'"
-            if  pat in line:
-                line = line.replace(pat, pat + ",'rmagic'")
-            sys.stdout.write(line)
-
     print "Make links"
     xrdcp = os.path.join(path, 'install/bin/xrdcp')
     if  not os.path.islink(xrdcp):
-        xrootd_env  = find_installed_pkg('external/xrootd')
-        xrootd_root = '/'.join(xrootd_env.split('/')[:-3])
+        _xrootd_init, xrootd_root, _xrootd_ver = find_installed_pkg('external/xrootd')
         os.symlink(os.path.join(xrootd_root, 'bin/xrdcp'), xrdcp)
 
     print "Clean-up soft area"
