@@ -722,7 +722,8 @@ def main():
             try:
                 if  os.path.isfile('/usr/bin/llvm-gcc') and \
                     os.path.isfile('/usr/bin/llvm-g++'):
-                    env_list = [('CC', 'llvm-gcc'), ('CXX', 'llvm-g++')]
+                    env_list  = [('CC', 'llvm-gcc'), ('CXX', 'llvm-g++')]
+                    env_list += [('MACOSX_DEPLOYMENT_TARGET', osx_ver())]
                     ft_init, ft_root, _   = find_installed_pkg('external/freetype')
                     png_init, png_root, _ = find_installed_pkg('external/libpng')
                     cms_env2 = 'source %s; source %s; source %s;' \
