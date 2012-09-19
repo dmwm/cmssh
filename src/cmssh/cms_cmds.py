@@ -686,9 +686,8 @@ def integration_tests(_arg):
     sename    = 'T3_US_Cornell:/store/user/valya'
     cmd_list  = ['ls', 'mkdir ttt', 'ls -l', 'rmdir ttt', 'ls']
     cmd_list += ['ls dataset=%s' % dataset, 'ls run=%s' % run, 'ls file=%s' % lfn]
-    cmd_list += ['ls %s' % dataset, 'ls %s' % run, 'ls %s' % lfn]
+    cmd_list += ['ls %s' % dataset, 'info %s' % dataset]
     cmd_list += ['find dataset=/ZMM*', 'das dataset=/ZMM*']
-    cmd_list += ['info dataset=%s' % dataset, 'info run=%s' % run]
     cmd_list += ['lumi dataset=%s' % dataset,
                  'lumi {"190704":[1,2,3]}', 'lumi {190704:[1,2,3]}']
     cmd_list += ['du T3_US_Cornell', 'ls T3_US_Cornell']
