@@ -17,7 +17,10 @@ from contextlib import contextmanager
 from cmssh.iprint import print_info, print_warning, print_error
 from cmssh.auth_utils import PEMMGR, working_pem
 from cmssh.auth_utils import get_key_cert, HTTPSClientAuthHandler
-from cmssh.pycurl_manager import RequestHandler
+try:
+    from cmssh.pycurl_manager import RequestHandler
+except:
+    pass
 
 def get_data(url, kwargs=None, headers=None,
         verbose=None, decoder='json', post=False):
@@ -35,9 +38,10 @@ def get_data(url, kwargs=None, headers=None,
                 data = res.read()
             return data
     except Exception as exc:
-        print_error(exc)
-        msg = 'Fall back to urllib'
-        print_warning(msg)
+        if  verbose:
+            print_error(exc)
+            msg = 'Fall back to urllib'
+            print_warning(msg)
         # urllib data look-up, fallback mechanism
         with working_pem(PEMMGR.pem) as ckey:
             return get_data_helper(url, kwargs, headers,
