@@ -905,15 +905,17 @@ fi
         msg += 'cms_init "external/python"\n'
         msg += 'cms_init "external/xz"\n'
         msg += 'cms_init "external/pcre"\n'
+        msg += 'if  [ -n "$CMSSH_MATPLOTLIB" ]; then\n'
         msg += 'cms_init "external/freetype"\n'
-        msg += 'cms_init "external/py2-matplotlib"\n'
-        msg += 'cms_init "external/py2-numpy"\n'
-        msg += 'cms_init "external/py2-scipy"\n'
         msg += 'cms_init "external/libpng"\n'
         msg += 'cms_init "external/lapack"\n'
         msg += 'cms_init "external/libjpg"\n'
         msg += 'cms_init "external/libtiff"\n'
         msg += 'cms_init "external/libungif"\n'
+        msg += 'cms_init "external/py2-matplotlib"\n'
+        msg += 'cms_init "external/py2-scipy"\n'
+        msg += 'fi\n'
+        msg += 'cms_init "external/py2-numpy"\n'
         msg += 'cms_init "external/xrootd"\n'
         msg += 'cms_init "external/boost"\n'
         msg += 'cms_init "cms/coral"\n'
@@ -988,6 +990,20 @@ fi
         pass
     with open(os.path.join(path, 'bin/cmssh'), 'w') as cmssh:
         msg  = '#!/bin/bash\n'
+        msg += """
+if  [ $# == 1 ]; then
+    list="help -help --help -h"
+    if [[ $list =~ $1 ]]; then
+        echo "Usage: $0 OPTIONS"
+        echo "      pylab - start matplotlib environment within cmssh"
+        echo "      notebook - start cmssh in notebook mode"
+        echo "                 (will start cmssh session in a browser)"
+        exit;
+    fi
+    if  [ $1 == "pylab" ]; then
+        export CMSSH_MATPLOTLIB=1
+    fi
+fi\n"""
         msg += 'echo "Welcome to cmssh! Loading configuration, please wait ..."\n'
         msg += 'source %s/setup.sh\n' % path
         if  opts.multi_user:
