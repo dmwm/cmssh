@@ -106,18 +106,5 @@ import matplotlib.pyplot as plt
 x = np.arange(0, 5, 0.1);
 y = np.exp(-2*x)
 plt.plot(x, y)
-plt.show()
 plt.savefig('test.png', format='png', transparent=True)
 plt.close()
-
-#################################
-# R session example
-#################################
-%%R
-mysample <- rnorm(50)
-hist(mysample, prob=TRUE)
-mu <- mean(mysample)
-sigma <- sd(mysample)
-x <- seq(-4, 4, length=500)
-y <- dnorm(x, mu, sigma)
-lines(x, y)
