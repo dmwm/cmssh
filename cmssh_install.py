@@ -1007,8 +1007,9 @@ if  [ $# == 1 ]; then
         export CMSSH_NOTEBOOK=1
     fi
     if  [ $1 == "pylab" ]; then
-        osx_driver=`find $CMSSH_ROOT/CMSSW/$SCRAM_ARCH/external/py2-matplotlib -name _macosx.so`
-        if  [ -f "$osx_driver" ]; then
+        cms_osx_driver=`find $CMSSH_ROOT/CMSSW/$SCRAM_ARCH/external/py2-matplotlib -name _macosx.so`
+        osx_driver=`find $CMSSH_ROOT/install/lib -name _macosx.so`
+        if  [ -f "$osx_driver" ] || [ -f "$cms_osx_driver" ]; then
             pylab=" --pylab=osx"
         else
             pylab=" --pylab=auto"
