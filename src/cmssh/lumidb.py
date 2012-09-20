@@ -12,6 +12,9 @@ from RecoLuminosity.LumiDB import sessionManager
 from RecoLuminosity.LumiDB import revisionDML, CommonUtil
 from RecoLuminosity.LumiDB import lumiCalcAPI, lumiReport
 
+# cmssh modules
+from cmssh.iprint import print_warning
+
 def lumidb(run_lumi_dict, action='delivered', lumi_report=False):
     "Call lumidb to get luminosity numbers"
     actions  = ['overview', 'delivered', 'recorded', 'lumibyls', 'lumibylsXing']
@@ -85,8 +88,8 @@ def lumidb(run_lumi_dict, action='delivered', lumi_report=False):
             runlist=rruns, withcomment=False)
     session.transaction().commit()
     if not dataidmap:
-        print '[INFO] No qualified data found, do nothing'
-        sys.exit(0)
+        print_warning('No data found in LumiDB for given set run lumi section')
+        return 0, '/ub' # return lumi, units
                 
     normvalueDict={}
     ##################
@@ -109,7 +112,7 @@ def lumidb(run_lumi_dict, action='delivered', lumi_report=False):
                 else:
                     totlumi += llist[5]
         totlumival, lumiunit = CommonUtil.guessUnit(totlumi)
-        print "Delivered luminosity %s (%s)" % (totlumival, lumiunit)
+        return totlumival, lumiunit
     if  action == 'overview':
         result=lumiCalcAPI.lumiForIds(session.nominalSchema(),irunlsdict,dataidmap,runsummaryMap=GrunsummaryData,beamstatusfilter=pbeammode,timeFilter=timeFilter,normmap=normvalueDict,lumitype='HF')
         lumiReport.toScreenOverview(result,iresults,scalefactor,irunlsdict=irunlsdict,noWarning=nowarning,toFile=outputfile)
