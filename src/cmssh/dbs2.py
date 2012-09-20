@@ -23,6 +23,7 @@ from   cmssh.cms_objects import File, Block, Dataset
 from   cmssh.filemover import get_pfns, resolve_user_srm_path, lfn2pfn
 from   cmssh.cms_urls import dbs_url, dbs_instances
 from   cmssh.iprint import print_error, print_warning
+from   cmssh.regex import pat_dataset, pat_block, pat_lfn, pat_run
 
 def list_datasets(kwargs):
     """Find sites"""
@@ -137,8 +138,15 @@ def file_info(lfn, verbose=None):
     msg = 'Fail to look-up LFN in %s DBS instances' % dbs_instances()
     print_error(msg)
 
-def run_lumi(dataset, verbose=None):
-    query  = 'find run,lumi where dataset=%s' % dataset
+def run_lumi(arg, verbose=None):
+    if pat_block.match(arg):
+        query  = 'find run,lumi where block=%s' % arg
+    elif  pat_lfn.match(arg):
+        query  = 'find run,lumi where file=%s' % arg
+    elif  pat_dataset.match(arg):
+        query  = 'find run,lumi where dataset=%s' % arg
+    elif  pat_run.match(arg):
+        query  = 'find run,lumi where run=%s' % arg
     params = {"api":"executeQuery", "apiversion": "DBS_2_0_9", "query":query}
     data   = urllib2.urlopen(dbs_url(), urllib.urlencode(params))
     run_lumi = {}
