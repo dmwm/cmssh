@@ -822,12 +822,12 @@ python setup.py install --prefix=$idir
     os.chdir(path)
     with open('setup.sh', 'w') as setup:
         msg  = '#!/bin/bash\nexport CMSSH_ROOT=%s\n' % path
+        msg += 'echo -n "Loading dependencies:"\n'
         msg += """cms_init()
 {
 if [ -f $VO_CMS_SW_DIR/$SCRAM_ARCH/$1/$2/etc/profile.d/init.sh ]; then
-    echo -n "Loading $1 ... "
+    echo -n "."
     source $VO_CMS_SW_DIR/$SCRAM_ARCH/$1/$2/etc/profile.d/init.sh
-    echo "DONE"
 fi
 }
 coral_init()
@@ -874,15 +874,14 @@ fi
                 'external/py2-matplotlib', 'external/py2-scipy',
                 'external/py2-numpy', 'external/curl', 'external/py2-pycurl',
                 'external/xrootd', 'external/boost', 'cms/coral']
+        matplotlib_ver = None
         for pkg in deps:
             _init, _root, pkg_ver = find_installed_pkg(pkg)
+            if  pkg == 'external/py2-matplotlib':
+                matplotlib_ver = pkg_ver
             if  not pkg_ver:
                 continue
             msg += 'cms_init "%s" "%s"\n' % (pkg, pkg_ver)
-            if  pkg == 'external/pcre':
-                msg += 'if  [ -n "$CMSSH_MATPLOTLIB" ]; then\n'
-            if  pkg == 'external/py2-scipy':
-                msg += 'fi\n'
         msg += 'export DYLD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib\n'
         msg += 'export LD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib:$LD_LIBRARY_PATH\n'
         if  parch == 'x86_64':
@@ -915,6 +914,7 @@ fi
         msg += 'export MATPLOTLIBRC=$CMSSH_ROOT/cmssh/src/config\n'
         msg += 'export CORAL_DIR=$CMSSH_ROOT/CMSSW/$SCRAM_ARCH/cms/coral/%s\n' % coral_ver
         msg += 'coral_init\n'
+        msg += 'echo " DONE"'
         if  debug:
             print "+++ write setup.sh"
         setup.write(msg)
@@ -957,17 +957,13 @@ fi
 if  [ $# == 1 ]; then
     list="help -help --help -h"
     if [[ $list =~ $1 ]]; then
-        echo "Usage: $0 OPTIONS"
-        echo "      pylab - start matplotlib environment within cmssh"
+        echo "Usage: $0 <notebook>"
         echo "      notebook - start cmssh in notebook mode"
         echo "                 (will start cmssh session in a browser)"
         exit;
     fi
-    if  [ $1 == "pylab" ]; then
-        export CMSSH_MATPLOTLIB=1
-    fi
 fi\n"""
-        msg += 'echo "Welcome to cmssh! Loading configuration, please wait ..."\n'
+        msg += 'echo "Welcome to cmssh."\n'
         msg += 'source %s/setup.sh\n' % path
         if  opts.multi_user:
             msg += 'ipdir="/tmp/$USER/.ipython"\nmkdir -p $ipdir\n'
@@ -1001,7 +997,14 @@ if [ ! -f $HOME/.globus/usercert.pem ]; then
     exit -1
 fi
 export IPYTHONDIR=$ipdir
-pylab=""
+pylab=" --pylab=auto"
+osname=`uname -s`
+if  [ "$osname" == "Darwin" ]; then
+    cms_osx_driver=$CMSSH_ROOT/CMSSW/$SCRAM_ARCH/external/py2-matplotlib/%(mver)s/lib/python2.7/site-packages/matplotlib/backends_macosx.so
+    osx_driver=$CMSSH_ROOT/install/lib/python%(pver)s/site-packages/matplotlib/backends/_macosx.so
+    if  [ -f "$osx_driver" ] || [ -f "$cms_osx_driver" ]; then
+        pylab=" --pylab=osx"
+fi
 notebook="--no-banner"
 if  [ $# == 1 ]; then
     if [ $1 == "notebook" ]; then
@@ -1009,19 +1012,10 @@ if  [ $# == 1 ]; then
         pylab="--pylab=inline"
         export CMSSH_NOTEBOOK=1
     fi
-    if  [ $1 == "pylab" ]; then
-        cms_osx_driver=`find $CMSSH_ROOT/CMSSW/$SCRAM_ARCH/external/py2-matplotlib -name _macosx.so`
-        osx_driver=`find $CMSSH_ROOT/install/lib -name _macosx.so`
-        if  [ -f "$osx_driver" ] || [ -f "$cms_osx_driver" ]; then
-            pylab=" --pylab=osx"
-        else
-            pylab=" --pylab=auto"
-        fi
-    fi
 fi
 opts="$notebook $pylab"
 ipython $opts --ipython-dir=$ipdir --profile=cmssh
-""" % {'path':path}
+""" % {'path':path, 'pver':pver, 'mver': matplotlib_ver}
         cmssh.write(msg)
     os.chmod('bin/cmssh', 0755)
 
