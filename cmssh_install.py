@@ -558,7 +558,7 @@ def main():
     if  not is_installed(url, path):
         get_file(url, 'voms-essentials.tar.gz', path, debug)
 
-    if  osx_ver() == '10.6':
+    if  platform == 'Darwin' and osx_ver() == '10.6':
         # CMSSW pcre is too old and srm software uses grep which linked to newer
         # pcre library, therefore install pcre 7.9 which is suitable for this case
         print "Installing pcre"
@@ -640,7 +640,7 @@ def main():
         exe_cmd(os.path.join(path, 'srmclient2/setup'), cmd, debug, log='srmclient.log')
         # fix Lion, Unable to load native library: libjava.jnilib problem
         # http://stackoverflow.com/questions/1482450/broken-java-mac-10-6
-        if  osx_ver() == '10.6':
+        if  platform == 'Darwin' and osx_ver() == '10.6':
             pat = 'export CLASSPATH'
             new_pat = pat + '\nunset DYLD_LIBRARY_PATH\n'
             for fname in os.listdir(os.path.join(path, 'srmclient2/bin')):
@@ -730,7 +730,8 @@ def main():
             args = '--install-option="--zmq=%s/install"' % path
         if pkg == 'matplotlib':
             try:
-                if  os.path.isfile('/usr/bin/llvm-gcc') and \
+                if  platform == 'Darwin' and \
+                    os.path.isfile('/usr/bin/llvm-gcc') and \
                     os.path.isfile('/usr/bin/llvm-g++'):
                     env_list  = [('CC', 'llvm-gcc'), ('CXX', 'llvm-g++')]
                     env_list += [('MACOSX_DEPLOYMENT_TARGET', osx_ver())]
@@ -1025,15 +1026,14 @@ ipython $opts --ipython-dir=$ipdir --profile=cmssh
     os.chmod('bin/cmssh', 0755)
 
     # remove libPng.dylib in old coral, since it cause matplotlib fail to load
-    if  platform == 'Darwin':
-        if  osx_ver() == '10.6':
-            fname = '%s/external/osx106_amd64_gcc421/lib/libPng.dylib' % coral_root
-            cmd  = 'find %s/external/*/lib -name libPng.dylib' % coral_root
-            res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            for item in res.stdout.readlines():
-                fname = item.replace('\n', '')
-                if  os.path.isfile(fname):
-                    shutil.move(fname, fname + '.old')
+    if  platform == 'Darwin' and osx_ver() == '10.6':
+        fname = '%s/external/osx106_amd64_gcc421/lib/libPng.dylib' % coral_root
+        cmd  = 'find %s/external/*/lib -name libPng.dylib' % coral_root
+        res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        for item in res.stdout.readlines():
+            fname = item.replace('\n', '')
+            if  os.path.isfile(fname):
+                shutil.move(fname, fname + '.old')
 
     print "Make links"
     xrdcp = os.path.join(path, 'install/bin/xrdcp')
