@@ -138,13 +138,13 @@ DEF_SCRAM_ARCH = get_scram_arch()
 # the osx106_amd64_gcc421 has corrent python 2.6.4, but it picks root 5.30.02
 # which does not have pyROOT library
 
-def find_cms_package(apt, pkg, debug=None, lookup=None):
+def find_cms_package(apt_init, pkg, debug=None, lookup=None):
     """
     Find latest version of given package in CMSSW repository.
     """
     if  not lookup:
         lookup = pkg
-    cmd  = apt + 'apt-cache search %s | grep "%s" | grep -v toolfile ' % (pkg, lookup)
+    cmd  = 'source %s; apt-cache search %s | grep "%s" | grep -v toolfile ' % (apt_init, pkg, lookup)
     if  debug:
         print cmd
     if  DEF_SCRAM_ARCH == 'osx106_amd64_gcc421': # Snow Leopard
@@ -170,11 +170,12 @@ def find_cms_package(apt, pkg, debug=None, lookup=None):
 
 def find_installed_pkg(name):
     "Find latest version (via natural sort) of installed package for a given name"
-    cmd  = 'find $VO_CMS_SW_DIR/$SCRAM_ARCH/%s -name init.sh' % name
+    cmd  = 'find $VO_CMS_SW_DIR/$SCRAM_ARCH/%s/*/etc/profile.d -name init.sh' % name
     res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    vers = [r.replace('\n', '').split()[0] for r in res.stdout.readlines()]
+    script = '/etc/profile.d/init.sh'
+    vers = [r.replace('\n', '').split()[0].replace(script, '') for r in res.stdout.readlines()]
     try:
-        init = natsorted(vers)[-1]
+        init = natsorted(vers)[-1] + script
     except:
         print "Fail to process, name=%s, ver=%s" % (name, vers)
         print natsorted(vers)
@@ -458,7 +459,8 @@ def main():
     if  opts.cmssw:
         # check if default architecture is present
         if  arch in os.listdir(opts.cmssw):
-            os.symlink(opts.cmssw, sdir)
+            if  not os.path.islink(sdir):
+                os.symlink(opts.cmssw, sdir)
             os.environ['SCRAM_ARCH'] = arch
             os.environ['VO_CMS_SW_DIR'] = sdir
             if  debug:
@@ -490,13 +492,15 @@ def main():
                 cmd += ' -unsupported_distribution_hack'
             os.chdir(path)
             exe_cmd(sdir, cmd, debug, 'Bootstrap CMSSW', log='bootstrap.log')
-            apt  = 'source `find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/apt -name init.sh | tail -1`; '
-            cmd  = apt
+            apt_init, _root, _ver = find_installed_pkg('external/apt')
+            cmd  = 'source %s' % apt_init
             cmd += 'apt-get install external+fakesystem+1.0; '
             cmd += 'apt-get update; '
             exe_cmd(sdir, cmd, debug, 'Init CMSSW apt repository', log='aptget.log')
             # install useful set of CMS libraries
             cms_libs = ['root', 'coral', 'py2-pycurl', 'py2-matplotlib', 'py2-scipy']
+            if  platform == 'Darwin' and osx_ver() == '10.6':
+                cms_libs += ['freetype']
             for cmspkg in cms_libs:
                 msg  = 'Install CMSSW %s' % cmspkg
                 if  cmspkg == 'root':
@@ -505,14 +509,14 @@ def main():
                     lookup = 'coral+CORAL'
                 else:
                     lookup = ''
-                name = find_cms_package(apt, cmspkg, debug, lookup)
-                cmd  = apt + 'echo "Y" | apt-get install %s' % name
+                name = find_cms_package(apt_init, cmspkg, debug, lookup)
+                cmd  = 'source %s; echo "Y" | apt-get install %s' % (apt_init, name)
                 exe_cmd(sdir, cmd, debug, msg, log='%s.log' % cmspkg)
             # add bootstrap url into soft/.packages
             add_url2packages(url, path)
 
     # command to setup CMSSW python
-    _coral_init, _coral_root, coral_ver = find_installed_pkg('cms/coral')
+    _coral_init, coral_root, coral_ver = find_installed_pkg('cms/coral')
     python_init, python_root, python_ver = find_installed_pkg('external/python')
     if  not python_init.find('init.sh') != -1:
         msg  = '\nUnable to locate python in:'
@@ -767,7 +771,7 @@ export CMSSH_ROOT={path}
 export VO_CMS_SW_DIR=$CMSSH_ROOT/CMSSW
 export SCRAM_ARCH={arch}
 export LANG="C"
-source `find $VO_CMS_SW_DIR/$SCRAM_ARCH/external/python -name init.sh | tail -1`
+source {python_init}
 idir={path}/install
 mkdir -p $idir/lib/python{pver}/site-packages
 export PYTHONPATH=$PYTHONPATH:$CMSSH_ROOT/install/lib/python{pver}/site-packages:$idir/lib/python{pver}/site-packages
@@ -779,7 +783,7 @@ cd readline
 make
 cd -
 python setup.py install --prefix=$idir
-""".format(path=path, arch=arch, pver=pver)
+""".format(path=path, arch=arch, pver=pver, python_init=python_init)
         exe_cmd(os.path.join(path, 'readline-%s' % ver), cmd, debug, log='readline.log')
 
     print "Installing LumiDB"
@@ -963,7 +967,7 @@ if  [ $# == 1 ]; then
         exit;
     fi
 fi\n"""
-        msg += 'echo "Welcome to cmssh."\n'
+        msg += 'echo "Welcome to cmssh!"\n'
         msg += 'source %s/setup.sh\n' % path
         if  opts.multi_user:
             msg += 'ipdir="/tmp/$USER/.ipython"\nmkdir -p $ipdir\n'
@@ -1004,6 +1008,7 @@ if  [ "$osname" == "Darwin" ]; then
     osx_driver=$CMSSH_ROOT/install/lib/python%(pver)s/site-packages/matplotlib/backends/_macosx.so
     if  [ -f "$osx_driver" ] || [ -f "$cms_osx_driver" ]; then
         pylab=" --pylab=osx"
+    fi
 fi
 notebook="--no-banner"
 if  [ $# == 1 ]; then
@@ -1019,9 +1024,16 @@ ipython $opts --ipython-dir=$ipdir --profile=cmssh
         cmssh.write(msg)
     os.chmod('bin/cmssh', 0755)
 
-    # copy osx matplotlib driver if it exists
-    if  platform == 'Dawrin':
-        cmd = 'cp %s/cmssh/osx/matplotlib/%s/_macosx.so %s/CMSSW/%s/external/py2-matplotlib/*/lib/python%s/site-packages/matplotlib/backends/' % (path, osx_ver(), path, arch, pver)
+    # remove libPng.dylib in old coral, since it cause matplotlib fail to load
+    if  platform == 'Darwin':
+        if  osx_ver() == '10.6':
+            fname = '%s/external/osx106_amd64_gcc421/lib/libPng.dylib' % coral_root
+            cmd  = 'find %s/external/*/lib -name libPng.dylib' % coral_root
+            res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            for item in res.stdout.readlines():
+                fname = item.replace('\n', '')
+                if  os.path.isfile(fname):
+                    shutil.move(fname, fname + '.old')
 
     print "Make links"
     xrdcp = os.path.join(path, 'install/bin/xrdcp')
