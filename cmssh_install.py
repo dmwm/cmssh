@@ -1025,14 +1025,13 @@ ipython $opts --ipython-dir=$ipdir --profile=cmssh
         cmssh.write(msg)
     os.chmod('bin/cmssh', 0755)
 
-    # remove libPng.dylib in old coral, since it cause matplotlib fail to load
+    # remove soflinks in coral, since matplotlib fails to load
     if  platform == 'Darwin' and osx_ver() == '10.6':
-        cmd  = 'find %s/external/*/lib -name libPng.dylib' % coral_root
-        res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        for item in res.stdout.readlines():
-            fname = item.replace('\n', '')
-            if  os.path.isfile(fname):
-                shutil.move(fname, fname + '.old')
+        cdir = coral_root + '/external/%s/lib' % get_scram_arch()
+        for item in os.listdir(cdir):
+            fname = os.path.join(cdir, item)
+            if  os.path.islink(fname):
+                os.remove(fname)
 
     print "Make links"
     xrdcp = os.path.join(path, 'install/bin/xrdcp')
