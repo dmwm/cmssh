@@ -16,7 +16,7 @@ import pprint
 from   types import GeneratorType
 
 # cmssh modules
-from   cmssh.iprint import format_dict, print_warning
+from   cmssh.iprint import format_dict, print_warning, print_error
 from   cmssh.url_utils import get_data
 from   cmssh.cms_objects import Run, File, Block, Dataset, Site, User, Job
 from   cmssh.cms_objects import Release
@@ -462,6 +462,9 @@ def run_lumi_info(arg, verbose=None):
         #     for item in filelumis(fname)
         #     for item in runs(fname)
         run_lumi = {} # need to implement DBS3 call
+    if  not run_lumi:
+        print_error('Empty run-lumi list')
+        return []
     totlumi, lumiunit = lumidb(run_lumi_dict=run_lumi, lumi_report=verbose)
     print "Delivered luminosity %s (%s)" % (totlumi, lumiunit)
     if  verbose:
