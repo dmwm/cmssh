@@ -674,8 +674,12 @@ def cms_ls(arg):
 
 def cms_lumi(arg):
     "Return lumi info for given dataset"
+    try:
+        debug = get_ipython().debug
+    except:
+        debug = 0
     arg = arg.replace('dataset=', '')
-    res = run_lumi_info(arg)
+    res = run_lumi_info(arg, debug)
 
 def integration_tests(_arg):
     "Run series of integration tests for cmssh"
