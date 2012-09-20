@@ -678,7 +678,8 @@ def cms_lumi(arg):
         debug = get_ipython().debug
     except:
         debug = 0
-    arg = arg.replace('dataset=', '')
+    arg = arg.replace('dataset=', '').replace('file=', '').replace('block=', '')
+    arg = arg.replace('lfn=', '').replace('run=', '')
     res = run_lumi_info(arg, debug)
 
 def integration_tests(_arg):
