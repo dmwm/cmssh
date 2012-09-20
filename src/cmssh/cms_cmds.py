@@ -464,7 +464,7 @@ def dbs_instance(arg=None):
 
 def cms_help_msg():
     """cmsHelp message"""
-    msg  = '\nAvailable cmssh commands:\n'
+    msg  = 'Available cmssh commands:\n'
     msg += msg_green('find        ') \
         + ' search CMS meta-data (query DBS/Phedex/SiteDB)\n'
     msg += msg_green('dbs_instance') \
