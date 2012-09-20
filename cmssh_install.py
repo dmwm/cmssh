@@ -1027,7 +1027,6 @@ ipython $opts --ipython-dir=$ipdir --profile=cmssh
 
     # remove libPng.dylib in old coral, since it cause matplotlib fail to load
     if  platform == 'Darwin' and osx_ver() == '10.6':
-        fname = '%s/external/osx106_amd64_gcc421/lib/libPng.dylib' % coral_root
         cmd  = 'find %s/external/*/lib -name libPng.dylib' % coral_root
         res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         for item in res.stdout.readlines():
