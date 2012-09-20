@@ -434,7 +434,7 @@ def run_lumi_golden_json():
     fname = os.environ.get('CMS_JSON', cms_fname)
     if  os.path.isfile(fname):
         with open(fname, 'r') as json_file:
-            return json.load(json_file)
+            return fname, json.load(json_file)
     else:
         msg  = 'Unable to locate CMS JSON file'
         print_warning(msg)
@@ -466,11 +466,12 @@ def run_lumi_info(arg, verbose=None):
     print "Delivered luminosity %s (%s)" % (totlumi, lumiunit)
     if  verbose:
         print "Input run lumi dict", iprint.pprint(run_lumi)
-    golden_json = run_lumi_golden_json()
+    golden_fname, golden_json = run_lumi_golden_json()
     if  golden_json:
+        print "Intersect with CMS JSON:", golden_fname
         rdict = run_lumi_subset(golden_json, run_lumi)
         totlumi, lumiunit = lumidb(rdict, lumi_report=verbose)
-        print "Intersection with CMS JSON list: %s (%s)" % (totlumi, lumiunit)
+        print "Delivered luminosity wrt CMS JSON: %s (%s)" % (totlumi, lumiunit)
         if  verbose:
             print "Intersected run lumi dict", iprint.pprint(rdict)
     return []
