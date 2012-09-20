@@ -468,7 +468,8 @@ def run_lumi_info(arg, verbose=None):
         print "Input run lumi dict", pprint.pprint(run_lumi)
     golden_fname, golden_json = run_lumi_golden_json()
     if  golden_json:
-        print "Intersect with CMS JSON:", golden_fname
+        if  verbose:
+            print "Intersect with CMS JSON:", golden_fname
         rdict = run_lumi_subset(golden_json, run_lumi)
         totlumi, lumiunit = lumidb(rdict, lumi_report=verbose)
         print "Delivered luminosity wrt CMS JSON: %s (%s)" % (totlumi, lumiunit)
