@@ -12,10 +12,11 @@ import json
 import routes
 import urllib
 import urllib2
+import iprint
 from   types import GeneratorType
 
 # cmssh modules
-from   cmssh.iprint import format_dict
+from   cmssh.iprint import format_dict, print_warning
 from   cmssh.url_utils import get_data
 from   cmssh.cms_objects import Run, File, Block, Dataset, Site, User, Job
 from   cmssh.cms_objects import Release
@@ -417,6 +418,27 @@ def release_info(release, rfilter=None):
     plist = [Release(r) for r in data]
     return plist
 
+def run_lumi_subset(json_file, run_lumi):
+    "Return subset of good run/lumis based on provided golden json file and run lumi dict"
+    rdict = {}
+    for key, lumi_ranges in json_file.items():
+        for run, lumis in run_lumi.items():
+            if  int(run) == int(key):
+                all_lumis = (i for x in lumi_ranges for i in xrange(x[0], x[-1]+1))
+                rdict[run] = list(set(lumis) & set(all_lumis))
+    return rdict
+
+def run_lumi_golden_json():
+    "Get run lumi dict from golden JSON file"
+    cms_fname = '/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions12/8TeV/Prompt/Cert_190456-202305_8TeV_PromptReco_Collisions12_JSON.txt'
+    fname = os.environ.get('CMS_JSON', cms_fname)
+    if  os.path.isfile(fname):
+        with open(fname, 'r') as json_file:
+            return json.load(json_file)
+    else:
+        msg  = 'Unable to locate CMS JSON file'
+        print_warning(msg)
+
 def run_lumi_info(arg, verbose=None):
     "Return run-lumi info"
     try:
@@ -440,7 +462,17 @@ def run_lumi_info(arg, verbose=None):
         #     for item in filelumis(fname)
         #     for item in runs(fname)
         run_lumi = {} # need to implement DBS3 call
-    lumidb(run_lumi_dict=run_lumi, lumi_report=verbose)
+    totlumi, lumiunit = lumidb(run_lumi_dict=run_lumi, lumi_report=verbose)
+    print "Delivered luminosity %s (%s)" % (totlumi, lumiunit)
+    if  verbose:
+        print "Input run lumi dict", iprint.pprint(run_lumi)
+    golden_json = run_lumi_golden_json()
+    if  golden_json:
+        rdict = run_lumi_subset(golden_json, run_lumi)
+        totlumi, lumiunit = lumidb(rdict, lumi_report=verbose)
+        print "Intersection with CMS JSON list: %s (%s)" % (totlumi, lumiunit)
+        if  verbose:
+            print "Intersected run lumi dict", iprint.pprint(rdict)
     return []
 
 # create instance of CMSFS class (singleton)
