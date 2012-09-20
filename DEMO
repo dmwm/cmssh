@@ -22,9 +22,8 @@ info run=160915
 for r in results(): print r.initLumi, type(r.initLumi), r.DeliveredLumi, type(r.DeliveredLumi)
 
 # find lumi info
-lumi dataset=/PhotonHad/Run2011A-PromptReco-v1/RECO
-lumi {"190704":[1,2,3]}
-lumi {190704:[1,2,3]}
+lumi dataset=/Photon/Run2012A-29Jun2012-v1/AOD
+lumi {190704:[1,2,3,4], 201706:[1,2,3,67]}
 
 # list/copy LFN to local disk
 ls /store/data/CRUZET3/Cosmics/RAW/v1/000/050/832/186585EC-024D-DD11-B747-000423D94AA8.root
@@ -106,5 +105,5 @@ import matplotlib.pyplot as plt
 x = np.arange(0, 5, 0.1);
 y = np.exp(-2*x)
 plt.plot(x, y)
-plt.savefig('test.png', format='png', transparent=True)
+plt.savefig('test.png', transparent=True)
 plt.close()
