@@ -451,11 +451,11 @@ def run_lumi_info(arg, verbose=None):
     url = dbs_url()
     run_lumi = {}
     if  url.find('cmsdbsprod') != -1: # DBS2
-        if  isinstance(data, basestring):
-            run_lumi = dbs2.run_lumi(data, verbose)
-        elif isinstance(data, dict):
+        if isinstance(data, dict):
             for run, lumis in data.items():
                 run_lumi[int(run)] = lumis
+        else:
+            run_lumi = dbs2.run_lumi(str(data), verbose)
     else:
         # need DBS3 implementation
         # for fname in files(dataset)
