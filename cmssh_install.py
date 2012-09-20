@@ -155,8 +155,9 @@ def find_cms_package(apt, pkg, debug=None, lookup=None):
         elif pkg == 'py2-scipy':
             name = 'external+py2-scipy+0.8.0-cms3'
         elif pkg == 'coral':
-            name = 'external+py2-scipy+0.8.0-cms3'
             name = 'cms+coral+CORAL_2_3_12-cms30'
+        elif pkg == 'py2-pycurl':
+            name = 'external+py2-pycurl+7.19.0'
         else:
             res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
             vers = [r.replace('\n', '').split()[0] for r in res.stdout.readlines()]
@@ -172,7 +173,12 @@ def find_installed_pkg(name):
     cmd  = 'find $VO_CMS_SW_DIR/$SCRAM_ARCH/%s -name init.sh' % name
     res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     vers = [r.replace('\n', '').split()[0] for r in res.stdout.readlines()]
-    init = natsorted(vers)[-1]
+    try:
+        init = natsorted(vers)[-1]
+    except:
+        print "Fail to process, name=%s, ver=%s" % (name, vers)
+        print natsorted(vers)
+        return None, None, None
     root = '/'.join(init.split('/')[:-3])
     ver  = init.split('/')[-4]
     return init, root, ver
@@ -490,7 +496,7 @@ def main():
             cmd += 'apt-get update; '
             exe_cmd(sdir, cmd, debug, 'Init CMSSW apt repository', log='aptget.log')
             # install useful set of CMS libraries
-            cms_libs = ['root', 'coral', 'py2-matplotlib', 'py2-scipy']
+            cms_libs = ['root', 'coral', 'py2-pycurl', 'py2-matplotlib', 'py2-scipy']
             for cmspkg in cms_libs:
                 msg  = 'Install CMSSW %s' % cmspkg
                 if  cmspkg == 'root':
@@ -704,7 +710,7 @@ def main():
 
     # install standard libraries
     std_pkgs = ['Routes', 'python-dateutil', 'decorator',
-            'pyOpenSSL', 'pycurl', 'paramiko', 'pyzmq', 'tornado',
+            'pyOpenSSL', 'paramiko', 'pyzmq', 'tornado',
             'numpy', 'matplotlib',
     ]
     for pkg in std_pkgs:
@@ -818,10 +824,9 @@ python setup.py install --prefix=$idir
         msg  = '#!/bin/bash\nexport CMSSH_ROOT=%s\n' % path
         msg += """cms_init()
 {
-if [ -d $VO_CMS_SW_DIR/$SCRAM_ARCH/$1 ]; then
+if [ -f $VO_CMS_SW_DIR/$SCRAM_ARCH/$1/$2/etc/profile.d/init.sh ]; then
     echo -n "Loading $1 ... "
-    pkg_init=`find $VO_CMS_SW_DIR/$SCRAM_ARCH/$1 -name init.sh | tail -1`
-    source $pkg_init
+    source $VO_CMS_SW_DIR/$SCRAM_ARCH/$1/$2/etc/profile.d/init.sh
     echo "DONE"
 fi
 }
@@ -862,25 +867,22 @@ fi
         msg += 'unset PYTHONPATH\n'
         if  os.environ.has_key('LD_LIBRARY_PATH'):
             msg += 'export LD_LIBRARY_PATH=%s\n' % os.environ['LD_LIBRARY_PATH']
-        msg += 'cms_init "external/apt"\n'
-        msg += 'cms_init "lcg/root"\n'
-        msg += 'cms_init "external/python"\n'
-        msg += 'cms_init "external/xz"\n'
-        msg += 'cms_init "external/pcre"\n'
-        msg += 'if  [ -n "$CMSSH_MATPLOTLIB" ]; then\n'
-        msg += 'cms_init "external/freetype"\n'
-        msg += 'cms_init "external/libpng"\n'
-        msg += 'cms_init "external/lapack"\n'
-        msg += 'cms_init "external/libjpg"\n'
-        msg += 'cms_init "external/libtiff"\n'
-        msg += 'cms_init "external/libungif"\n'
-        msg += 'cms_init "external/py2-matplotlib"\n'
-        msg += 'cms_init "external/py2-scipy"\n'
-        msg += 'fi\n'
-        msg += 'cms_init "external/py2-numpy"\n'
-        msg += 'cms_init "external/xrootd"\n'
-        msg += 'cms_init "external/boost"\n'
-        msg += 'cms_init "cms/coral"\n'
+        deps = ['external/apt', 'lcg/root', 'external/python',
+                'external/xz', 'external/pcre',
+                'external/freetype', 'external/libpng', 'external/lapack',
+                'external/libjpg', 'external/libtiff', 'external/libungif',
+                'external/py2-matplotlib', 'external/py2-scipy',
+                'external/py2-numpy', 'external/curl', 'external/py2-pycurl',
+                'external/xrootd', 'external/boost', 'cms/coral']
+        for pkg in deps:
+            _init, _root, pkg_ver = find_installed_pkg(pkg)
+            if  not pkg_ver:
+                continue
+            msg += 'cms_init "%s" "%s"\n' % (pkg, pkg_ver)
+            if  pkg == 'external/pcre':
+                msg += 'if  [ -n "$CMSSH_MATPLOTLIB" ]; then\n'
+            if  pkg == 'external/py2-scipy':
+                msg += 'fi\n'
         msg += 'export DYLD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib\n'
         msg += 'export LD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib:$LD_LIBRARY_PATH\n'
         if  parch == 'x86_64':
