@@ -12,7 +12,7 @@ import json
 import routes
 import urllib
 import urllib2
-import iprint
+import pprint
 from   types import GeneratorType
 
 # cmssh modules
@@ -465,7 +465,7 @@ def run_lumi_info(arg, verbose=None):
     totlumi, lumiunit = lumidb(run_lumi_dict=run_lumi, lumi_report=verbose)
     print "Delivered luminosity %s (%s)" % (totlumi, lumiunit)
     if  verbose:
-        print "Input run lumi dict", iprint.pprint(run_lumi)
+        print "Input run lumi dict", pprint.pprint(run_lumi)
     golden_fname, golden_json = run_lumi_golden_json()
     if  golden_json:
         print "Intersect with CMS JSON:", golden_fname
@@ -473,7 +473,7 @@ def run_lumi_info(arg, verbose=None):
         totlumi, lumiunit = lumidb(rdict, lumi_report=verbose)
         print "Delivered luminosity wrt CMS JSON: %s (%s)" % (totlumi, lumiunit)
         if  verbose:
-            print "Intersected run lumi dict", iprint.pprint(rdict)
+            print "Intersected run lumi dict", pprint.pprint(rdict)
     return []
 
 # create instance of CMSFS class (singleton)
