@@ -25,6 +25,8 @@ except:
 def get_data(url, kwargs=None, headers=None,
         verbose=None, decoder='json', post=False):
     "Retrive data"
+    if  not headers and url.find('DBSReader') != -1:
+        headers =  {'Accept': 'application/json' } # DBS3 always needs that
     ckey = None
     cert = os.path.join(os.environ['HOME'], '.globus/usercert.pem')
     try:
