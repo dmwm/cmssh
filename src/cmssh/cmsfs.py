@@ -27,6 +27,7 @@ from   cmssh.cms_urls import dashboard_url, dbs_instances
 from   cmssh import dbs2
 from   cmssh.runsum import runsum
 from   cmssh.lumidb import lumidb
+from   cmssh.regex import pat_dataset, pat_block, pat_lfn, pat_run
 
 def rowdict(columns, row):
     """Convert given row list into dict with column keys"""
@@ -439,6 +440,15 @@ def run_lumi_golden_json():
         msg  = 'Unable to locate CMS JSON file'
         print_warning(msg)
 
+def parse_runlumis(filelumis):
+    "Parse DBS3 output of filelumis API and return run-lumi dict"
+    run_lumi = {}
+    for row in filelumis:
+        run  = row['run_num']
+        lumi = row['lumi_section_num']
+        run_lumi.setdefault(run, []).append(lumi)
+    return run_lumi
+
 def run_lumi_info(arg, verbose=None):
     "Return run-lumi info"
     try:
@@ -447,21 +457,36 @@ def run_lumi_info(arg, verbose=None):
         if  isinstance(arg, basestring) and arg.find("{") != -1:
             data = eval(arg, { "__builtins__": None }, {})
         else:
-            data = arg # assume it is dataset
+            data = arg # assume it is dataset/file/block/run
     url = dbs_url()
     run_lumi = {}
-    if  url.find('cmsdbsprod') != -1: # DBS2
-        if isinstance(data, dict):
-            for run, lumis in data.items():
-                run_lumi[int(run)] = lumis
-        else:
-            run_lumi = dbs2.run_lumi(str(data), verbose)
+    if  isinstance(data, dict): # we got run-lumi dict
+        for run, lumis in data.items():
+            run_lumi[int(run)] = lumis
     else:
-        # need DBS3 implementation
-        # for fname in files(dataset)
-        #     for item in filelumis(fname)
-        #     for item in runs(fname)
-        run_lumi = {} # need to implement DBS3 call
+        if  url.find('cmsdbsprod') != -1: # DBS2
+            run_lumi = dbs2.run_lumi(str(data), verbose)
+        else:
+            run_lumi = {}
+            data = str(data) # make sure we have string, since json may convert arg to int
+            if  pat_dataset.match(data):
+                params = {'dataset': data}
+                result = get_data(dbs_url('files'), params, verbose)
+                for row in result:
+                    params = {'logical_file_name': row['logical_file_name']}
+                    run_lumi = parse_runlumis(get_data(dbs_url('filelumis'), params, verbose))
+            elif pat_block.match(data):
+                params = {'block_name': data}
+                run_lumi = parse_runlumis(get_data(dbs_url('files'), params, verbose))
+            elif pat_lfn.match(data):
+                params = {'logical_file_name': data}
+                run_lumi = parse_runlumis(get_data(dbs_url('filelumis'), params, verbose))
+            elif pat_run.match(data):
+                # this does not work, since filelumis not accepting just run number
+                # see ticket https://svnweb.cern.ch/trac/CMSDMWM/ticket/4006
+#                params = {'run_num': data}
+#                run_lumi = parse_runlumis(get_data(dbs_url('filelumis'), params, verbose))
+                run_lumi = {}
     if  not run_lumi:
         print_error('Empty run-lumi list')
         return []
