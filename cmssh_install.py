@@ -879,6 +879,8 @@ fi
                 'external/py2-matplotlib', 'external/py2-scipy',
                 'external/py2-numpy', 'external/curl', 'external/py2-pycurl',
                 'external/xrootd', 'external/boost', 'cms/coral']
+        if  platform == 'Darwin' and osx_ver() == '10.6':
+            deps += ['external/xerces-c', 'external/frontier_client']
         matplotlib_ver = None
         for pkg in deps:
             _init, _root, pkg_ver = find_installed_pkg(pkg)
