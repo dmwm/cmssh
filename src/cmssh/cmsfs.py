@@ -439,6 +439,7 @@ def run_lumi_golden_json():
     else:
         msg  = 'Unable to locate CMS JSON file'
         print_warning(msg)
+        return None, {}
 
 def parse_runlumis(filelumis):
     "Parse DBS3 output of filelumis API and return run-lumi dict"
