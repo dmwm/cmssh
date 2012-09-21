@@ -29,7 +29,10 @@ def releases(rel_name=None, rfilter=None):
     pat = re.compile('CMSSW_[1-9]_[0-9]_X\.*')
     for key, val in rel_info['data'].iteritems():
         if rfilter == 'list':
-            if  pat.match(key) or not key.find('CMSSW') != -1:
+            if  pat.match(key) or not key.find('CMSSW') != -1 or \
+                key.find('EXPERIMENTAL') != -1 or \
+                key.find('CLANG') != -1 or \
+                key.find('FORTIFIED') != -1:
                 continue
         row   = {}
         pairs = zip(columns['release_name'], val)
