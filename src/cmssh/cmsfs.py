@@ -426,7 +426,10 @@ def run_lumi_subset(json_file, run_lumi):
         for run, lumis in run_lumi.items():
             if  int(run) == int(key):
                 all_lumis = (i for x in lumi_ranges for i in xrange(x[0], x[-1]+1))
-                rdict[run] = list(set(lumis) & set(all_lumis))
+                if  lumis:
+                    rdict[run] = list(set(lumis) & set(all_lumis))
+                else:
+                    rdict[run] = list(set(all_lumis))
     return rdict
 
 def run_lumi_golden_json():
