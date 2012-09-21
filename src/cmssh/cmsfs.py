@@ -467,12 +467,12 @@ def run_lumi_info(arg, verbose=None):
     if  isinstance(data, dict): # we got run-lumi dict
         for run, lumis in data.items():
             run_lumi[int(run)] = lumis
+    elif isinstance(data, int) or pat_run.match(str(data)): # we got run-number
+        run_lumi[int(data)] = None
     else:
         if  url.find('cmsdbsprod') != -1: # DBS2
             run_lumi = dbs2.run_lumi(str(data), verbose)
         else:
-            run_lumi = {}
-            data = str(data) # make sure we have string, since json may convert arg to int
             if  pat_dataset.match(data):
                 params = {'dataset': data}
                 result = get_data(dbs_url('files'), params, verbose)
@@ -485,12 +485,6 @@ def run_lumi_info(arg, verbose=None):
             elif pat_lfn.match(data):
                 params = {'logical_file_name': data}
                 run_lumi = parse_runlumis(get_data(dbs_url('filelumis'), params, verbose))
-            elif pat_run.match(data):
-                # this does not work, since filelumis not accepting just run number
-                # see ticket https://svnweb.cern.ch/trac/CMSDMWM/ticket/4006
-#                params = {'run_num': data}
-#                run_lumi = parse_runlumis(get_data(dbs_url('filelumis'), params, verbose))
-                run_lumi = {}
     if  not run_lumi:
         print_error('Empty run-lumi list')
         return []
