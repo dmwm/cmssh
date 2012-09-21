@@ -9,12 +9,7 @@ import stat
 import time
 import thread
 import traceback
-from   types import GeneratorType, ModuleType
-
-# change name space
-import __builtin__
-builtin_reload = __builtin__.reload
-del __builtin__.reload
+from   types import GeneratorType
 
 # ipython modules
 import IPython
@@ -41,22 +36,6 @@ class ShellName(object):
         self.dict     = {}
         self.funcList = []
 
-def reload_module(arg):
-    """
-    Reload given python module, i.e. you can modify any python code
-    and reload it directly into your current shell.
-    Examples:
-        Let's say you edit cmssh/utils.py file and add some functionality
-        Just invoke the following command and this functionality will be
-        added into your current session.
-
-        cmssh> reload_module cmssh.utils
-    """
-    for key, val in sys.modules.items():
-        if  key.find(arg) != -1:
-            if  isinstance(val, ModuleType):
-                print_info('reload %s' % key)
-                builtin_reload(val)
 
 def unregister():
     """Unregister shell"""
@@ -103,7 +82,6 @@ except:
 
 # list of cms-sh magic functions
 cmsMagicList = [ \
-    ('reload', reload_module),
     # generic commands, we use Magic class and its execute function
     ('cvs', Magic('cvs').execute),
     ('svn', Magic('svn').execute),
