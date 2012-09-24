@@ -920,6 +920,11 @@ fi
         msg += 'export VOMS_PROXY_INFO_DONT_VERIFY_AC=anything_you_want\n'
         msg += 'export MATPLOTLIBRC=$CMSSH_ROOT/cmssh/src/config\n'
         msg += 'export CORAL_DIR=$CMSSH_ROOT/CMSSW/$SCRAM_ARCH/cms/coral/%s\n' % coral_ver
+        fname = '/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions12/8TeV/Prompt/Cert_190456-202305_8TeV_PromptReco_Collisions12_JSON.txt'
+        if  os.path.isfile(fname):
+            msg += 'export CMS_JSON=%s\n' % fname
+        else:
+            msg += 'export CMS_JSON=None\n'
         msg += 'coral_init\n'
         msg += 'echo " DONE"'
         if  debug:
