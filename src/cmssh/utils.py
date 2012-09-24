@@ -8,6 +8,7 @@ Common utilities
 import os
 import re
 import sys
+import stat
 import time
 import shlex
 import types
@@ -24,6 +25,19 @@ from   decorator import decorator
 from   cmssh.iprint import format_dict, msg_green
 from   cmssh.iprint import print_warning, print_error, print_info
 from   cmssh.regex import float_number_pattern, int_number_pattern
+
+def access2file(fname):
+    "Check if given file name exists on a system and is accessible"
+    if  not os.path.isfile(fname):
+        msg = 'File %s does not exists' % fname
+        print_error(msg)
+        return False
+    mode = os.stat(fname).st_mode
+    if  not bool(mode & stat.S_IRUSR):
+        msg = 'Unsufficient privileges to access %s' % fname
+        print_error(msg)
+        return False
+    return True
 
 def memoize(obj):
     "Keep things in cache"
