@@ -21,7 +21,7 @@ import subprocess
 from cmssh.iprint import msg_red, msg_green, msg_blue
 from cmssh.iprint import print_warning, print_error, print_status, print_info
 from cmssh.filemover import copy_lfn, rm_lfn, mkdir, rmdir, list_se, dqueue
-from cmssh.utils import list_results, check_os, unsupported_linux
+from cmssh.utils import list_results, check_os, unsupported_linux, access2file
 from cmssh.utils import osparameters, check_voms_proxy, run, user_input
 from cmssh.cmsfs import dataset_info, block_info, file_info, site_info, run_info
 from cmssh.cmsfs import CMSMGR, apply_filter, validate_dbs_instance
@@ -681,6 +681,23 @@ def cms_lumi(arg):
     arg = arg.replace('dataset=', '').replace('file=', '').replace('block=', '')
     arg = arg.replace('lfn=', '').replace('run=', '')
     res = run_lumi_info(arg, debug)
+
+def cms_json(arg):
+    "Print or set CMS JSON file"
+    if  arg:
+        if  access2file(arg):
+            os.environ['CMS_JSON'] = arg
+            print_info('CMS_JSON: %s' % arg)
+    else:
+        fname = os.environ.get('CMS_JSON')
+        print_info('CMS JSON: %s' % fname)
+        try:
+            debug = get_ipython().debug
+        except:
+            debug = 0
+        if  debug and access2file(fname):
+            with open(fname, 'r') as cms_json:
+                print cms_json.read()
 
 def integration_tests(_arg):
     "Run series of integration tests for cmssh"

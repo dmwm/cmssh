@@ -25,7 +25,7 @@ from   cmssh.cms_cmds import cms_rm, cms_rmdir, cms_mkdir, cms_root, cms_xrdcp
 from   cmssh.cms_cmds import cms_install, cms_releases, cms_info, debug_http
 from   cmssh.cms_cmds import cmsrel, cmsrun, cms_help, cms_arch, cms_vomsinit
 from   cmssh.cms_cmds import cms_help_msg, results, cms_apt, cms_das, cms_das_json
-from   cmssh.cms_cmds import github_issues, demo
+from   cmssh.cms_cmds import github_issues, demo, cms_json
 from   cmssh.cms_cmds import cms_lumi, integration_tests
 
 class ShellName(object):
@@ -117,6 +117,7 @@ cmsMagicList = [ \
     ('ls', cms_ls),
     ('info', cms_info),
     ('lumi', cms_lumi),
+    ('cms_json', cms_json),
     ('rm', cms_rm),
     ('mkdir', cms_mkdir),
     ('rmdir', cms_rmdir),
