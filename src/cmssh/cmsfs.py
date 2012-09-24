@@ -434,11 +434,15 @@ def run_lumi_subset(json_file, run_lumi):
 
 def run_lumi_golden_json():
     "Get run lumi dict from golden JSON file"
-    cms_fname = '/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions12/8TeV/Prompt/Cert_190456-202305_8TeV_PromptReco_Collisions12_JSON.txt'
-    fname = os.environ.get('CMS_JSON', cms_fname)
+    fname = os.environ.get('CMS_JSON', None)
     if  os.path.isfile(fname):
         with open(fname, 'r') as json_file:
-            return fname, json.load(json_file)
+            try:
+                cms_json = json.load(json_file)
+                return fname, cms_json
+            except:
+                print_error('Unable to decode CMS JSON: %s' % fname)
+                return fname, {}
     else:
         msg  = 'Unable to locate CMS JSON file'
         print_warning(msg)
