@@ -808,6 +808,8 @@ python setup.py install --prefix=$idir
         url = 'http://github.com/vkuznet/cmssh/tarball/master/'
     else:
         url = 'http://github.com/vkuznet/cmssh/tarball/v0.26/'
+    cmssh_ver = [i for i in url.split('/') if i][-1]
+    cmssh_ts  = time.strftime("%Y-%m-%d %H:%M:%S GMT", time.gmtime())
     if  not is_installed(url, path):
         try:
             cmd = 'rm -rf vkuznet-cmssh*; rm -rf cmssh'
@@ -975,7 +977,7 @@ if  [ $# == 1 ]; then
         exit;
     fi
 fi\n"""
-        msg += 'echo "Welcome to cmssh!"\n'
+        msg += 'echo "Welcome to cmssh, %s@%s"\n' % (cmssh_ver, cmssh_ts)
         msg += 'source %s/setup.sh\n' % path
         if  opts.multi_user:
             msg += 'ipdir="/tmp/$USER/.ipython"\nmkdir -p $ipdir\n'
