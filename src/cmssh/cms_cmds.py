@@ -12,6 +12,7 @@ import sys
 import time
 import json
 import glob
+import shutil
 import base64
 import pprint
 import traceback
@@ -23,6 +24,7 @@ from cmssh.iprint import print_warning, print_error, print_status, print_info
 from cmssh.filemover import copy_lfn, rm_lfn, mkdir, rmdir, list_se, dqueue
 from cmssh.utils import list_results, check_os, unsupported_linux, access2file
 from cmssh.utils import osparameters, check_voms_proxy, run, user_input
+from cmssh.utils import execmd, touch
 from cmssh.cmsfs import dataset_info, block_info, file_info, site_info, run_info
 from cmssh.cmsfs import CMSMGR, apply_filter, validate_dbs_instance
 from cmssh.cmsfs import release_info, run_lumi_info
@@ -375,6 +377,36 @@ def cmsrel(rel):
             magic_name = 'magic_%s' % name
             cmd = "eval `scramv1 runtime -sh`; %s" % fname
             setattr(ipython, magic_name, Magic(cmd).execute)
+
+    # setup environment
+    root = os.environ['CMSSH_ROOT']
+    idir = os.environ['CMSSH_INSTALL_DIR']
+    base = os.path.realpath('%s/CMSSW' % root)
+    path = '%s/%s/cms/cmssw/%s' % (base, rel_arch, rel)
+    os.environ['CMSSW_BASE'] = os.path.join(cmssw_dir, rel)
+    os.environ['CMSSW_RELEASE_BASE'] = path
+    for pkg in ['FWCore', 'DataFormats']:
+        pdir = '%s/%s' % (idir, pkg)
+        if  os.path.exists(pdir):
+            shutil.rmtree(pdir)
+        os.mkdir(pdir)
+        touch(os.path.join(pdir, '__init__.py'))
+    pkgs = ['Framework', 'GuiBrowsers', 'Integration', 'MessageLogger',
+            'MessageService', 'Modules', 'ParameterSet', 'PythonUtilities',
+            'Services', 'Utilities']
+    for pkg in pkgs:
+        link = '%s/src/FWCore/%s/python' % (path, pkg)
+        dst  = '%s/FWCore/%s' % (idir, pkg)
+        os.symlink(link, dst)
+    link = '%s/src/DataFormats/FWLite/python' % path
+    dst  = '%s/DataFormats/FWLite' % idir
+    os.symlink(link, dst)
+    for lib in ['external', 'lib']:
+        link = '%s/%s/%s' % (path, lib, rel_arch)
+        dst  = '%s/install/lib/release_%s' % (root, lib)
+        if  os.path.islink(dst):
+            os.remove(dst)
+        os.symlink(link, dst)
 
     # final message
     print "%s is ready, cwd: %s" % (rel, os.getcwd())
