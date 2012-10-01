@@ -210,7 +210,7 @@ def install_pip_pkg(pkgs, cms_env, path, debug, pkg, ver=None, opts=None, env_li
         - pkg to be installed
         - optional: version, options and environment list (key-value tuple)
     """
-    print "Installing", pkg
+    print "Install", pkg
     cmd = cms_env
     if  env_list:
         for key, val in env_list:
@@ -536,13 +536,13 @@ def main():
         print "CMSSW python: %s/%s" % (python_root, python_ver)
         print "python version", pver
 
-    print "Installing Globus"
+    print "Install Globus"
     os.chdir(path)
     url = 'http://vdt.cs.wisc.edu/software/globus/4.0.8_VDT2.0.0gt4nbs/vdt_globus_essentials-VDT2.0.0-3-%s_%s.tar.gz' % (parch, ver)
     if  not is_installed(url, path):
         get_file(url, 'globus.tar.gz', path, debug)
 
-    print "Installing Myproxy"
+    print "Install Myproxy"
     url = 'http://vdt.cs.wisc.edu/software/myproxy/5.3_VDT-2.0.0/myproxy_client-5.3-%s_%s.tar.gz' % (parch, ver)
     if  not is_installed(url, path):
         get_file(url, 'myproxy_client.tar.gz', path, debug)
@@ -550,7 +550,7 @@ def main():
     if  not is_installed(url, path):
         get_file(url, 'myproxy_essentials.tar.gz', path, debug)
 
-    print "Installing VOMS"
+    print "Install VOMS"
     url = 'http://vdt.cs.wisc.edu/software/voms/1.8.8-2p1-1/voms-client-1.8.8-2p1-%s_%s.tar.gz' % (parch, ver)
     if  not is_installed(url, path):
         get_file(url, 'voms-client.tar.gz', path, debug)
@@ -561,7 +561,7 @@ def main():
     if  platform == 'Darwin' and osx_ver() == '10.6':
         # CMSSW pcre is too old and srm software uses grep which linked to newer
         # pcre library, therefore install pcre 7.9 which is suitable for this case
-        print "Installing pcre"
+        print "Install pcre"
         ver = '7.9'
         url = 'http://downloads.sourceforge.net/pcre/%s/pcre-%s.tar.gz' % (ver, ver)
         if  not is_installed(url, path):
@@ -570,7 +570,7 @@ def main():
             os.chdir(os.path.join(path, 'pcre-%s' % ver))
             exe_cmd(os.path.join(path, 'pcre-%s' % ver), cmd, debug, log='pcre.log')
 
-    print "Installing expat"
+    print "Install expat"
     ver = '2.0.1'
     url = 'http://sourceforge.net/projects/expat/files/expat/%s/expat-%s.tar.gz/download?use_mirror=iweb' % (ver, ver)
     if  not is_installed(url, path):
@@ -583,7 +583,7 @@ def main():
         os.chdir(os.path.join(path, 'expat-%s' % ver))
         exe_cmd(os.path.join(path, 'expat-%s' % ver), cmd, debug, log='expat.log')
 
-    print "Installing PythonUtilities"
+    print "Install PythonUtilities"
     url = "http://cmssw.cvs.cern.ch/cgi-bin/cmssw.cgi/CMSSW/FWCore/PythonUtilities.tar.gz?view=tar"
     if  not is_installed(url, path):
         get_file(url, 'PythonUtilities.tar.gz', path, debug)
@@ -593,13 +593,13 @@ def main():
         cmd = 'mkdir FWCore; touch FWCore/__init__.py; mv PythonUtilities FWCore'
         exe_cmd(path, cmd, debug)
 
-#    print "Installing CRAB3"
+#    print "Install CRAB3"
 #    ver = '3.0.6a'
 #    url = 'http://cmsrep.cern.ch/cmssw/comp/SOURCES/slc5_amd64_gcc461/cms/crab-client3/%s/crabclient3.tar.gz' % ver
 #    if  not is_installed(url, path):
 #        get_file(url, 'crabclient3.tar.gz', path, debug)
 
-    print "Installing CRAB"
+    print "Install CRAB"
     os.chdir(path)
     crab_ver = 'CRAB_2_8_1'
     url = 'http://cmsdoc.cern.ch/cms/ccs/wm/www/Crab/Docs/%s.tgz' % crab_ver
@@ -608,13 +608,13 @@ def main():
         cmd = 'cd %s; ./configure' % crab_ver
         exe_cmd(path, cmd, debug, log='crab.log')
 
-    print "Installing WMCore"
+    print "Install WMCore"
     ver = '0.8.21'
     url = 'http://cmsrep.cern.ch/cmssw/comp/SOURCES/slc5_amd64_gcc461/cms/wmcore/%s/WMCORE.tar.gz' % ver
     if  not is_installed(url, path):
         get_file(url, 'wmcore.tar.gz', path, debug)
 
-    print "Installing LCG info"
+    print "Install LCG info"
     url = 'http://vdt.cs.wisc.edu/software/lcg-infosites/2.6-2/lcg-infosites-2.6-2.tar.gz'
     if  not is_installed(url, path):
         get_file(url, 'lcg-infosites.tar.gz', path, debug)
@@ -622,12 +622,12 @@ def main():
     if  not is_installed(url, path):
         get_file(url, 'lcg-info.tar.gz', path, debug)
 
-    print "Installing certificates"
+    print "Install certificates"
     url = 'http://vdt.cs.wisc.edu/software/certificates/62/certificates-62-1.tar.gz'
     if  not is_installed(url, path):
         get_file(url, 'certificates.tar.gz', path, debug)
 
-    print "Installing SRM client"
+    print "Install SRM client"
     ver = '2.2.1.3.19'
     url = 'http://vdt.cs.wisc.edu/software/srm-client-lbnl/%s/srmclient2-%s.tar.gz' \
         % (ver, ver)
@@ -649,7 +649,7 @@ def main():
                     replace_in_file(filename, pat, new_pat)
                     os.chmod(filename, 0755)
 
-    print "Installing zmq"
+    print "Install zmq"
     os.chdir(path)
     zmq_ver = '2.2.0'
     url = 'http://download.zeromq.org/zeromq-%s.tar.gz' % zmq_ver
@@ -659,7 +659,7 @@ def main():
         cmd += '; make install'
         exe_cmd(path, cmd, debug, log='zmq.log')
 
-    print "Installing setuptools"
+    print "Install setuptools"
     os.chdir(path)
     s_ver = '0.6c11'
     url = 'http://pypi.python.org/packages/source/s/setuptools/setuptools-%s.tar.gz' % s_ver
@@ -668,7 +668,7 @@ def main():
         cmd = cms_env + 'cd setuptools-%s; python setup.py install --prefix=%s/install' % (s_ver, path)
         exe_cmd(path, cmd, debug, log='setuptools.log')
 
-    print "Installing pip"
+    print "Install pip"
     os.chdir(path)
     url = 'https://raw.github.com/pypa/virtualenv/master/virtualenv.py'
     if  not is_installed(url, path):
@@ -750,7 +750,7 @@ def main():
             install_pip_pkg(pip_packages, cms_env, path, debug, pkg, ver, args, env_list)
 
     # install readline after pip, since it requires setuptools
-    print "Installing readline"
+    print "Install readline"
 #    if  platform == 'Darwin' and not is_installed(url, path):
 #        if  pver == '2.7':
 #            url = 'http://pypi.python.org/packages/2.7/r/readline/readline-6.2.2-py2.7-macosx-10.7-intel.egg'
@@ -787,7 +787,7 @@ python setup.py install --prefix=$idir
 """.format(path=path, arch=arch, pver=pver, python_init=python_init)
         exe_cmd(os.path.join(path, 'readline-%s' % ver), cmd, debug, log='readline.log')
 
-    print "Installing LumiDB"
+    print "Install LumiDB"
     os.chdir(path)
     url = 'http://cmssw.cvs.cern.ch/cgi-bin/cmssw.cgi/CMSSW/RecoLuminosity.tar.gz?view=tar'
     if  not is_installed(url, path):
@@ -802,7 +802,7 @@ python setup.py install --prefix=$idir
             init_file.write("")
         shutil.copy(os.path.join(dst, '__init__.py'), os.path.join(dst, 'LumiDB'))
 
-    print "Installing cmssh"
+    print "Install cmssh"
     os.chdir(path)
     if  opts.master:
         url = 'http://github.com/vkuznet/cmssh/tarball/master/'
