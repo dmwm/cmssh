@@ -761,16 +761,26 @@ def cms_cp(arg):
         cmssh> cp T3_US_Cornell:/store/user/name/file.root T3_US_Omaha
     """
     check_voms_proxy()
+    background = False
+    orig_arg = arg
     arg = arg.strip()
     try:
-        src, dst = arg.split(' ', 1)
+        last_arg = arg.split(' ')[-1].strip()
+        if  last_arg == '&':
+            background = True
+            arg = arg.replace('&', '').strip()
+        src, dst = arg.rsplit(' ', 1)
         if  dst.find('&') != -1:
             background = True
             dst = dst.replace('&', '').strip()
-        else:
-            background = False
         if  dst == '.':
             dst = os.getcwd()
+        # check if src still has options and user asked for -f
+        options = src.split(' ')
+        if  len(options) > 1 and options[0] == '-f':
+            overwrite = True
+        else:
+            overwrite = False
     except:
         traceback.print_exc()
         return
@@ -780,12 +790,17 @@ def cms_cp(arg):
         debug = 0
     if  not arg:
         print_error("Usage: cp <options> source_file target_{file,directory}")
-    pat = pat_se
-    if  os.path.exists(src) and not pat.match(dst):
-        run("cp %s %s" % (src, dst))
+    pat  = pat_se
+    orig = src.split(' ')[-1]
+    if  os.path.exists(orig) and not pat.match(dst):
+        if  background:
+            cmd = 'cp %s' % orig_arg
+            subprocess.call(cmd, shell=True)
+        else:
+            run("cp %s %s" % (src, dst))
     else:
         try:
-            status = copy_lfn(src, dst, debug, background)
+            status = copy_lfn(orig, dst, debug, background, overwrite)
             print_status(status)
         except:
             traceback.print_exc()
