@@ -177,7 +177,7 @@ def find_installed_pkg(name):
     try:
         init = natsorted(vers)[-1] + script
     except:
-        print "Fail to process, name=%s, ver=%s" % (name, vers)
+        print "Unable to process, name=%s, ver=%s" % (name, vers)
         print natsorted(vers)
         return None, None, None
     root = '/'.join(init.split('/')[:-3])
