@@ -26,6 +26,11 @@ from   cmssh.iprint import format_dict, msg_green
 from   cmssh.iprint import print_warning, print_error, print_info
 from   cmssh.regex import float_number_pattern, int_number_pattern
 
+def touch(fname):
+    "Emulate touch UNIX command"
+    with open(fname, 'w') as fobj:
+        fobj.write('')
+
 def access2file(fname):
     "Check if given file name exists on a system and is accessible"
     if  not os.path.isfile(fname):
