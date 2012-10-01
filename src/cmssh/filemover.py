@@ -533,15 +533,19 @@ class FileMover(object):
         if  verbose:
             print_info(cmd)
         stdout, stderr = execmd(cmd)
-        if  stderr:
+        print "xrootd output", stdout, stderr
+        if  stderr and stderr.find('Total') == -1:
             print_error(stderr)
             return 'fail'
+        else:
+            print_info(stdout + stderr)
         return 'success'
 
     def copy(self, lfn, dst, verbose=0, background=False):
         """Copy LFN to given destination"""
-        err = 'Unable to identify total size of the file,'
+        err  = 'Unable to identify total size of the file,'
         err += ' GRID middleware fails.'
+        bar  = PrintProgress('Get LFN info')
         for cmd in srmcp("srm-copy", lfn, dst, verbose):
             if  cmd:
                 if  background:
@@ -568,7 +572,8 @@ class FileMover(object):
                     pfn_size = get_size('srm-ls %s' % pfn)
                     if  pfn_size and pfn_size != 'null':
                         tot_size = float(pfn_size)
-                        bar  = PrintProgress()
+                        bar.print_msg('LFN size=%s' % size_format(tot_size))
+                        bar.init('Download in progress:')
                         proc = Process(target=execute, args=(cmd, lfn, verbose))
                         proc.start()
                         while True:
