@@ -545,7 +545,8 @@ class FileMover(object):
         """Copy LFN to given destination"""
         err  = 'Unable to identify total size of the file,'
         err += ' GRID middleware fails.'
-        bar  = PrintProgress('Get LFN info')
+        if  not background:
+            bar  = PrintProgress('Gather LFN info')
         for cmd in srmcp("srm-copy", lfn, dst, verbose):
             if  cmd:
                 if  background:
@@ -722,9 +723,42 @@ class FileMover(object):
         else:
             print stdout
 
+def lfn_exists(lfn, dst):
+    "Check if given LFN exists at local destination"
+    if  dst[0] == '/' or dst[0] == '.':
+        fname = lfn.split('/')[-1]
+        if  os.path.isdir(dst):
+            if  os.path.exists(os.path.join(dst, fname)):
+                return True
+        if  os.path.exists(dst):
+            return True
+    return False
+
 FM_SINGLETON = FileMover()
-def copy_lfn(lfn, dst, verbose=0, background=False):
+def copy_lfn(lfn, dst, verbose=0, background=False, overwrite=False):
     """Copy lfn to destination"""
+    if  overwrite:
+        if  os.path.isfile(dst):
+            os.remove(dst)
+        if  lfn_exists(lfn, dst):
+            if  os.path.isdir(dst):
+                fname = lfn.split('/')[-1]
+                if  os.path.exists(os.path.join(dst, fname)):
+                    os.remove(os.path.join(dst, fname))
+    else:
+        if  lfn_exists(lfn, dst):
+            if  os.path.isdir(dst):
+                fname = os.path.join(dst, lfn.split('/')[-1])
+                if  not os.path.exists(fname):
+                    fname = None
+            elif os.path.isfile(dst) and os.path.exists(dst):
+                fname = dst
+            else:
+                fname = None
+                print_warning('Destination %s is not local disk')
+            if  fname:
+                print_warning('File %s already exists' % fname)
+                return 'fail'
     status = FM_SINGLETON.copy(lfn, dst, verbose, background)
     if  status == 'fail':
         print_info('Fallback to xrdcp method')
