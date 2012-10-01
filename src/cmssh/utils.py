@@ -173,19 +173,27 @@ class PrintProgress(object):
             self.return_char = '\r'
             init_msg = msg
             self.msg = init_msg
-        self.width = width
-        self.fill = fill
-        self.msg_format = '%%%ds' % width
+        self.width   = width
+        self.fill    = fill
         self.print_msg(init_msg)
         self.init()
+
+    def msg_format(self):
+        return '%%%ds' % self.width
 
     def init(self, msg=None, fill=' '):
         "Init bar progress status"
         self.progress = set(['N/A']) # progress values
         if  msg:
-            self.msg = msg
-            self.width = len(self.msg)
-            self.fill = fill
+            if  os.environ.has_key('CMSSH_NOTEBOOK'):
+                if  msg == 'Download in progress:':
+                    self.print_msg(msg)
+                    self.msg   = ''
+                    self.width = 0
+            else:
+                self.msg = msg
+                self.width = len(self.msg)
+                self.fill = fill
 
     def clear(self):
         "Clear bar progress status"
@@ -204,14 +212,17 @@ class PrintProgress(object):
             sys.stdout.write(self.return_char)
         else:
             msg = " %d%%" % progress
-            msg = self.msg_format % self.msg + msg + self.return_char
+            msg = self.msg_format() % self.msg + msg + self.return_char
             sys.stdout.write(msg)
         sys.stdout.flush()
 
     def print_msg(self, msg):
         "Update progress bar with given message"
-        mmm = self.msg_format % (msg.ljust(self.width, self.fill) \
-                + self.return_char)
+        if  os.environ.has_key('CMSSH_NOTEBOOK'):
+            mmm = msg + '\n'
+        else:
+            mmm = self.msg_format() % (msg.ljust(self.width, self.fill) \
+                    + self.return_char)
         sys.stdout.write(mmm)
         sys.stdout.flush()
 
