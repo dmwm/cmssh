@@ -769,6 +769,7 @@ def main():
         get_file(url, 'readline.tar.gz', path, debug)
         cmd = """#!/bin/bash
 export CMSSH_ROOT={path}
+export CMSSH_INSTALL_DIR=$CMSSH_ROOT/install/lib/python{pver}/site-packages
 export VO_CMS_SW_DIR=$CMSSH_ROOT/CMSSW
 export SCRAM_ARCH={arch}
 export LANG="C"
@@ -892,7 +893,9 @@ fi
                 continue
             msg += 'cms_init "%s" "%s"\n' % (pkg, pkg_ver)
         msg += 'export DYLD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib\n'
+        msg += 'export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$CMSSH_ROOT/install/lib/release_lib:$CMSSH_ROOT/install/lib/release_external'
         msg += 'export LD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib:$LD_LIBRARY_PATH\n'
+        msg += 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CMSSH_ROOT/install/lib/release_lib:$CMSSH_ROOT/install/lib/release_external'
         if  parch == 'x86_64':
             msg += 'export LD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib64:$CMSSH_ROOT/glite/lib64:$CMSSH_ROOT/install/lib64:$LD_LIBRARY_PATH\n'
         msg += 'export PATH=$VO_CMS_SW_DIR/bin:$CMSSH_ROOT/install/bin:$PATH\n'
