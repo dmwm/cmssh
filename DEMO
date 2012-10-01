@@ -99,6 +99,13 @@ c1.SetGridx();
 c1.SetGridy();
 fun1.Draw();
 c1.Update();
+# read CMS root file
+import ROOT
+f = ROOT.TFile("F4CBEB6F-A4B2-E011-8D72-002618943920.root")
+t = f.Get("Events")
+branches = t.GetListOfBranches()
+aliases = t.GetListOfAliases()
+for row in branches: print row.GetName()
 
 #################################
 # matplotlib example
