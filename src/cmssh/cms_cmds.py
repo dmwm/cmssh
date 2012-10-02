@@ -418,9 +418,8 @@ def cmsrel(rel):
     for name in os.listdir(reldir):
         fname = os.path.join(reldir, name)
         if  name.find('edm') == 0 and os.path.isfile(fname):
-            magic_name = 'magic_%s' % name
             cmd = "eval `scramv1 runtime -sh`; %s" % fname
-            setattr(ipython, magic_name, Magic(cmd).execute)
+            ipython.register_magic_function(Magic(cmd).execute, 'line', name)
 
     # final message
     print "%s is ready, cwd: %s" % (rel, os.getcwd())
