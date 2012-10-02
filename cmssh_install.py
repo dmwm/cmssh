@@ -833,28 +833,36 @@ python setup.py install --prefix=$idir
         msg += 'echo -n "Loading dependencies:"\n'
         msg += """cms_init()
 {
-if [ -f $VO_CMS_SW_DIR/$SCRAM_ARCH/$1/$2/etc/profile.d/init.sh ]; then
-    echo -n "."
-    source $VO_CMS_SW_DIR/$SCRAM_ARCH/$1/$2/etc/profile.d/init.sh
-fi
+    if [ -f $VO_CMS_SW_DIR/$SCRAM_ARCH/$1/$2/etc/profile.d/init.sh ]; then
+        echo -n "."
+        source $VO_CMS_SW_DIR/$SCRAM_ARCH/$1/$2/etc/profile.d/init.sh
+    fi
+}
+link_root()
+{
+    dir=$CMSSH_ROOT/install/lib/release_root
+    if [ -d $dir ] || [ -L $dir ]; then
+        rm -rf $dir
+    fi
+    ln -s $VO_CMS_SW_DIR/$SCRAM_ARCH/$1/$2 $dir
 }
 coral_init()
 {
-coral=$CORAL_DIR/$SCRAM_ARCH
-coral_external=$CORAL_DIR/external/$SCRAM_ARCH/lib
-export PYTHONPATH=$PYTHONPATH:$PWD:$coral/python:$coral/lib:$coral_external
-export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$coral/lib:$coral_external
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$coral/lib:$coral_external
-if [ -f $CORAL_DIR/$SCRAM_ARCH/lib/liblcg_PyCoral.dylib ]; then
-if [ ! -f $CORAL_DIR/$SCRAM_ARCH/lib/liblcg_PyCoral.so ]; then
-    ln -s $CORAL_DIR/$SCRAM_ARCH/lib/liblcg_PyCoral.dylib $CORAL_DIR/$SCRAM_ARCH/lib/liblcg_PyCoral.so
-fi
-fi
-if [ -f $CORAL_DIR/$SCRAM_ARCH/lib/liblcg_ConnectionService.dylib ]; then
-if [ ! -f $CORAL_DIR/$SCRAM_ARCH/lib/liblcg_ConnectionService.so ]; then
-    ln -s $CORAL_DIR/$SCRAM_ARCH/lib/liblcg_ConnectionService.dylib $CORAL_DIR/$SCRAM_ARCH/lib/liblcg_ConnectionService.so
-fi
-fi
+    coral=$CORAL_DIR/$SCRAM_ARCH
+    coral_external=$CORAL_DIR/external/$SCRAM_ARCH/lib
+    export PYTHONPATH=$PYTHONPATH:$PWD:$coral/python:$coral/lib:$coral_external
+    export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$coral/lib:$coral_external
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$coral/lib:$coral_external
+    if [ -f $CORAL_DIR/$SCRAM_ARCH/lib/liblcg_PyCoral.dylib ]; then
+        if [ ! -f $CORAL_DIR/$SCRAM_ARCH/lib/liblcg_PyCoral.so ]; then
+            ln -s $CORAL_DIR/$SCRAM_ARCH/lib/liblcg_PyCoral.dylib $CORAL_DIR/$SCRAM_ARCH/lib/liblcg_PyCoral.so
+        fi
+    fi
+    if [ -f $CORAL_DIR/$SCRAM_ARCH/lib/liblcg_ConnectionService.dylib ]; then
+        if [ ! -f $CORAL_DIR/$SCRAM_ARCH/lib/liblcg_ConnectionService.so ]; then
+            ln -s $CORAL_DIR/$SCRAM_ARCH/lib/liblcg_ConnectionService.dylib $CORAL_DIR/$SCRAM_ARCH/lib/liblcg_ConnectionService.so
+        fi
+    fi
 }
 \n
 """
@@ -886,16 +894,22 @@ fi
             deps += ['external/xerces-c', 'external/frontier_client']
         matplotlib_ver = None
         for pkg in deps:
+            func = 'cms_init'
             _init, _root, pkg_ver = find_installed_pkg(pkg)
             if  pkg == 'external/py2-matplotlib':
                 matplotlib_ver = pkg_ver
             if  not pkg_ver:
                 continue
-            msg += 'cms_init "%s" "%s"\n' % (pkg, pkg_ver)
+            if  pkg == 'lcg/root':
+                func = 'link_root'
+            msg += '%s "%s" "%s"\n' % (func, pkg, pkg_ver)
+        msg += 'mkdir -p $CMSSH_ROOT/install/lib/release_lib\n'
+        msg += 'mkdir -p $CMSSH_ROOT/install/lib/release_root/lib\n'
+        msg += 'mkdir -p $CMSSH_ROOT/install/lib/release_external/lib\n'
         msg += 'export DYLD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib\n'
         msg += 'export DYLD_LIBRARY_PATH=$CMSSH_ROOT/install/lib/release_lib:$CMSSH_ROOT/install/lib/release_external:$CMSSH_ROOT/install/lib/release_external/lib:$DYLD_LIBRARY_PATH\n'
         msg += 'export LD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib:$CMSSH_ROOT/glite/lib:$CMSSH_ROOT/install/lib:$LD_LIBRARY_PATH\n'
-        msg += 'export LD_LIBRARY_PATH=$CMSSH_ROOT/install/lib/release_lib:$CMSSH_ROOT/install/lib/release_external:$CMSSH_ROOT/install/lib/release_external/lib:$LD_LIBRARY_PATH\n'
+        msg += 'export LD_LIBRARY_PATH=$CMSSH_ROOT/install/lib/release_lib:$CMSSH_ROOT/install/lib/release_external/lib:$CMSSH_ROOT/install/lib/release_root/lib:$LD_LIBRARY_PATH\n'
         if  parch == 'x86_64':
             msg += 'export LD_LIBRARY_PATH=$CMSSH_ROOT/globus/lib64:$CMSSH_ROOT/glite/lib64:$CMSSH_ROOT/install/lib64:$LD_LIBRARY_PATH\n'
         msg += 'export PATH=$VO_CMS_SW_DIR/bin:$CMSSH_ROOT/install/bin:$PATH\n'
@@ -906,7 +920,7 @@ fi
         msg += 'export PATH=$PATH:$CMSSH_ROOT/lcg/bin\n'
         msg += 'export PATH=$PATH:$CMSSH_ROOT/CRABClient/bin\n'
         msg += 'export PYTHONPATH=$CMSSH_ROOT/cmssh/src:$PYTHONPATH\n'
-        msg += 'export PYTHONPATH=$ROOTSYS/lib:$PYTHONPATH\n'
+        msg += 'export PYTHONPATH=$CMSSH_ROOT/install/lib/release_root/lib:$PYTHONPATH\n'
         msg += 'export PYTHONPATH=$PYTHONPATH:$CMSSH_ROOT\n'
         msg += 'export PYTHONPATH=$PYTHONPATH:$CMSSH_ROOT/CRABClient/src/python\n'
         msg += 'export PYTHONPATH=$PYTHONPATH:$CMSSH_ROOT/WMCore/src/python\n'
