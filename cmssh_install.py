@@ -769,7 +769,6 @@ def main():
         get_file(url, 'readline.tar.gz', path, debug)
         cmd = """#!/bin/bash
 export CMSSH_ROOT={path}
-export CMSSH_INSTALL_DIR=$CMSSH_ROOT/install/lib/python{pver}/site-packages
 export VO_CMS_SW_DIR=$CMSSH_ROOT/CMSSW
 export SCRAM_ARCH={arch}
 export LANG="C"
@@ -830,6 +829,7 @@ python setup.py install --prefix=$idir
     os.chdir(path)
     with open('setup.sh', 'w') as setup:
         msg  = '#!/bin/bash\nexport CMSSH_ROOT=%s\n' % path
+        msg += 'export CMSSH_INSTALL_DIR=$CMSSH_ROOT/install/lib/python%s/site-packages\n' % pver
         msg += 'echo -n "Loading dependencies:"\n'
         msg += """cms_init()
 {
