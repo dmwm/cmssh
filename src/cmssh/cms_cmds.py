@@ -353,32 +353,10 @@ def cmsrel(rel):
     # set release architecture
     os.environ['SCRAM_ARCH'] = rel_arch
 
-    # switch to given release
+    # setup environment
     cmssw_dir = os.environ.get('CMSSW_RELEASES', os.getcwd())
     if  not os.path.isdir(cmssw_dir):
         os.makedirs(cmssw_dir)
-    os.environ['CMSSW_VERSION'] = rel
-    os.environ['CMSSW_WORKAREA'] = os.path.join(cmssw_dir, rel)
-    if  os.path.isdir(os.path.join(cmssw_dir, rel + '/src')):
-        os.chdir(os.path.join(cmssw_dir, rel + '/src'))
-    else:
-        os.chdir(cmssw_dir)
-        cmd = "scramv1 project CMSSW %s" % rel
-        run(cmd)
-        os.chdir(os.path.join(rel, 'src'))
-
-    # set edm utils for given release
-    ipython = get_ipython()
-    rdir    = '%s/bin/%s' % (rel_dir, rel_arch)
-    reldir  = os.path.join(os.environ['VO_CMS_SW_DIR'], rdir)
-    for name in os.listdir(reldir):
-        fname = os.path.join(reldir, name)
-        if  name.find('edm') == 0 and os.path.isfile(fname):
-            magic_name = 'magic_%s' % name
-            cmd = "eval `scramv1 runtime -sh`; %s" % fname
-            setattr(ipython, magic_name, Magic(cmd).execute)
-
-    # setup environment
     root = os.environ['CMSSH_ROOT']
     idir = os.environ['CMSSH_INSTALL_DIR']
     base = os.path.realpath('%s/CMSSW' % root)
@@ -406,7 +384,43 @@ def cmsrel(rel):
         dst  = '%s/install/lib/release_%s' % (root, lib)
         if  os.path.islink(dst):
             os.remove(dst)
+        else:
+            shutil.rmtree(dst)
         os.symlink(link, dst)
+
+    # switch to given release
+    os.environ['CMSSW_VERSION'] = rel
+    os.environ['CMSSW_WORKAREA'] = os.path.join(cmssw_dir, rel)
+    if  os.path.isdir(os.path.join(cmssw_dir, rel + '/src')):
+        os.chdir(os.path.join(cmssw_dir, rel + '/src'))
+    else:
+        os.chdir(cmssw_dir)
+        cmd = "scramv1 project CMSSW %s" % rel
+        run(cmd)
+        os.chdir(os.path.join(rel, 'src'))
+
+    # get ROOT from run-time environment
+    cmd = 'eval `scramv1 runtime -sh`; env | grep ^ROOTSYS='
+    stdout, _stderr = execmd(cmd)
+    rootsys = stdout.replace('\n', '').replace('ROOTSYS=', '')
+    dst     = '%s/install/lib/release_root' % root
+    if  os.path.exists(dst):
+        if  os.path.islink(dst):
+            os.remove(dst)
+        else:
+            shutil.rmtree(dst)
+    os.symlink(rootsys, dst)
+
+    # set edm utils for given release
+    ipython = get_ipython()
+    rdir    = '%s/bin/%s' % (rel_dir, rel_arch)
+    reldir  = os.path.join(os.environ['VO_CMS_SW_DIR'], rdir)
+    for name in os.listdir(reldir):
+        fname = os.path.join(reldir, name)
+        if  name.find('edm') == 0 and os.path.isfile(fname):
+            magic_name = 'magic_%s' % name
+            cmd = "eval `scramv1 runtime -sh`; %s" % fname
+            setattr(ipython, magic_name, Magic(cmd).execute)
 
     # final message
     print "%s is ready, cwd: %s" % (rel, os.getcwd())
