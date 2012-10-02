@@ -99,13 +99,29 @@ c1.SetGridx();
 c1.SetGridy();
 fun1.Draw();
 c1.Update();
-# read CMS root file
+
+# access root file
 import ROOT
-f = ROOT.TFile("F4CBEB6F-A4B2-E011-8D72-002618943920.root")
+f = ROOT.TFile("file.root")
 t = f.Get("Events")
 branches = t.GetListOfBranches()
 aliases = t.GetListOfAliases()
 for row in branches: print row.GetName()
+
+# CMS way to read root file, but first you need to set CMSSW environment
+cmsrel CMSSW_5_2_4
+import ROOT
+from DataFormats.FWLite import Events, Handle
+ROOT.gROOT.SetBatch()
+ROOT.gROOT.SetStyle('Plain')
+events = Events ('file.root')
+label  = ("muons")
+handle = Handle ('std::vector<reco::Muon>')
+for evt in events:
+    evt.getByLabel (label, handle)
+    objects = handle.product()
+    print len(objects)
+
 
 #################################
 # matplotlib example
