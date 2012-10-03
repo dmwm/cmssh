@@ -65,13 +65,22 @@ ls T3_US_Cornell:/store/user/valya
 # copy multiple files
 cp /store/data/CRUZET3/Cosmics/RAW/v1/000/050/832/186585EC-024D-DD11-B747-000423D94AA8.root . &
 cp /store/data/CRUZET3/Cosmics/RAW/v1/000/050/796/4E1D3610-E64C-DD11-8629-001D09F251FE.root . &
-dqueue
+jobs
 
 # copy user file from T1 tier
 cp T1_US_FNAL_Buffer:/store/user/neggert/TT_TuneZ2_7TeV-mcatnlo/MCTSusy_Skim_Mar2012/7b5af1bfe3424f60f0db5b5f14cf327a/MCTSusySkimMar2012_591_1_cSX.root .
 
 # copy lfn from SE to SE
 cp T1_US_FNAL_Buffer:/store/user/neggert/TT_TuneZ2_7TeV-mcatnlo/MCTSusy_Skim_Mar2012/7b5af1bfe3424f60f0db5b5f14cf327a/MCTSusySkimMar2012_591_1_cSX.root T3_US_Cornell:/store/user/valya
+
+# look-up job information
+jobs
+jobs list
+jobs site=T2_US_UCSD
+
+# find user information
+find user=oliver
+jobs user=<dashboard name>
 
 # look-up available releases
 releases
