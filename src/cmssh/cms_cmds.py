@@ -15,6 +15,7 @@ import glob
 import shutil
 import base64
 import pprint
+import mimetypes
 import traceback
 import subprocess
 
