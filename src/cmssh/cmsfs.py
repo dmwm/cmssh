@@ -280,14 +280,14 @@ class CMSFS(object):
         params = {}
         cert = os.path.join(os.environ['HOME'], '.globus/usercert.pem')
         ckey = os.path.join(os.environ['HOME'], '.globus/userkey.pem')
-        data = get_data(url, params, ckey, cert)
-        qname = kwargs['username']
+        data = get_data(url, params)
+        qname = kwargs['username'].lower()
         users = []
         for row in sitedb_parser(data):
-            username = row.get('username', None)
-            forename = row.get('forename', None)
-            surname  = row.get('surname', None)
-            email    = row.get('email', None)
+            username = row.get('username', '').lower()
+            forename = row.get('forename', '').lower()
+            surname  = row.get('surname', '').lower()
+            email    = row.get('email', '').lower()
             if  username and qname.find(username) != -1 or \
                 forename and qname.find(forename) != -1 or \
                 surname and qname.find(surname) != -1 or \
