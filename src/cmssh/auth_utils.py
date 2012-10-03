@@ -137,17 +137,21 @@ def timestamp():
     """Construct timestamp used by Shibboleth"""
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
-def get_data_sso(url, key, cert, debug=0):
+def get_data_sso(url, key, cert, debug=0, read_wbm=False):
     """
     Main routine to get data from data service behind CERN SSO.
     Return file-like descriptor object (similar to open).
     """
+    orig_url = url
     # send request to RunSummary, it set the _shibstate_ cookie which
     # will be used for redirection
     opener = create_ssh_opener(key, cert)
     fdesc  = opener.open(url)
     url    = fdesc.geturl()
-    params = url.split('?')[-1] # redirect parameters
+    if  url.find('?') == -1:
+        params = ''
+    else:
+        params = url.split('?')[-1] # redirect parameters
     if  int(os.environ.get('HTTPDEBUG', 0)):
         print_info('Response info')
         print fdesc.info()
@@ -159,7 +163,10 @@ def get_data_sso(url, key, cert, debug=0):
     if  int(os.environ.get('HTTPDEBUG', 0)):
         print_info('CERN Login parameters')
         print url + '?' + params
-    fdesc  = opener.open(url + '?' + params)
+    if  params:
+        fdesc  = opener.open(url + '?' + params)
+    else:
+        fdesc  = opener.open(url)
     data   = fdesc.read()
     if  int(os.environ.get('HTTPDEBUG', 0)):
         print_info('Response info')
@@ -181,7 +188,10 @@ def get_data_sso(url, key, cert, debug=0):
 
     # now I'm ready to send my form to Shibboleth authentication
     # request to Shibboleth
-    url    = 'https://cmswbm.web.cern.ch/Shibboleth.sso/ADFS'
+    if  read_wbm:
+        url = 'https://cmswbm.web.cern.ch/Shibboleth.sso/ADFS'
+    else:
+        url = orig_url
     params = urllib.urlencode(param_dict)
     if  int(os.environ.get('HTTPDEBUG', 0)):
         print_info('WBM parameters')
