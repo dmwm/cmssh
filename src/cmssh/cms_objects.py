@@ -86,10 +86,11 @@ class Site(CMSObj):
 
 def get_dashboardname(userdn):
     "Return user name used in Dashboard"
-    for key in userdn.split('/'):
-        if  key.find('CN') != -1:
-            usercn = key.replace('/CN=', '')
-            return ''.join(usercn.split(' '))
+    if  userdn and isinstance(userdn, basestring):
+        for key in userdn.split('/'):
+            if  key.find('CN') != -1:
+                usercn = key.replace('/CN=', '')
+                return ''.join(usercn.split(' '))
 
 class User(CMSObj):
     """docstring for User"""
@@ -99,7 +100,7 @@ class User(CMSObj):
         """User string representation"""
         keys = self.data.keys()
         if  set(['username', 'dn']) & set(keys):
-            userdn = self.data['dn']
+            userdn = self.data.get('dn', '')
             sitedb_name = self.data['username']
             dashboard_name = get_dashboardname(userdn)
             return "<SiteDB name=%s, Dashboard name=%s, DN=%s>" \
