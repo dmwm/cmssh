@@ -372,30 +372,10 @@ def site_info(dst, verbose=None):
     data   = get_data(url, params)
     res    = [Site(s) for s in data['phedex']['node']]
     paths  = [r for r in resolve_user_srm_path(dst)]
+    pdirs  = [p.split('=')[-1] for p in paths]
     for site in res:
         site.assign('pfn_path', paths)
-    for pdir in paths:
-        site.assign('default_path', pdir.split('=')[-1])
-    pat    = re.compile('^T[0-9]_[A-Z]+(_)[A-Z]+')
-    if  pat.match(dst) and verbose:
-        url       = phedex_url('blockReplicas')
-        params    = {'node': dst}
-        data      = urllib2.urlopen(url, urllib.urlencode(params, doseq=True))
-        json_dict = json.load(data)
-        totfiles  = 0
-        totblocks = 0
-        totsize   = 0
-        print "Site %s has the following blocks:" % dst
-        for row in json_dict['phedex']['block']:
-            totfiles += long(row['files'])
-            totblocks += 1
-            for rep in row['replica']:
-                if  rep['node'] == dst:
-                    totsize += long(rep['bytes'])
-            print row['name']
-        print "Total number of blocks:", totblocks
-        print "Total number of files :", totfiles
-        return res
+        site.assign('default_path', pdirs)
     return res
 
 def run_info(run, verbose=None):
