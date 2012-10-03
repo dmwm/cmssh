@@ -20,12 +20,12 @@ import cmssh
 from   cmssh.iprint import PrintManager, print_error, print_warning, print_info
 from   cmssh.debug import DebugManager
 from   cmssh.cms_cmds import dbs_instance, Magic, cms_find, cms_du
-from   cmssh.cms_cmds import cms_ls, cms_cp, verbose, cms_dqueue, cmscrab
+from   cmssh.cms_cmds import cms_ls, cms_cp, verbose, cmscrab
 from   cmssh.cms_cmds import cms_rm, cms_rmdir, cms_mkdir, cms_root, cms_xrdcp
 from   cmssh.cms_cmds import cms_install, cms_releases, cms_info, debug_http
 from   cmssh.cms_cmds import cmsrel, cmsrun, cms_help, cms_arch, cms_vomsinit
 from   cmssh.cms_cmds import cms_help_msg, results, cms_apt, cms_das, cms_das_json
-from   cmssh.cms_cmds import github_issues, demo, cms_json
+from   cmssh.cms_cmds import github_issues, demo, cms_json, cms_jobs
 from   cmssh.cms_cmds import cms_lumi, integration_tests, cms_read
 
 class ShellName(object):
@@ -108,6 +108,7 @@ cmsMagicList = [ \
     # specific commands whose execution depends on conditions
     ('crab', cmscrab),
     ('read', cms_read),
+    ('jobs', cms_jobs),
     ('das', cms_das),
     ('das_json', cms_das_json),
     ('apt', cms_apt),
@@ -123,7 +124,6 @@ cmsMagicList = [ \
     ('mkdir', cms_mkdir),
     ('rmdir', cms_rmdir),
     ('cp', cms_cp),
-    ('dqueue', cms_dqueue),
     ('verbose', verbose),
     ('debug_http', debug_http),
     ('install', cms_install),
