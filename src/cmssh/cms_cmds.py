@@ -33,12 +33,13 @@ from cmssh.cms_urls import dbs_instances, tc_url
 from cmssh.das import das_client
 from cmssh.url_utils import get_data, send_email
 from cmssh.regex import pat_release, pat_site, pat_dataset, pat_block
-from cmssh.regex import pat_lfn, pat_run, pat_se
+from cmssh.regex import pat_lfn, pat_run, pat_se, pat_user
 from cmssh.tagcollector import architectures as tc_architectures
 from cmssh.results import RESMGR
 from cmssh.auth_utils import PEMMGR, working_pem
 from cmssh.cmssw_utils import crab_submit_remotely, crabconfig
 from cmssh.cern_html import read
+from cmssh.dashboard import jobsummary
 
 def options(arg):
     """Extract options from given arg string"""
@@ -533,8 +534,8 @@ def cms_help_msg():
     msg += msg_green('das         ') + ' query DAS service\n'
     msg += msg_green('das_json    ') \
         + ' query DAS and return data in JSON format\n'
-    msg += msg_green('dqueue      ') \
-        + ' status of download queue, list files which are in progress.\n'
+    msg += msg_green('jobs        ') \
+        + ' status of job queue or CMS jobs.\n'
     msg += msg_green('root        ') + ' invoke ROOT\n'
     msg += msg_green('du          ') \
         + ' display disk usage for given site, e.g. du T3_US_Cornell\n'
@@ -722,6 +723,38 @@ def cms_ls(arg):
         RESMGR.assign(res)
         list_results(res, debug=True, flt=flt)
 
+def cms_jobs(arg=None):
+    """
+    cmssh jobs command lists local job queue or provides information
+    about jobs at give site or for given user.
+    Examples:
+        cmssh> jobs
+        cmssh> jobs site=T2_US_UCSD
+        cmssh> jobs user=my_cms_user_name
+    """
+    res = None
+    try:
+        debug = get_ipython().debug
+    except:
+        debug = 0
+    orig_arg = arg
+    if  orig_arg.find('|') != -1:
+        arg, flt = orig_arg.split('|', 1)
+        arg = arg.strip()
+    else:
+        flt = None
+    if  arg:
+        arg = arg.strip()
+    if  not arg or arg == 'list':
+        dqueue(arg)
+    elif  pat_site.match(arg):
+        res = jobsummary({'site': arg.replace('site=', '')})
+    elif  pat_user.match(arg):
+        res = jobsummary({'user': arg.replace('user=', '')})
+    if  res:
+        RESMGR.assign(res)
+        list_results(res, debug=True, flt=flt)
+
 def cms_lumi(arg):
     "Return lumi info for given dataset"
     try:
@@ -854,13 +887,6 @@ def cms_cp(arg):
             print_status(status)
         except:
             traceback.print_exc()
-
-def cms_dqueue(arg=None):
-    "Return status of transfer queue. For detailed view please use list option."
-    if  arg and arg != 'list':
-        print_error("Wrong argument '%s', please use 'list'" % arg)
-        return
-    dqueue(arg)
 
 def cms_architectures(arch_type=None):
     "Return list of CMSSW architectures (aka SCRAM_ARCH)"
