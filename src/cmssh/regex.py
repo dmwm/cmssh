@@ -13,6 +13,7 @@ pat_release = re.compile(\
 r'^(release=)?CMSSW(_[0-9]){3}$|(release=)?^CMSSW(_[0-9]){3}_patch[0-9]+$|^(release=)?CMSSW(_[0-9]){3}_pre[0-9]+$')
 pat_lfn = re.compile('.*\.root$')
 pat_site = re.compile('^(site=)?T[0-9]_[A-Z]+(_)[A-Z]+')
+pat_user = re.compile('user=[A-Za-z]+')
 pat_dataset = re.compile('^(dataset=)?/.*/.*/.*')
 pat_block = re.compile('^(block=)?/.*/.*/.*#.*')
 pat_lfn = re.compile('^(file=)?/.*\.root$')
