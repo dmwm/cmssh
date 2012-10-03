@@ -84,14 +84,26 @@ class Site(CMSObj):
         else:
             return self.data
 
+def get_dashboardname(userdn):
+    "Return user name used in Dashboard"
+    for key in userdn.split('/'):
+        if  key.find('CN') != -1:
+            usercn = key.replace('/CN=', '')
+            return ''.join(usercn.split(' '))
+
 class User(CMSObj):
     """docstring for User"""
     def __init__(self, data):
         CMSObj.__init__(self, data)
     def __str__(self):
         """User string representation"""
-        if  self.data.has_key('username'):
-            return self.data['username']
+        keys = self.data.keys()
+        if  set(['username', 'dn']) & set(keys):
+            userdn = self.data['dn']
+            sitedb_name = self.data['username']
+            dashboard_name = get_dashboardname(userdn)
+            return "<SiteDB name=%s, Dashboard name=%s, DN=%s>" \
+                    % (sitedb_name, dashboard_name, userdn)
         return self.data
 
 class Job(CMSObj):
