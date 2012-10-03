@@ -58,11 +58,11 @@ class Magic(object):
     def __init__(self, cmd):
         self.cmd = cmd
     def execute(self, args=''):
-        "Execute given command in a shell"
+        "Execute given command in current shell environment"
         cmd = '%s %s' % (self.cmd, args.strip())
         run(cmd)
     def subprocess(self, args=''):
-        "Execute given command in a shell"
+        "Execute given command in original shell environment"
         cmd = '%s %s' % (self.cmd, args.strip())
         subprocess.call(cmd, shell=True)
 
@@ -425,7 +425,12 @@ def cmsrel(rel):
     for name in os.listdir(reldir):
         fname = os.path.join(reldir, name)
         if  name.find('edm') == 0 and os.path.isfile(fname):
-            cmd = "eval `scramv1 runtime -sh`; %s" % fname
+            # we use Magic(cmd).execute we don't need
+            # to add scramv1 command in front of edm one, since
+            # execute method will run in current shell environment
+            # old command for reference:
+            # cmd = "eval `scramv1 runtime -sh`; %s" % fname
+            cmd = fname
             ipython.register_magic_function(Magic(cmd).execute, 'line', name)
 
     # final message
