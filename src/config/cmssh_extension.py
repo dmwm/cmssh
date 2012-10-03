@@ -26,7 +26,7 @@ from   cmssh.cms_cmds import cms_install, cms_releases, cms_info, debug_http
 from   cmssh.cms_cmds import cmsrel, cmsrun, cms_help, cms_arch, cms_vomsinit
 from   cmssh.cms_cmds import cms_help_msg, results, cms_apt, cms_das, cms_das_json
 from   cmssh.cms_cmds import github_issues, demo, cms_json
-from   cmssh.cms_cmds import cms_lumi, integration_tests
+from   cmssh.cms_cmds import cms_lumi, integration_tests, cms_read
 
 class ShellName(object):
     def __init__(self):
@@ -107,6 +107,7 @@ cmsMagicList = [ \
     ('vomsinfo', Magic('voms-proxy-info').execute),
     # specific commands whose execution depends on conditions
     ('crab', cmscrab),
+    ('read', cms_read),
     ('das', cms_das),
     ('das_json', cms_das_json),
     ('apt', cms_apt),

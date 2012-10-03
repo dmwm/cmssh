@@ -38,6 +38,7 @@ from cmssh.tagcollector import architectures as tc_architectures
 from cmssh.results import RESMGR
 from cmssh.auth_utils import PEMMGR, working_pem
 from cmssh.cmssw_utils import crab_submit_remotely, crabconfig
+from cmssh.cern_html import read
 
 def options(arg):
     """Extract options from given arg string"""
@@ -84,6 +85,10 @@ def installed_releases():
         msg += "\nPlease use " + msg_green('install CMSSW_X_Y_Z') \
                 + ' command to install one'
         print msg
+
+def cms_read(arg):
+    "Read HTML"
+    read(arg)
 
 def cms_releases(arg=None):
     """
