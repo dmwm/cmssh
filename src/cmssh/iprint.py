@@ -387,7 +387,10 @@ def format_dict(data):
         val = data[key]
         if  isinstance(val, list):
             if  len(val) and isinstance(val[0], basestring):
-                val = ', '.join(val)
+                if  len(val) < 5:
+                    val = ', '.join(val)
+                else:
+                    val = '\n'.join(val)
         if  len(key) < length:
             wkey = key + ' '*(length-len(key))
         else:
