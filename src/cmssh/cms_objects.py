@@ -5,8 +5,14 @@
 """
 CMS objects
 """
+# system modules
+import re
+
+# cmssh modules
 from cmssh.iprint import format_dict
 from cmssh.utils import size_format
+
+NUMBER = re.compile('[0-9]')
 
 class CMSObj(object):
     """CMS object"""
@@ -90,7 +96,8 @@ def get_dashboardname(userdn):
         for key in userdn.split('/'):
             if  key.find('CN') != -1:
                 usercn = key.replace('/CN=', '')
-                return ''.join(usercn.split(' '))
+                data = [r for r in usercn.split(' ') if not NUMBER.match(r)]
+                return ''.join(data)
 
 class User(CMSObj):
     """docstring for User"""
