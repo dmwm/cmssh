@@ -828,11 +828,35 @@ def cms_info(arg):
         cmssh> info dataset=/a/b/c
         cmssh> info /a/b/c
         cmssh> info run=160915
+        cmssh> info local_file.root
 
     Please note: to enable access to RunSummary service please ensure that your
     usercert.pem is mapped at https://ca.cern.ch/ca/Certificates/MapCertificate.aspx
     """
-    cms_ls(arg)
+    if  not arg:
+        return
+    try:
+        debug = get_ipython().debug
+    except:
+        debug = 0
+    fname = arg.replace('file=', '')
+    if  arg and os.path.isfile(fname):
+        mtype = mimetypes.guess_type(arg)
+        if  mtype[0]:
+            print "Mime type:", mtype[0]
+        ipython = get_ipython()
+        magic = ipython.find_line_magic('edmFileUtil')
+        if  magic:
+            if  arg[0] == '/':
+                cmd = '-e -f file:///%s' % fname
+            else:
+                cmd = '-e -f %s' % fname
+            ipython.run_line_magic('edmFileUtil', cmd)
+            if  debug:
+                if  ipython.find_line_magic('edmDumpEventContent'):
+                    ipython.run_line_magic('edmDumpEventContent', fname)
+    else:
+        cms_ls(arg)
 
 def cms_cp(arg):
     """
