@@ -79,7 +79,10 @@ class Site(CMSObj):
         """Site string representation"""
         if  self.data.has_key('name'):
             return self.data['name']
-        return self.data['node']
+        elif  self.data.has_key('node'):
+            return self.data['node']
+        else:
+            return self.data
 
 class User(CMSObj):
     """docstring for User"""
@@ -87,15 +90,21 @@ class User(CMSObj):
         CMSObj.__init__(self, data)
     def __str__(self):
         """User string representation"""
-        return self.data['username']
+        if  self.data.has_key('username'):
+            return self.data['username']
+        return self.data
 
 class Job(CMSObj):
-    """docstring for User"""
+    """docstring for Job"""
     def __init__(self, data):
         CMSObj.__init__(self, data)
     def __str__(self):
         """User string representation"""
-        return self.data['name']
+        if  self.data.has_key('name'):
+            return self.data['name']
+        elif self.data.has_key('summaries'):
+            return self.data['summaries']
+        return self.data
 
 class Release(CMSObj):
     """docstring for Release"""
