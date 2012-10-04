@@ -792,6 +792,8 @@ def integration_tests(_arg):
     "Run series of integration tests for cmssh"
     lfn       = \
     '/store/data/CRUZET3/Cosmics/RAW/v1/000/050/832/186585EC-024D-DD11-B747-000423D94AA8.root'
+    lfn2      = \
+    '/store/data/CRUZET3/Cosmics/RAW/v1/000/050/796/4E1D3610-E64C-DD11-8629-001D09F251FE.root'
     dataset   = '/PhotonHad/Run2011A-PromptReco-v1/RECO'
     run       = 160915
     sename    = 'T3_US_Cornell:/store/user/valya'
@@ -808,12 +810,18 @@ def integration_tests(_arg):
                  'rmdir %s/foo' % sename,
                  'ls %s' % sename,
                  ]
-    cmd_list += ['cp %s file.root' % lfn, 'ls',
+    cmd_list += ['cp %s file.root' % lfn,
+                 'ls',
                  'cp file.root %s' % sename,
                  'ls %s' % sename,
                  'rm %s/file.root' % sename,
-                 'ls %s' % sename]
-    cmd_list += ['releases list', 'arch list']
+                 'ls %s' % sename,
+                 'rm file.root',
+                 'cp %s file1.root &' % lfn,
+                 'cp %s file2.root &' % lfn2,
+                 'ls']
+    cmd_list += ['find user=oliver', 'jobs list', 'jobs user=AikenOliver']
+    cmd_list += ['releases list', 'arch list', 'jobs', 'ls']
     mgr = get_ipython()
     for item in cmd_list:
         print_info("Execute %s" % item)
