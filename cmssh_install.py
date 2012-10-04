@@ -168,7 +168,7 @@ def find_cms_package(apt_init, pkg, debug=None, lookup=None):
         name = natsorted(vers)[-1]
     return name
 
-def find_installed_pkg(name):
+def find_installed_pkg(name, debug=0):
     "Find latest version (via natural sort) of installed package for a given name"
     cmd  = 'find $VO_CMS_SW_DIR/$SCRAM_ARCH/%s/*/etc/profile.d -name init.sh' % name
     res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -177,7 +177,8 @@ def find_installed_pkg(name):
     try:
         init = natsorted(vers)[-1] + script
     except:
-        print "Unable to process, name=%s, ver=%s" % (name, vers)
+        if  debug:
+            print "Unable to process, name=%s, ver=%s" % (name, vers)
         if  vers:
             print natsorted(vers)
         return None, None, None
@@ -496,7 +497,7 @@ def main():
                 cmd += ' -unsupported_distribution_hack'
             os.chdir(path)
             exe_cmd(sdir, cmd, debug, 'Bootstrap CMSSW', log='bootstrap.log')
-            apt_init, _root, _ver = find_installed_pkg('external/apt')
+            apt_init, _root, _ver = find_installed_pkg('external/apt', debug)
             cmd  = 'source %s' % apt_init
             cmd += 'apt-get install external+fakesystem+1.0; '
             cmd += 'apt-get update; '
@@ -520,8 +521,8 @@ def main():
             add_url2packages(url, path)
 
     # command to setup CMSSW python
-    _coral_init, coral_root, coral_ver = find_installed_pkg('cms/coral')
-    python_init, python_root, python_ver = find_installed_pkg('external/python')
+    _coral_init, coral_root, coral_ver = find_installed_pkg('cms/coral', debug)
+    python_init, python_root, python_ver = find_installed_pkg('external/python', debug)
     if  not python_init.find('init.sh') != -1:
         msg  = '\nUnable to locate python in:'
         msg += '\n%s/%s/external/python' % (os.environ['VO_CMS_SW_DIR'], os.environ['SCRAM_ARCH'])
@@ -739,8 +740,8 @@ def main():
                     os.path.isfile('/usr/bin/llvm-g++'):
                     env_list  = [('CC', 'llvm-gcc'), ('CXX', 'llvm-g++')]
                     env_list += [('MACOSX_DEPLOYMENT_TARGET', osx_ver())]
-                    ft_init, ft_root, _   = find_installed_pkg('external/freetype')
-                    png_init, png_root, _ = find_installed_pkg('external/libpng')
+                    ft_init, ft_root, _   = find_installed_pkg('external/freetype', debug)
+                    png_init, png_root, _ = find_installed_pkg('external/libpng', debug)
                     cms_env2 = 'source %s; source %s; source %s;' \
                             % (python_init, ft_init, png_init)
                     cflags  = '-I%s/include -I%s/include/freetype2 -I%s/include' \
@@ -899,7 +900,7 @@ coral_init()
         matplotlib_ver = None
         for pkg in deps:
             func = 'cms_init'
-            _init, _root, pkg_ver = find_installed_pkg(pkg)
+            _init, _root, pkg_ver = find_installed_pkg(pkg, debug)
             if  pkg == 'external/py2-matplotlib':
                 matplotlib_ver = pkg_ver
             if  not pkg_ver:
@@ -1066,7 +1067,7 @@ ipython $opts --ipython-dir=$ipdir --profile=cmssh
     print "Make links"
     xrdcp = os.path.join(path, 'install/bin/xrdcp')
     if  not os.path.islink(xrdcp):
-        _xrootd_init, xrootd_root, _xrootd_ver = find_installed_pkg('external/xrootd')
+        _xrootd_init, xrootd_root, _xrootd_ver = find_installed_pkg('external/xrootd', debug)
         os.symlink(os.path.join(xrootd_root, 'bin/xrdcp'), xrdcp)
 
     print "Clean-up soft area"
