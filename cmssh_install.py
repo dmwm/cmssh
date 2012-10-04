@@ -269,7 +269,9 @@ class MyOptionParser:
             type="string", default=None,
             dest="install_dir", help="install directory")
         self.parser.add_option("-i", "--install", action="store_true",
-            dest="install", help="install command")
+            dest="install", help="install cmssh and its dependencies")
+        self.parser.add_option("-u", "--upgrade", action="store_true",
+            dest="upgrade", help="upgrade cmssh")
         self.parser.add_option("--version", action="store",
             type="string", default="v0.26",
             dest="version", help="get specific version of cmssh, e.g. master")
@@ -402,7 +404,7 @@ def main():
             elif os.path.isfile('/opt/local/bin/java') or os.path.islink('/opt/local/bin/java'):
                 os.environ['JAVA_HOME'] = '/opt/local'
 
-    if  not opts.install:
+    if  not opts.install and not opts.upgrade:
         print "Usage: cmssh_install.py --help"
         sys.exit(0)
     check_system(opts.unsupported)
@@ -804,12 +806,15 @@ python setup.py install --prefix=$idir
             init_file.write("")
         shutil.copy(os.path.join(dst, '__init__.py'), os.path.join(dst, 'LumiDB'))
 
-    print "Install cmssh"
+    if  opts.upgrade:
+        print "Upgrade cmssh"
+    else:
+        print "Install cmssh"
     os.chdir(path)
     url = 'http://github.com/vkuznet/cmssh/tarball/%s/' % opts.version
     cmssh_ver = [i for i in url.split('/') if i][-1]
     cmssh_ts  = time.strftime("%Y-%m-%d %H:%M:%S GMT", time.gmtime())
-    if  not is_installed(url, path):
+    if  opts.upgrade or not is_installed(url, path):
         try:
             cmd = 'rm -rf vkuznet-cmssh*; rm -rf cmssh'
             exe_cmd(path, cmd, debug)
