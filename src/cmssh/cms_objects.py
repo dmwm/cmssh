@@ -94,9 +94,11 @@ def get_dashboardname(userdn):
     "Return user name used in Dashboard"
     if  userdn and isinstance(userdn, basestring):
         for key in userdn.split('/'):
-            if  key.find('CN') != -1:
-                usercn = key.replace('/CN=', '')
-                data = [r for r in usercn.split(' ') if not NUMBER.match(r)]
+            if  key.find('CN=') != -1:
+                usercn = key.replace('CN=', '')
+                usercn = usercn.replace('-', '').replace('.', '')
+                data = [r.capitalize() \
+                        for r in usercn.split(' ') if not NUMBER.match(r)]
                 return ''.join(data)
 
 class User(CMSObj):
