@@ -555,7 +555,9 @@ def cms_help_msg():
     msg += msg_green('das_json    ') \
         + ' query DAS and return data in JSON format\n'
     msg += msg_green('jobs        ') \
-        + ' status of job queue or CMS jobs.\n'
+        + ' status of job queue or CMS jobs\n'
+    msg += msg_green('read        ') \
+        + ' read URL/local file content\n'
     msg += msg_green('root        ') + ' invoke ROOT\n'
     msg += msg_green('du          ') \
         + ' display disk usage for given site, e.g. du T3_US_Cornell\n'
