@@ -270,8 +270,9 @@ class MyOptionParser:
             dest="install_dir", help="install directory")
         self.parser.add_option("-i", "--install", action="store_true",
             dest="install", help="install command")
-        self.parser.add_option("--dev", action="store_true",
-            dest="master", help="get cmssh code from development branch")
+        self.parser.add_option("--version", action="store",
+            type="string", default="v0.26",
+            dest="version", help="get specific version of cmssh, e.g. master")
         drivers = ', '.join(available_architectures())
         self.parser.add_option("--arch", action="store",
             type="string", default=None, dest="arch",
@@ -805,10 +806,7 @@ python setup.py install --prefix=$idir
 
     print "Install cmssh"
     os.chdir(path)
-    if  opts.master:
-        url = 'http://github.com/vkuznet/cmssh/tarball/master/'
-    else:
-        url = 'http://github.com/vkuznet/cmssh/tarball/v0.26/'
+    url = 'http://github.com/vkuznet/cmssh/tarball/%s/' % opts.version
     cmssh_ver = [i for i in url.split('/') if i][-1]
     cmssh_ts  = time.strftime("%Y-%m-%d %H:%M:%S GMT", time.gmtime())
     if  not is_installed(url, path):
