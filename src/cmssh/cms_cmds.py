@@ -41,6 +41,7 @@ from cmssh.auth_utils import PEMMGR, working_pem
 from cmssh.cmssw_utils import crab_submit_remotely, crabconfig
 from cmssh.cern_html import read
 from cmssh.dashboard import jobsummary
+from cmssh.reqmgr import reqmgr
 
 def options(arg):
     """Extract options from given arg string"""
@@ -90,7 +91,20 @@ def installed_releases():
 
 def cms_read(arg):
     "Read HTML"
-    read(arg)
+    try:
+        debug = get_ipython().debug
+    except:
+        debug = 0
+    orig_arg = arg
+    if  orig_arg.find('>') != -1:
+        arg, out = orig_arg.split('>', 1)
+        out = out.strip()
+        arg = arg.strip()
+    else:
+        out = None
+    if  arg:
+        arg = arg.strip()
+    read(arg, out, debug)
 
 def cms_releases(arg=None):
     """
@@ -760,6 +774,13 @@ def cms_jobs(arg=None):
     if  res:
         RESMGR.assign(res)
         list_results(res, debug=True, flt=flt)
+
+def cms_config(arg):
+    "Return configuration object"
+    if  arg:
+        arg = arg.strip()
+    if  pat_dataset.match(arg):
+        reqmgr(arg.replace('dataset=', ''))
 
 def cms_lumi(arg):
     "Return lumi info for given dataset"
