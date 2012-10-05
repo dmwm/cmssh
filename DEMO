@@ -22,18 +22,18 @@ info run=160915
 for r in results(): print r.initLumi, type(r.initLumi), r.DeliveredLumi, type(r.DeliveredLumi)
 
 # find lumi info
-lumi dataset=/Photon/Run2012A-29Jun2012-v1/AOD
-lumi block=/Photon/Run2012A-29Jun2012-v1/AOD#3e33ce8e-c44d-11e1-9a26-003048f0e1c6
-lumi file=/store/data/Run2012A/Photon/AOD/29Jun2012-v1/0000/001B241C-ADC3-E111-BD1D-001E673971CA.root
-lumi run=190704
-lumi {190704:[1,2,3,4], 201706:[1,2,3,67]}
+find lumi dataset=/Photon/Run2012A-29Jun2012-v1/AOD
+find lumi block=/Photon/Run2012A-29Jun2012-v1/AOD#3e33ce8e-c44d-11e1-9a26-003048f0e1c6
+find lumi file=/store/data/Run2012A/Photon/AOD/29Jun2012-v1/0000/001B241C-ADC3-E111-BD1D-001E673971CA.root
+find lumi run=190704
+find lumi {190704:[1,2,3,4], 201706:[1,2,3,67]}
 
 # find dataset configuration
-config dataset=/SUSY_LM9_sftsht_8TeV-pythia6/Summer12-START50_V13-v1/GEN-SIM
+find config dataset=/SUSY_LM9_sftsht_8TeV-pythia6/Summer12-START50_V13-v1/GEN-SIM
 
 # read command
 read https://cmsweb.cern.ch/couchdb/reqmgr_config_cache/7a2f69a2a0a6df3bf57ebd6586f184e1/configFile
-config dataset=/SUSY_LM9_sftsht_8TeV-pythia6/Summer12-START50_V13-v1/GEN-SIM > config.txt
+find config dataset=/SUSY_LM9_sftsht_8TeV-pythia6/Summer12-START50_V13-v1/GEN-SIM > config.txt
 read config.txt
 read https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookFWLitePython
 
