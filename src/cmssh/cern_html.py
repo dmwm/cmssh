@@ -36,6 +36,10 @@ def read(url, output=None, debug=0):
         data = get_data(url, decoder=None)
         html = data
         encoding = None
+    elif url.find('mcdb.cern.ch') != -1:
+        data = urllib.urlopen(url)
+        html = data.read()
+        encoding = enc(data.headers, html)[0]
     elif url.find('cern.ch') == -1:
         data = urllib.urlopen(url)
         html = data.read()
