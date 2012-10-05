@@ -55,7 +55,7 @@ class HTTPSClientAuthHandler(urllib2.HTTPSHandler):
                                                 cert_file=self.cert)
         return httplib.HTTPSConnection(host)
 
-def create_ssh_opener(key, cert):
+def create_https_opener(key, cert):
     "Create HTTPS url opener with cookie support"
     cookie_jar = cookielib.CookieJar()
     cookie_handler = urllib2.HTTPCookieProcessor(cookie_jar)
@@ -161,7 +161,7 @@ def get_data_sso(url, key, cert, debug=0, redirect=None):
     orig_url = url
     # send request to url, it sets the _shibstate_ cookie which
     # will be used for redirection
-    opener = create_ssh_opener(key, cert)
+    opener = create_https_opener(key, cert)
     fdesc  = opener.open(url)
     url    = fdesc.geturl()
     if  url.find('?') == -1:
