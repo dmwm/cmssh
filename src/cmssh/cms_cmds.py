@@ -818,6 +818,7 @@ def integration_tests(_arg):
     lfn2      = \
     '/store/data/CRUZET3/Cosmics/RAW/v1/000/050/796/4E1D3610-E64C-DD11-8629-001D09F251FE.root'
     dataset   = '/PhotonHad/Run2011A-PromptReco-v1/RECO'
+    dataset2  = '/SUSY_LM9_sftsht_8TeV-pythia6/Summer12-START50_V13-v1/GEN-SIM'
     run       = 160915
     sename    = 'T3_US_Cornell:/store/user/valya'
     cmd_list  = ['ls', 'mkdir ttt', 'ls -l', 'rmdir ttt', 'ls']
@@ -827,6 +828,7 @@ def integration_tests(_arg):
     cmd_list += ['find lumi dataset=%s' % dataset,
                  'find lumi {"190704":[1,2,3]}',
                  'find lumi {190704:[1,2,3]}']
+    cms_list += ['find config dataset=%s' % dataset2]
     cmd_list += ['du T3_US_Cornell', 'ls T3_US_Cornell']
     cmd_list += ['ls %s' % sename,
                  'mkdir %s/foo' % sename,
