@@ -40,7 +40,8 @@ def runsum(run, debug=0):
     url  = run_summary_url(url, args)
     key  = None
     cert = os.path.join(os.environ['HOME'], '.globus/usercert.pem')
+    redirect = 'https://cmswbm.web.cern.ch/Shibboleth.sso/ADFS'
     with working_pem(PEMMGR.pem) as key:
-        data = get_data_sso(url, key, cert, debug, read_wbm=True)
+        data = get_data_sso(url, key, cert, debug, redirect)
         for row in xml_parser(data, 'runInfo'):
             yield row['runInfo']

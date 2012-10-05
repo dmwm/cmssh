@@ -137,13 +137,29 @@ def timestamp():
     """Construct timestamp used by Shibboleth"""
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
-def get_data_sso(url, key, cert, debug=0, read_wbm=False):
+def parse_sso_output(data):
+    "Parse SSO XML output"
+    # at this point SSO sends back the XML form to proceed since my client
+    # doesn't support JavaScript and no auto-redirection happened
+    # Since XML form is not well-formed XML I'll parse it manually, urggg ...
+    param_dict = {}
+    for item in data.split('<input '):
+        if  item.find('name=') != -1 and item.find('value=') != -1:
+            namelist = item.split('name="')
+            key = namelist[1].split('"')[0]
+            vallist = item.split('value="')
+            val = vallist[1].split('"')[0]
+            val = val.replace('&quot;', '"').replace('&lt;','<')
+            param_dict[key] = val
+    return param_dict
+
+def get_data_sso(url, key, cert, debug=0, redirect=None):
     """
     Main routine to get data from data service behind CERN SSO.
     Return file-like descriptor object (similar to open).
     """
     orig_url = url
-    # send request to RunSummary, it set the _shibstate_ cookie which
+    # send request to url, it sets the _shibstate_ cookie which
     # will be used for redirection
     opener = create_ssh_opener(key, cert)
     fdesc  = opener.open(url)
@@ -176,20 +192,12 @@ def get_data_sso(url, key, cert, debug=0, read_wbm=False):
     # at this point it sends back the XML form to proceed since my client
     # doesn't support JavaScript and no auto-redirection happened
     # Since XML form is not well-formed XML I'll parse it manually, urggg ...
-    param_dict = {}
-    for item in data.split('<input '):
-        if  item.find('name=') != -1 and item.find('value=') != -1:
-            namelist = item.split('name="')
-            key = namelist[1].split('"')[0]
-            vallist = item.split('value="')
-            val = vallist[1].split('"')[0]
-            val = val.replace('&quot;', '"').replace('&lt;','<')
-            param_dict[key] = val
+    param_dict = parse_sso_output(data)
 
     # now I'm ready to send my form to Shibboleth authentication
     # request to Shibboleth
-    if  read_wbm:
-        url = 'https://cmswbm.web.cern.ch/Shibboleth.sso/ADFS'
+    if  redirect:
+        url = redirect
     else:
         url = orig_url
     params = urllib.urlencode(param_dict)
