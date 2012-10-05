@@ -31,7 +31,7 @@ def reqmgr(dataset):
                 for item in val:
                     configs.append(item)
     if  configs:
-        print_info('Found configuration %s files:' % len(configs))
+        print_info('Found %s configuration files:' % len(configs))
         for rec in configs:
             print rec
     else:
