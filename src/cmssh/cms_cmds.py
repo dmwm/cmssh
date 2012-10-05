@@ -824,8 +824,9 @@ def integration_tests(_arg):
     cmd_list += ['ls dataset=%s' % dataset, 'ls run=%s' % run, 'ls file=%s' % lfn]
     cmd_list += ['ls %s' % dataset, 'info %s' % dataset]
     cmd_list += ['find dataset=/ZMM*', 'das dataset=/ZMM*']
-    cmd_list += ['lumi dataset=%s' % dataset,
-                 'lumi {"190704":[1,2,3]}', 'lumi {190704:[1,2,3]}']
+    cmd_list += ['find lumi dataset=%s' % dataset,
+                 'find lumi {"190704":[1,2,3]}',
+                 'find lumi {190704:[1,2,3]}']
     cmd_list += ['du T3_US_Cornell', 'ls T3_US_Cornell']
     cmd_list += ['ls %s' % sename,
                  'mkdir %s/foo' % sename,
