@@ -28,6 +28,7 @@ from   cmssh import dbs2
 from   cmssh.runsum import runsum
 from   cmssh.lumidb import lumidb
 from   cmssh.regex import pat_dataset, pat_block, pat_lfn, pat_run
+from   cmssh.reqmgr import reqmgr
 
 def rowdict(columns, row):
     """Convert given row list into dict with column keys"""
@@ -146,6 +147,12 @@ class CMSFS(object):
         rmp.connect('release', controller='list_releases')
         rmp.connect('releases', controller='list_releases')
         rmp.connect('release={name:CMSSW(_[0-9]){3}}', controller='list_releases')
+        rmp.connect('config dataset={dataset:/.*?}', controller='list_configs')
+        rmp.connect('lumi dataset={dataset:/.*?}', controller='list_lumis')
+        rmp.connect('lumi block={block:/.*#.*?}', controller='list_lumis')
+        rmp.connect('lumi file={file:/.*.root}', controller='list_lumis')
+        rmp.connect('lumi run={run:[0-9]+}', controller='list_lumis')
+        rmp.connect('lumi {arg:.*}', controller='list_lumis')
         return rmp
 
     def lookup(self, obj):
@@ -165,6 +172,28 @@ class CMSFS(object):
         Dataset access method
         """
         return self.lookup(path)
+
+    def list_lumis(self, **kwargs):
+        """
+        Controller to get CMSSW lumi information
+        """
+        if  kwargs.get('dataset'):
+            run_lumi_info(kwargs['dataset'])
+        elif kwargs.has_key('block'):
+            run_lumi_info(kwargs['block'])
+        elif kwargs.has_key('file'):
+            run_lumi_info(kwargs['file'])
+        elif kwargs.has_key('run'):
+            run_lumi_info(kwargs['run'])
+        else:
+            arg = ''.join([v for k, v in kwargs.items()])
+            run_lumi_info(arg)
+
+    def list_configs(self, **kwargs):
+        """
+        Controller to get CMSSW configuration files
+        """
+        reqmgr(kwargs['dataset'])
 
     def list_releases(self, **kwargs):
         """
