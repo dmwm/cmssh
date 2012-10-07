@@ -185,12 +185,25 @@ def debug_http(arg):
 def cms_find(arg):
     """
     Perform lookup of given query in CMS data-services.
+    cmssh find command lookup given query in CMS data-services.
+    Examples:
+        cmssh> find dataset=/ZMM*
+        cmssh> find file dataset=/Cosmics/CRUZET3-v1/RAW
+        csmsh> find site dataset=/Cosmics/CRUZET3-v1/RAW
+        cmssh> find config dataset=/SUSY_LM9_sftsht_8TeV-pythia6/Summer12-START50_V13-v1/GEN-SIM
+        cmssh> find run=160915
+        cmssh> find lumi dataset=/Photon/Run2012A-29Jun2012-v1/AOD
+        cmssh> find lumi run=190704
+        cmssh> find user=oliver
+    List of supported entities: dataset, block, file, run, lumi, site, user.
     """
     lookup(arg)
 
 def cms_du(arg):
     """
-    Disk utility cmssh command. Provides information about given CMS storage element.
+    cmssh disk utility cmssh command.
+    Examples:
+        cmssh> du T3_US_Cornell
     """
     lookup(arg)
 
@@ -304,7 +317,9 @@ def get_apt_init(arch):
 
 def cms_install(rel):
     """
-    Install given CMSSW release
+    cmssh command to install given CMSSW release.
+    Examples:
+        cmssh> install CMSSW_5_2_4
     """
     rel = rel.strip()
     pat = pat_release
@@ -346,7 +361,10 @@ def cms_install(rel):
 
 def cmsrel(rel):
     """
-    Switch to given CMSSW release
+    cmssh release setup command, it setups CMSSW environment and creates user based
+    directory structure.
+    Examples:
+        cmssh> cmsrel CMSSW_5_2_4
     """
     rel = rel.strip()
     if  not rel:
