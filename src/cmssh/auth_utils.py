@@ -145,13 +145,25 @@ def parse_sso_output(data):
     param_dict = {}
     for item in data.split('<input '):
         if  item.find('name=') != -1 and item.find('value=') != -1:
-            namelist = item.split('name="')
-            key = namelist[1].split('"')[0]
-            vallist = item.split('value="')
-            val = vallist[1].split('"')[0]
+            try:
+                namelist = item.split('name="')
+                key = namelist[1].split('"')[0]
+            except:
+                namelist = item.split('name=')
+                key = namelist[1].split(' ')[0].strip()
+            try:
+                vallist = item.split('value="')
+                val = vallist[1].split('"')[0]
+            except:
+                vallist = item.split('value=')
+                val = vallist[1].split(' ')[0].strip()
             val = val.replace('&quot;', '"').replace('&lt;','<')
             param_dict[key] = val
-    return param_dict
+        for key in ['action', 'ACTION']:
+            if  item.find('%s=' % key) != -1:
+                action = item.split("%s=" % key)[-1].split(" ")[0].split('"')[1]
+                break
+    return param_dict, action
 
 def get_data_sso(url, key, cert, debug=0, redirect=None):
     """
@@ -192,11 +204,13 @@ def get_data_sso(url, key, cert, debug=0, redirect=None):
     # at this point it sends back the XML form to proceed since my client
     # doesn't support JavaScript and no auto-redirection happened
     # Since XML form is not well-formed XML I'll parse it manually, urggg ...
-    param_dict = parse_sso_output(data)
+    param_dict, action = parse_sso_output(data)
 
     # now I'm ready to send my form to Shibboleth authentication
     # request to Shibboleth
-    if  redirect:
+    if  action:
+        url = action
+    elif redirect:
         url = redirect
     else:
         url = orig_url
