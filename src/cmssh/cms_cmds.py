@@ -876,7 +876,7 @@ def integration_tests(_arg):
     dataset2  = '/SUSY_LM9_sftsht_8TeV-pythia6/Summer12-START50_V13-v1/GEN-SIM'
     run       = 160915
     sename    = 'T3_US_Cornell:/store/user/valya'
-    cmd_list  = ['ls', 'mkdir ttt', 'ls -l', 'rmdir ttt', 'ls']
+    cmd_list  = ['pager 0', 'ls', 'mkdir ttt', 'ls -l', 'rmdir ttt', 'ls']
     cmd_list += ['ls dataset=%s' % dataset, 'ls run=%s' % run, 'ls file=%s' % lfn]
     cmd_list += ['ls %s' % dataset, 'info %s' % dataset]
     cmd_list += ['find dataset=/ZMM*', 'das dataset=/ZMM*']
