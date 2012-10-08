@@ -90,7 +90,11 @@ def installed_releases():
         print msg
 
 def cms_read(arg):
-    "Read HTML"
+    """
+    cmssh command to read provided HTML page (by default output dumps via pager)
+    Examples:
+        cmssh> read https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookFWLitePython
+    """
     try:
         debug = get_ipython().debug
     except:
@@ -135,7 +139,9 @@ def pkg_init(pkg_dir):
 
 def cms_root(arg):
     """
-    Run ROOT command
+    cmssh command to run ROOT within cmssh
+    Examples:
+        cmssh> root -l
     """
     pcre_init = pkg_init('external/pcre')
     gcc_init  = pkg_init('external/gcc')
@@ -146,7 +152,9 @@ def cms_root(arg):
 
 def cms_xrdcp(arg):
     """
-    Run ROOT xrdcp command
+    cmssh command to run ROOT xrdcp via cmssh shell
+    Examples:
+        cmssh> xrdcp /a/b/c.root file:////tmp.file.root
     """
     dyld_path = os.environ.get('DYLD_LIBRARY_PATH', None)
     root_path = os.environ['DEFAULT_ROOT']
@@ -195,7 +203,8 @@ def cms_find(arg):
         cmssh> find lumi dataset=/Photon/Run2012A-29Jun2012-v1/AOD
         cmssh> find lumi run=190704
         cmssh> find user=oliver
-    List of supported entities: dataset, block, file, run, lumi, site, user.
+    List of supported entities:
+        dataset, block, file, run, lumi, site, user
     """
     lookup(arg)
 
@@ -527,14 +536,18 @@ def cmscrab(arg):
 
 def cmsrun(arg):
     """
-    Execute CMSSW cmsRun command
+    cmssh command to execute CMSSW cmsRun command.
+    Requires cmsrel to setup CMSSW environment.
     """
     cmd = 'cmsRun %s' % arg
     cmsexe(cmd)
 
 def dbs_instance(arg=None):
     """
-    Show or set dbs instance
+    cmssh command to show or set DBS instance
+    Examples:
+        cmssh> dbs_instance
+        cmssh> dbs_instance cms_dbs_prod_global
     """
     arg = arg.strip()
     if  arg:
@@ -601,6 +614,7 @@ def cms_help_msg():
     msg += '   find dataset=/*Zee*\n'
     msg += '   for r in results(): print r, type(r)\n'
     msg += '\nHelp is accessible via ' + msg_blue('cmshelp <command>\n')
+    msg += '\nList all available commands ' + msg_blue('cmshelp commands\n')
     msg += '\nTo install python software use ' + \
                 msg_blue('pip <search|(un)install> <package>')
     return msg
@@ -610,6 +624,9 @@ def cms_help(arg=None):
     cmshelp command
     """
     if  arg:
+        if  arg.strip() == 'commands':
+            cms_commands()
+            return
         ipython = get_ipython()
         if  arg[0] == '(' and arg[-1] == ')':
             arg = arg[1:-1]
@@ -1024,7 +1041,11 @@ def cms_apt(arg=''):
     run(cmd)
 
 def cms_das(query):
-    "Execute given query in CMS DAS data-service"
+    """
+    cmssh command which queries DAS data-service with provided query.
+    Examples:
+        cmssh> das dataset=/ZMM*
+    """
     host  = 'https://cmsweb.cern.ch'
     idx   = 0
     limit = 0
@@ -1032,7 +1053,12 @@ def cms_das(query):
     das_client(host, query, idx, limit, debug, 'plain')
 
 def cms_das_json(query):
-    "Execute given query in CMS DAS data-service"
+    """
+    cmssh command which queries DAS data-service with provided query and
+    returns results in JSON data format
+    Examples:
+        cmssh> das_json dataset=/ZMM*
+    """
     host  = 'https://cmsweb.cern.ch'
     idx   = 0
     limit = 0
@@ -1042,7 +1068,13 @@ def cms_das_json(query):
     pprint.pprint(res)
 
 def cms_vomsinit(_arg=None):
-    "Execute voms-proxy-init command on behalf of the user"
+    """
+    cmssh command which executes voms-proxy-init on behalf of the user
+    Examples:
+        cmssh> vomsinit
+    By default it applies the following options
+        -rfc -voms cms:/cms -key <userkey.pem> -cert <usercert.pem>
+    """
     cert = os.path.join(os.environ['HOME'], '.globus/usercert.pem')
     with working_pem(PEMMGR.pem) as key:
         run("voms-proxy-destroy")
@@ -1116,3 +1148,15 @@ def demo(_arg=None):
 def results():
     """Return results from recent query"""
     return RESMGR
+
+def cms_commands(_arg=None):
+    """
+    cmssh command which lists all registered cmssh commands in current shell.
+    Examples:
+        cmssh> cmshelp commands
+    """
+    mdict = get_ipython().magics_manager.lsmagic()
+    cmds  = [k for k, v in mdict['line'].items() if v.func_name.find('cms_')!=-1]
+    cmds.sort()
+    for key in cmds:
+        print key
