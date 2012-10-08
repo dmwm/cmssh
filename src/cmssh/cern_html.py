@@ -38,7 +38,7 @@ def read(url, output=None, debug=0):
         encoding = None
     elif url.find('mcdb.cern.ch') != -1:
         data = urllib.urlopen(url)
-        html = data.read()
+        html = data.read().replace('&nbsp_place_holder;', '')
         encoding = enc(data.headers, html)[0]
     elif url.find('cern.ch') == -1:
         data = urllib.urlopen(url)
@@ -51,6 +51,7 @@ def read(url, output=None, debug=0):
             encoding = enc(data.headers, html)[0]
     if  encoding == 'us-ascii':
         encoding = 'utf-8'
+    pager = os.environ.get('CMSSH_PAGER', None)
     if  html:
         if  encoding:
             text = html.decode(encoding)
@@ -60,7 +61,10 @@ def read(url, output=None, debug=0):
                     stream.write(html)
             else:
                 try:
-                    pydoc.pager(res.encode('utf-8'))
+                    if  pager:
+                        pydoc.pager(res.encode('utf-8'))
+                    else:
+                        wrapwrite(html2text(text, ''))
                 except:
                     wrapwrite(html2text(text, ''))
         else:
@@ -69,6 +73,9 @@ def read(url, output=None, debug=0):
                     stream.write(html)
             else:
                 try:
-                    pydoc.pager(html)
+                    if  pager:
+                        pydoc.pager(html)
+                    else:
+                        print html
                 except:
                     print html
