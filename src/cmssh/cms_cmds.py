@@ -614,7 +614,7 @@ def cms_help_msg():
     msg += '   find dataset=/*Zee*\n'
     msg += '   for r in results(): print r, type(r)\n'
     msg += '\nHelp is accessible via ' + msg_blue('cmshelp <command>\n')
-    msg += '\nList all available commands ' + msg_blue('cmshelp commands\n')
+    msg += '; cmssh commands ' + msg_blue('commands\n')
     msg += '\nTo install python software use ' + \
                 msg_blue('pip <search|(un)install> <package>')
     return msg
