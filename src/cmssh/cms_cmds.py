@@ -883,7 +883,7 @@ def integration_tests(_arg):
     cmd_list += ['find lumi dataset=%s' % dataset,
                  'find lumi {"190704":[1,2,3]}',
                  'find lumi {190704:[1,2,3]}']
-    cms_list += ['find config dataset=%s' % dataset2]
+    cmd_list += ['find config dataset=%s' % dataset2]
     cmd_list += ['du T3_US_Cornell', 'ls T3_US_Cornell']
     cmd_list += ['ls %s' % sename,
                  'mkdir %s/foo' % sename,
