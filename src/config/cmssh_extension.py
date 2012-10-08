@@ -27,7 +27,7 @@ from   cmssh.cms_cmds import cmsrel, cmsrun, cms_help, cms_arch, cms_vomsinit
 from   cmssh.cms_cmds import cms_help_msg, results, cms_apt, cms_das, cms_das_json
 from   cmssh.cms_cmds import github_issues, demo, cms_json, cms_jobs
 from   cmssh.cms_cmds import cms_lumi, integration_tests, cms_read
-from   cmssh.cms_cmds import cms_config
+from   cmssh.cms_cmds import cms_config, cms_commands
 
 class ShellName(object):
     def __init__(self):
@@ -111,6 +111,7 @@ cmsMagicList = [ \
     ('read', cms_read),
     ('jobs', cms_jobs),
     ('config', cms_config),
+    ('commands', cms_commands),
     ('das', cms_das),
     ('das_json', cms_das_json),
     ('apt', cms_apt),
