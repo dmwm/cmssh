@@ -27,7 +27,7 @@ from   cmssh.cms_cmds import cmsrel, cmsrun, cms_help, cms_arch, cms_vomsinit
 from   cmssh.cms_cmds import cms_help_msg, results, cms_apt, cms_das, cms_das_json
 from   cmssh.cms_cmds import github_issues, demo, cms_json, cms_jobs
 from   cmssh.cms_cmds import cms_lumi, integration_tests, cms_read
-from   cmssh.cms_cmds import cms_config, cms_commands
+from   cmssh.cms_cmds import cms_config, cms_commands, cms_pager
 
 class ShellName(object):
     def __init__(self):
@@ -141,6 +141,7 @@ cmsMagicList = [ \
     ('ticket', github_issues),
     ('demo', demo),
     ('test', integration_tests),
+    ('pager', cms_pager),
 ]
 if  os.environ.get('CMSSH_EOS', 0):
     eos = '/afs/cern.ch/project/eos/installation/cms/bin/eos.select'
@@ -204,10 +205,12 @@ def main(ipython):
             setattr(ip, magic_name, m[1])
 
     # import required modules for the shell
+    ip.ex("import os")
     ip.ex("from cmssh.cms_cmds import results, cms_vomsinit")
     ip.ex("from cmssh.auth_utils import PEMMGR, read_pem")
     ip.ex("read_pem()")
     ip.ex("cms_vomsinit()")
+    ip.ex("os.environ['CMSSH_PAGER']='1'")
 
     # Set cmssh prompt
     prompt = 'cms-sh'
