@@ -542,6 +542,26 @@ def cmsrun(arg):
     cmd = 'cmsRun %s' % arg
     cmsexe(cmd)
 
+def cms_pager(arg=None):
+    """
+    cmssh command to show or set internal pager
+    Examples:
+        cmssh> pager # shows current setting
+        cmssh> pager None # set pager to nill
+    """
+    arg = arg.strip()
+    if  arg:
+        if  arg == '0' or arg == 'None' or arg == 'False':
+            if  os.environ.has_key('CMSSH_PAGER'):
+                del os.environ['CMSSH_PAGER']
+        else:
+            os.environ['CMSSH_PAGER'] = arg
+        print "Set CMSSH pager to %s" % arg
+    else:
+        val = os.environ.get('CMSSH_PAGER', None)
+        msg = "cmssh pager is set to: %s" % val
+        print msg
+
 def dbs_instance(arg=None):
     """
     cmssh command to show or set DBS instance
@@ -613,7 +633,7 @@ def cms_help_msg():
         % msg_blue('results()')
     msg += '   find dataset=/*Zee*\n'
     msg += '   for r in results(): print r, type(r)\n'
-    msg += '\nHelp is accessible via ' + msg_blue('cmshelp <command>\n')
+    msg += '\nHelp is accessible via ' + msg_blue('cmshelp <command>')
     msg += '; cmssh commands ' + msg_blue('commands\n')
     msg += '\nTo install python software use ' + \
                 msg_blue('pip <search|(un)install> <package>')
