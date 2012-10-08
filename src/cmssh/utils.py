@@ -11,6 +11,7 @@ import sys
 import stat
 import time
 import shlex
+import pydoc
 import types
 import readline
 import traceback
@@ -284,9 +285,49 @@ class Completer:
             return None
 
 def list_results(res, debug, flt=None):
-    """List results"""
+    "List results"
+    gen = formatter_output(res, debug)
+    out = '\n'.join([str(r) for r in gen])
+    if  flt:
+        out = '\n'.join(filter_output(out, flt))
+    if  os.environ.get('CMSSH_PAGER', None):
+        pydoc.pager(out)
+    else:
+        print out
 
-    old_stdout = sys.stdout
+def formatter_output(res, debug):
+    "Formatter takes care of results representation"
+    if  isinstance(res, list) or isinstance(res, GeneratorType):
+        for row in res:
+            if  not debug:
+                yield row
+            else:
+                if  isinstance(row, basestring):
+                    yield row
+                else:
+                    yield repr(row)
+    elif  isinstance(res, set):
+        for row in list(res):
+            if  not debug:
+                yield row
+            else:
+                if  isinstance(row, basestring):
+                    yield row
+                else:
+                    yield repr(row)
+    elif isinstance(res, dict):
+        yield format_dict(res)
+    else:
+        if  not debug:
+            yield res
+        else:
+            if  isinstance(res, basestring):
+                yield res
+            else:
+                yield repr(res)
+
+def filter_output(output, flt):
+    "Filter given output"
     match = None
     if  flt:
         arr = flt.split()
@@ -294,40 +335,6 @@ def list_results(res, debug, flt=None):
             match = ' '.join(arr[1:]).strip()
         else:
             raise NotImplementedError
-        sys.stdout = mystdout = StringIO()
-
-    if  not res:
-        return
-    if  isinstance(res, list) or isinstance(res, GeneratorType):
-        for row in res:
-            if  not debug:
-                print row
-            else:
-                if  isinstance(row, basestring):
-                    print row
-                else:
-                    print repr(row)
-    elif  isinstance(res, set):
-        for row in list(res):
-            if  not debug:
-                print row
-            else:
-                if  isinstance(row, basestring):
-                    print row
-                else:
-                    print repr(row)
-    elif isinstance(res, dict):
-        print format_dict(res)
-    else:
-        if  not debug:
-            print res
-        else:
-            if  isinstance(res, basestring):
-                print res
-            else:
-                print repr(res)
-
-    sys.stdout = old_stdout
     if  flt and match:
         arr = match.split()
         opt = None
@@ -337,20 +344,19 @@ def list_results(res, debug, flt=None):
             opt, match = arr
         else:
             raise NotImplementedError
-        output = mystdout.getvalue()
         for line in output.split('\n'):
             if  opt and opt == '-i':
                 if  line.lower().find(match.lower()) != -1:
-                    print line
+                    yield line
             elif  opt and opt == '-v':
                 if  line.find(match) == -1:
-                    print line
+                    yield line
             elif  opt and (opt == '-iv' or opt == '-vi'):
                 if  line.lower().find(match.lower()) == -1:
-                    print line
+                    yield line
             else:
                 if  line.find(match) != -1:
-                    print line
+                    yield line
 
 def execmd(cmd):
     """Execute given command in subprocess"""
