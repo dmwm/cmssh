@@ -169,8 +169,16 @@ def get_data_sso(url, key, cert, debug=0, redirect=None):
     """
     Main routine to get data from data service behind CERN SSO.
     Return file-like descriptor object (similar to open).
+    For iCMS access we need to pass via environment checking, e.g.
+    http://cms.cern.ch/iCMS/bla should be redirected to
+    https://cms.cern.ch/test/env.cgi?url=http://cms.cern.ch/iCMS/bla
     """
-    orig_url = url
+    cern_env = 'https://cms.cern.ch/test/env.cgi?url='
+    if  url.find('http://cms.cern.ch/iCMS') == 0 or\
+        url.find('https://cms.cern.ch/iCMS') == 0:
+        url   = cern_env + url
+    orig_url  = url
+    orig_args = url.split('?')[-1]
     # send request to url, it sets the _shibstate_ cookie which
     # will be used for redirection
     opener = create_https_opener(key, cert)
@@ -184,6 +192,12 @@ def get_data_sso(url, key, cert, debug=0, redirect=None):
         print_info('Response info')
         print fdesc.info()
         print fdesc.geturl()
+    if  not params or params == orig_args:
+        # if we did not receive new set of SSO parameters pass file
+        # descriptor to upper level, e.g.
+        # in case of CERN twiki it does not pass through SSO
+        # therefore we just return file descriptor
+        return fdesc
     fdesc.close()
 
     # now, request authentication at CERN login page
