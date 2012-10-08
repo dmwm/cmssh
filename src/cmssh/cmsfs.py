@@ -29,6 +29,7 @@ from   cmssh.runsum import runsum
 from   cmssh.lumidb import lumidb
 from   cmssh.regex import pat_dataset, pat_block, pat_lfn, pat_run
 from   cmssh.reqmgr import reqmgr
+from   cmssh.prepsrv import prep
 
 def rowdict(columns, row):
     """Convert given row list into dict with column keys"""
@@ -153,6 +154,8 @@ class CMSFS(object):
         rmp.connect('lumi file={file:/.*.root}', controller='list_lumis')
         rmp.connect('lumi run={run:[0-9]+}', controller='list_lumis')
         rmp.connect('lumi {arg:.*}', controller='list_lumis')
+        rmp.connect('prep dataset={dataset:/.*?}', controller='list_prep')
+        rmp.connect('mcinfo dataset={dataset:/.*?}', controller='list_prep')
         return rmp
 
     def lookup(self, obj):
@@ -194,6 +197,12 @@ class CMSFS(object):
         Controller to get CMSSW configuration files
         """
         reqmgr(kwargs['dataset'])
+
+    def list_prep(self, **kwargs):
+        """
+        Controller to get CMSSW configuration files
+        """
+        prep(kwargs['dataset'])
 
     def list_releases(self, **kwargs):
         """
