@@ -215,13 +215,11 @@ def get_data_sso(url, key, cert, debug=0, redirect=None):
         print fdesc.info()
     fdesc.close()
 
-    # at this point it sends back the XML form to proceed since my client
-    # doesn't support JavaScript and no auto-redirection happened
-    # Since XML form is not well-formed XML I'll parse it manually, urggg ...
+    # parse SSO output
     param_dict, action = parse_sso_output(data)
 
-    # now I'm ready to send my form to Shibboleth authentication
-    # request to Shibboleth
+    # finally, retrieve data from given action URL/redirect or original URL
+    # with all cookies in place and given set of parameters
     if  action:
         url = action
     elif redirect:
@@ -230,7 +228,7 @@ def get_data_sso(url, key, cert, debug=0, redirect=None):
         url = orig_url
     params = urllib.urlencode(param_dict)
     if  int(os.environ.get('HTTPDEBUG', 0)):
-        print_info('WBM parameters')
+        print_info('Redirect parameters')
         print url + '?' + params
     fdesc  = opener.open(url, params)
     return fdesc
