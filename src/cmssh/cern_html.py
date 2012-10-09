@@ -16,6 +16,7 @@ from feedparser import _getCharacterEncoding as enc
 from html2text import wrapwrite, html2text
 
 # cmssh modules
+from cmssh.iprint import print_info
 from cmssh.auth_utils import get_data_sso, PEMMGR, working_pem
 from cmssh.url_utils import get_data
 
@@ -53,6 +54,9 @@ def read(url, output=None, debug=0):
         encoding = 'utf-8'
     pager = os.environ.get('CMSSH_PAGER', None)
     if  html:
+        if  int(os.environ.get('HTTPDEBUG', 0)):
+            print_info('read data')
+            print html
         if  encoding:
             text = html.decode(encoding)
             res  = html2text(text, '')
