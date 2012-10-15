@@ -42,6 +42,7 @@ from cmssh.cmssw_utils import crab_submit_remotely, crabconfig
 from cmssh.cern_html import read
 from cmssh.dashboard import jobsummary
 from cmssh.reqmgr import reqmgr
+from cmssh.cms_objects import get_dashboardname
 
 def options(arg):
     """Extract options from given arg string"""
@@ -823,11 +824,21 @@ def cms_jobs(arg=None):
     if  arg:
         arg = arg.strip()
     if  not arg or arg == 'list':
+        print_info('Local data transfer')
         dqueue(arg)
+        userdn = os.environ.get('USER_DN', None)
+        if  userdn:
+            user = get_dashboardname(userdn)
+            print_info('Dashboard information, user=%s' % user)
+            res  = jobsummary({'user': user})
     elif  pat_site.match(arg):
-        res = jobsummary({'site': arg.replace('site=', '')})
+        site = arg.replace('site=', '')
+        print_info('Dashboard information, site=%s' % site)
+        res  = jobsummary({'site': site})
     elif  pat_user.match(arg):
-        res = jobsummary({'user': arg.replace('user=', '')})
+        user = arg.replace('user=', '')
+        print_info('Dashboard information, user=%s' % user)
+        res  = jobsummary({'user': user})
     if  res:
         RESMGR.assign(res)
         list_results(res, debug=True, flt=flt)
@@ -1102,6 +1113,11 @@ def cms_vomsinit(_arg=None):
         run("voms-proxy-destroy")
         cmd = "voms-proxy-init -rfc -voms cms:/cms -key %s -cert %s" % (key, cert)
         run(cmd)
+        userdn = os.environ.get('USER_DN', '')
+        if  not userdn:
+            cmd = "voms-proxy-info -identity"
+            stdout, stderr = execmd(cmd)
+            os.environ['USER_DN'] = stdout.replace('\n', '')
 
 def github_issues(arg=None):
     """
