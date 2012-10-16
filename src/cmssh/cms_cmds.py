@@ -804,10 +804,19 @@ def cms_ls(arg):
 def cms_jobs(arg=None):
     """
     cmssh jobs command lists local job queue or provides information
-    about jobs at give site or for given user.
+    about jobs at give site or for given user. It accepts the following
+    list of options:
+
+    - list, which lists local transfer jobs
+    - site, which lists jobs at given site
+    - dashboard, which lists jobs of current user
+    - user, which lists jobs of given user
+
     Examples:
         cmssh> jobs
+        cmssh> jobs list
         cmssh> jobs site=T2_US_UCSD
+        cmssh> jobs dashboard
         cmssh> jobs user=my_cms_user_name
     """
     res = None
@@ -826,6 +835,7 @@ def cms_jobs(arg=None):
     if  not arg or arg == 'list':
         print_info('Local data transfer')
         dqueue(arg)
+    elif arg == 'dashboard':
         userdn = os.environ.get('USER_DN', None)
         if  userdn:
             user = get_dashboardname(userdn)
