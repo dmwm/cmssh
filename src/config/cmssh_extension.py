@@ -210,7 +210,7 @@ def main(ipython):
     ip.ex("from cmssh.auth_utils import PEMMGR, read_pem")
     ip.ex("read_pem()")
     ip.ex("cms_vomsinit()")
-    ip.ex("os.environ['CMSSH_PAGER']='1'")
+    ip.ex("os.environ['CMSSH_PAGER']='0'")
 
     # Set cmssh prompt
     prompt = 'cms-sh'
