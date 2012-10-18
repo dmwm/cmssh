@@ -286,11 +286,14 @@ class Completer:
 
 def list_results(res, debug, flt=None):
     "List results"
+    if  not res:
+        return
     gen = formatter_output(res, debug)
     out = '\n'.join([str(r) for r in gen])
     if  flt:
         out = '\n'.join(filter_output(out, flt))
-    if  os.environ.get('CMSSH_PAGER', None):
+    pager = os.environ.get('CMSSH_PAGER', None)
+    if  pager and pager != '0':
         pydoc.pager(out)
     else:
         print out
