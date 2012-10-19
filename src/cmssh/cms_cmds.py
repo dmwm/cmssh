@@ -94,7 +94,9 @@ def cms_read(arg):
     """
     cmssh command to read provided HTML page (by default output dumps via pager)
     Examples:
+        cmssh> read https://cmsweb.cern.ch/couchdb/reqmgr_config_cache/7a2f69a2a0a6df3bf57ebd6586f184e1/configFile
         cmssh> read https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookFWLitePython
+        cmssh> read config.txt
     """
     try:
         debug = get_ipython().debug
@@ -213,9 +215,16 @@ def cms_du(arg):
     """
     cmssh disk utility cmssh command.
     Examples:
+        cmssh> du # UNIX command
         cmssh> du T3_US_Cornell
     """
-    lookup(arg)
+    arg = arg.strip()
+    if  pat_site.match(arg):
+        lookup(arg)
+    else:
+        cmd = 'du ' + arg
+        cmd = cmd.strip()
+        subprocess.call(cmd, shell=True)
 
 def lookup(arg):
     """
@@ -630,19 +639,23 @@ def cms_help_msg():
         + ' setup your proxy (aka voms-proxy-init)\n'
     msg += msg_green('vomsinfo    ') \
         + ' show your proxy info (aka voms-proxy-info)\n'
-    msg += '\nQuery results are accessible via %s function:\n' \
+    msg += '\nQuery results are accessible via %s function, e.g.\n' \
         % msg_blue('results()')
     msg += '   find dataset=/*Zee*\n'
     msg += '   for r in results(): print r, type(r)\n'
-    msg += '\nHelp is accessible via ' + msg_blue('cmshelp <command>')
-    msg += '; cmssh commands ' + msg_blue('commands\n')
-    msg += '\nTo install python software use ' + \
+    msg += '\nList cmssh commands    : ' + msg_blue('commands')
+    msg += '\ncmssh command help     : ' + msg_blue('cmshelp <command>')
+    msg += '\nInstall python software: ' + \
                 msg_blue('pip <search|(un)install> <package>')
     return msg
 
 def cms_help(arg=None):
     """
     cmshelp command
+    Examples:
+        cmssh> cmshelp
+        cmssh> cmshelp commands
+        cmssh> cmshelp ls
     """
     if  arg:
         if  arg.strip() == 'commands':
@@ -739,7 +752,7 @@ def cms_ls(arg):
     cmssh ls command lists local files/dirs/CMS storate elements or
     CMS entities (se, site, dataset, block, run, release, file).
     Examples:
-        cmssh> ls local_file
+        cmssh> ls # UNIX command
         cmssh> ls -l local_file
         cmssh> ls T3_US_Cornell:/store/user/valya
         cmssh> ls run=160915
@@ -854,14 +867,27 @@ def cms_jobs(arg=None):
         list_results(res, debug=True, flt=flt)
 
 def cms_config(arg):
-    "Return configuration object"
+    """
+    Return configuration object for given dataset
+    Examples:
+        cmssh> config dataset=/SUSY_LM9_sftsht_8TeV-pythia6/Summer12-START50_V13-v1/GEN-SIM
+    """
     if  arg:
         arg = arg.strip()
     if  pat_dataset.match(arg):
         reqmgr(arg.replace('dataset=', ''))
 
 def cms_lumi(arg):
-    "Return lumi info for given dataset"
+    """
+    Return lumi info for a given dataset/file/block/lfn/run
+    Examples:
+        cmssh> lumi run=190704
+        cmssh> lumi dataset=/Photon/Run2012A-29Jun2012-v1/AOD
+        cmssh> lumi block=/Photon/Run2012A-29Jun2012-v1/AOD#3e33ce8e-c44d-11e1-9a26-003048f0e1c6find
+        cmssh> lumi file=/store/data/Run2012A/Photon/AOD/29Jun2012-v1/0000/001B241C-ADC3-E111-BD1D-001E673971CA.root   
+        cmssh> lumi run=190704
+        cmssh> lumi {190704:[1,2,3,4], 201706:[1,2,3,67]}
+    """
     try:
         debug = get_ipython().debug
     except:
@@ -871,7 +897,7 @@ def cms_lumi(arg):
     res = run_lumi_info(arg, debug)
 
 def cms_json(arg):
-    "Print or set CMS JSON file"
+    "Print or set location of CMS JSON file"
     if  arg:
         if  access2file(arg):
             os.environ['CMS_JSON'] = arg
