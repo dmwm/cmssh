@@ -19,6 +19,11 @@ find file dataset=/Cosmics/CRUZET3-v1/RAW
 find site dataset=/Cosmics/CRUZET3-v1/RAW
 find run=160915
 info run=160915
+pager 1
+info run=160915
+pager 0
+
+# results() function
 for r in results(): print r.initLumi, type(r.initLumi), r.DeliveredLumi, type(r.DeliveredLumi)
 
 # find lumi info
@@ -31,7 +36,7 @@ find lumi {190704:[1,2,3,4], 201706:[1,2,3,67]}
 # find dataset configuration
 find config dataset=/SUSY_LM9_sftsht_8TeV-pythia6/Summer12-START50_V13-v1/GEN-SIM
 
-# read command
+# read commands
 read https://cmsweb.cern.ch/couchdb/reqmgr_config_cache/7a2f69a2a0a6df3bf57ebd6586f184e1/configFile
 find config dataset=/SUSY_LM9_sftsht_8TeV-pythia6/Summer12-START50_V13-v1/GEN-SIM > config.txt
 read config.txt
@@ -86,6 +91,7 @@ cp T1_US_FNAL_Buffer:/store/user/neggert/TT_TuneZ2_7TeV-mcatnlo/MCTSusy_Skim_Mar
 jobs
 jobs list
 jobs site=T2_US_UCSD
+jobs dashboard
 
 # find user information
 find user=oliver
