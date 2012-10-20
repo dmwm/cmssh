@@ -32,6 +32,7 @@ def releases(rel_name=None, rfilter=None):
             if  pat.match(key) or not key.find('CMSSW') != -1 or \
                 key.find('EXPERIMENTAL') != -1 or \
                 key.find('CLANG') != -1 or \
+                key.find('_X_') != -1 or \
                 key.find('FORTIFIED') != -1:
                 continue
         row   = {}
