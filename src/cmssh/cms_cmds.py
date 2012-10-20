@@ -267,13 +267,13 @@ def bootstrap(arch):
     sdir  = os.path.join(os.environ['CMSSH_ROOT'], 'CMSSW')
     debug = 0
     msg   = 'Bootstrap %s ...' % arch
-    run(cmd, sdir, 'bootstrap.log', msg, debug)
+    run(cmd, sdir, 'bootstrap.log', msg, debug, shell=True)
     cmd   = 'source `find %s/%s/external/apt -name init.sh | tail -1`; ' \
                 % (swdir, arch)
     cmd  += 'apt-get install external+fakesystem+1.0; '
     cmd  += 'apt-get update; '
     msg   = 'Initialize %s apt repository ...' % arch
-    run(cmd, sdir, msg=msg, debug=debug)
+    run(cmd, sdir, msg=msg, debug=debug, shell=True)
 
 def get_release_arch(rel):
     "Return architecture for given CMSSW release"
