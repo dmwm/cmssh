@@ -517,7 +517,7 @@ def main():
                 name = find_cms_package(apt_init, cmspkg, debug, lookup)
                 cmd  = 'source %s; echo "Y" | apt-get install %s' % (apt_init, name)
                 log  = '%s/logs/%s.log' % (path, cmspkg)
-                exe_cmd(sdir, cmd, debug, msg, log='%s.log' % cmspkg)
+                exe_cmd(sdir, cmd, debug, msg, log)
             # add bootstrap url into soft/.packages
             add_url2packages(url, path)
 
