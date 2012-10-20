@@ -58,8 +58,8 @@ class RequestHandler(object):
         curl.setopt(pycurl.CONNECTTIMEOUT, self.connecttimeout)
         curl.setopt(pycurl.FOLLOWLOCATION, self.followlocation)
         curl.setopt(pycurl.MAXREDIRS, self.maxredirs)
-        curl.setopt(pycurl.COOKIEJAR, 'cookie.txt')
-        curl.setopt(pycurl.COOKIEFILE, 'cookie.txt')
+        curl.setopt(pycurl.COOKIEJAR, '.cookie')
+        curl.setopt(pycurl.COOKIEFILE, '.cookie')
 
         encoded_data = urllib.urlencode(params, doseq=doseq)
         if  not post:
