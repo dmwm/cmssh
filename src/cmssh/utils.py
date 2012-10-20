@@ -120,8 +120,14 @@ def run(cmd, cdir=None, log=None, msg=None, debug=None, shell=False):
             else:
                 pipe = subprocess.Popen(cmd, **kwds)
             (child_stdout, child_stderr) = (pipe.stdout, pipe.stderr)
-            stdout = child_stdout.read()
-            stderr = child_stderr.read()
+            if  child_stdout:
+                stdout = child_stdout.read()
+            else:
+                stdout = ''
+            if  child_stderr:
+                stderr = child_stderr.read()
+            else:
+                stderr = ''
             if  stderr:
                 if  isinstance(cmd, list):
                     cmd_str = ' '.join(cmd)
