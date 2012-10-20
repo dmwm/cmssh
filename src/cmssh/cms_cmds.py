@@ -505,7 +505,7 @@ def cmsexe(cmd):
         print msg
         return
     cmd = "eval `scramv1 runtime -sh`; %s" % cmd
-    run(cmd)
+    run(cmd, shell=True, call=True)
 
 def cmscrab(arg):
     """
