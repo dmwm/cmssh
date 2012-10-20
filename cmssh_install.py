@@ -835,6 +835,10 @@ python setup.py install --prefix=$idir
     os.chdir(path)
     with open('setup.sh', 'w') as setup:
         msg  = '#!/bin/bash\nexport CMSSH_ROOT=%s\n' % path
+        msg += '# Remove release links\n'
+        msg += 'rm -rf $CMSSH_ROOT/install/lib/release_lib\n'
+        msg += 'rm -rf $CMSSH_ROOT/install/lib/release_root/lib\n'
+        msg += 'rm -rf $CMSSH_ROOT/install/lib/release_external/lib\n'
         msg += 'export CMSSH_INSTALL_DIR=$CMSSH_ROOT/install/lib/python%s/site-packages\n' % pver
         msg += 'echo -n "Loading dependencies:"\n'
         msg += """cms_init()
@@ -909,6 +913,7 @@ coral_init()
             if  pkg == 'lcg/root':
                 func = 'link_root'
             msg += '%s "%s" "%s"\n' % (func, pkg, pkg_ver)
+        msg += '# Recreate release dirs in order to add them to PATHs\n'
         msg += 'mkdir -p $CMSSH_ROOT/install/lib/release_lib\n'
         msg += 'mkdir -p $CMSSH_ROOT/install/lib/release_root/lib\n'
         msg += 'mkdir -p $CMSSH_ROOT/install/lib/release_external/lib\n'
