@@ -105,8 +105,9 @@ def run(cmd, cdir=None, log=None, msg=None, debug=None, shell=False):
             cmd = shlex.split(cmd.encode('ascii', 'ignore'))
         else:
             cmd = shlex.split(cmd)
+    msg = 'execute cmd=%s, kwds=%s' % (cmd, kwds)
     if  debug:
-        print_info('Execute cmd=%s, kwds=%s' % (cmd, kwds))
+        print_info(msg.capitalize())
     try:
         with working_dir(cdir):
             kwds.update({'stdout':subprocess.PIPE,
@@ -134,8 +135,10 @@ def run(cmd, cdir=None, log=None, msg=None, debug=None, shell=False):
                     print_error(stderr)
             print stdout
     except OSError as err:
-        msg = 'Fail to execute cmd=%s, kwds=%s, error=%s' \
-                % (cmd, kwds, str(err))
+        msg = 'OSError, fail to ' + msg + ', error=%s' % str(err)
+        print_error(msg)
+    except Exception as err:
+        msg = 'Fail to ' + msg + ', error=%s' % str(err)
         print_error(msg)
 
 class Memoize(object):
