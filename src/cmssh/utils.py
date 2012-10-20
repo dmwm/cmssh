@@ -91,7 +91,7 @@ def user_input(msg, default='N'):
         return True
     return False
 
-def run(cmd, cdir=None, log=None, msg=None, debug=None, shell=False):
+def run(cmd, cdir=None, log=None, msg=None, debug=None, shell=False, call=False):
     "Run given command via subprocess call"
     if  msg:
         print msg
@@ -110,14 +110,21 @@ def run(cmd, cdir=None, log=None, msg=None, debug=None, shell=False):
         print_info(msg.capitalize())
     try:
         with working_dir(cdir):
-            kwds.update({'stdout':subprocess.PIPE,
-                         'stderr':subprocess.PIPE,
-                         'close_fds':True})
+            if  not call:
+                kwds.update({'stdout':subprocess.PIPE,
+                             'stderr':subprocess.PIPE,
+                             'close_fds':True})
             if  log:
                 with open(log, 'w') as logstream:
                     kwds.update({'stdout': logstream, 'stderr': logstream})
+                    if  call:
+                        subprocess.call(cmd, **kwds)
+                        return
                     pipe = subprocess.Popen(cmd, **kwds)
             else:
+                if  call:
+                    subprocess.call(cmd, **kwds)
+                    return
                 pipe = subprocess.Popen(cmd, **kwds)
             (child_stdout, child_stderr) = (pipe.stdout, pipe.stderr)
             if  child_stdout:
