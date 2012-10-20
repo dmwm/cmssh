@@ -835,10 +835,21 @@ python setup.py install --prefix=$idir
     os.chdir(path)
     with open('setup.sh', 'w') as setup:
         msg  = '#!/bin/bash\nexport CMSSH_ROOT=%s\n' % path
-        msg += '# Remove release links\n'
-        msg += 'rm -rf $CMSSH_ROOT/install/lib/release_lib\n'
-        msg += 'rm -rf $CMSSH_ROOT/install/lib/release_root/lib\n'
-        msg += 'rm -rf $CMSSH_ROOT/install/lib/release_external/lib\n'
+        msg += """
+# Clean-up release environment
+dir=$CMSSH_ROOT/install/lib/release_lib
+if [ -d $dir ] || [ -L $dir ]; then
+   rm -rf $dir
+fi
+dir=$CMSSH_ROOT/install/lib/release_root
+if [ -d $dir ] || [ -L $dir ]; then
+   rm -rf $dir
+fi
+dir=$CMSSH_ROOT/install/lib/release_external
+if [ -d $dir ] || [ -L $dir ]; then
+   rm -rf $dir
+fi
+"""
         msg += 'export CMSSH_INSTALL_DIR=$CMSSH_ROOT/install/lib/python%s/site-packages\n' % pver
         msg += 'echo -n "Loading dependencies:"\n'
         msg += """cms_init()
