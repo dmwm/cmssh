@@ -454,7 +454,7 @@ def main():
     if  debug:
         print 'Probe architecture', arch
     try:
-        os.makedirs(path)
+        os.makedirs(os.path.join(path, 'logs'))
     except:
         pass
     os.chdir(path)
@@ -516,6 +516,7 @@ def main():
                     lookup = ''
                 name = find_cms_package(apt_init, cmspkg, debug, lookup)
                 cmd  = 'source %s; echo "Y" | apt-get install %s' % (apt_init, name)
+                log  = '%s/logs/%s.log' % (path, cmspkg)
                 exe_cmd(sdir, cmd, debug, msg, log='%s.log' % cmspkg)
             # add bootstrap url into soft/.packages
             add_url2packages(url, path)
