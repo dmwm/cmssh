@@ -267,7 +267,10 @@ def bootstrap(arch):
     sdir  = os.path.join(os.environ['CMSSH_ROOT'], 'CMSSW')
     debug = 0
     msg   = 'Bootstrap %s ...' % arch
-    run(cmd, sdir, 'bootstrap.log', msg, debug, shell=True)
+    # run bootstrap command in subprocess.call since it invokes
+    # wget/curl and it can be spawned into serate process, therefore
+    # subprocess.Popen will not catch it
+    run(cmd, sdir, 'bootstrap.log', msg, debug, shell=True, call=True)
     cmd   = 'source `find %s/%s/external/apt -name init.sh | tail -1`; ' \
                 % (swdir, arch)
     cmd  += 'apt-get install external+fakesystem+1.0; '
