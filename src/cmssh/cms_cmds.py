@@ -387,12 +387,19 @@ def cmsrel(rel):
     cmssh release setup command, it setups CMSSW environment and creates user based
     directory structure.
     Examples:
+        cmssh> cmsrel # reset CMSSW environment to cmssh one
         cmssh> cmsrel CMSSW_5_2_4
     """
     rel = rel.strip()
-    if  not rel:
-        print_error('Please specify release name')
-        installed_releases()
+    if  not rel or rel in ['reset', 'clear', 'clean']:
+        path = os.environ['CMSSH_ROOT']
+        for idir in ['external', 'lib', 'root']:
+            pdir = os.path.join(path, 'install/lib/release_%s' % idir)
+            if os.path.islink(pdir):
+                os.remove(pdir)
+            if  os.path.isdir(pdir):
+                shutil.rmtree(pdir)
+            os.makedirs(pdir)
         return
 
     # check if given release name is installed on user system
