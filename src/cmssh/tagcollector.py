@@ -5,13 +5,24 @@ CMS Tag Collector interface
 """
 
 # system modules
+import os
 import re
 
 # cmssh modules
-from cmssh.utils import Memoize
+from cmssh.utils import Memoize, platform
 from cmssh.cms_urls import tc_url
 from cmssh.url_utils import get_data
 from cmssh.regex import pat_release
+
+def match_platform(arch):
+    "Match given architecture with OS"
+    if  platform() == 'darwin' or platform() == 'osx':
+        if arch.find('osx') != -1:
+            return True
+    elif platform() == 'linux':
+        if  arch.find('slc') != -1:
+            return True
+    return False
 
 @Memoize(interval=3600)
 def releases(rel_name=None, rfilter=None):
@@ -44,7 +55,9 @@ def releases(rel_name=None, rfilter=None):
                 for item in vvv:
                     row.setdefault('architectures', []).append(dict(zip(kkk, item)))
         row['release_name'] = key
-        yield row
+        for item in row['architectures']:
+            if  match_platform(item['architecture_name']):
+                yield row
 
 def architectures(arch_type='production'):
     "Return list of CMSSW known architectures"
