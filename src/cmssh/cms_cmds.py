@@ -390,6 +390,7 @@ def cmsrel(rel):
         cmssh> cmsrel # reset CMSSW environment to cmssh one
         cmssh> cmsrel CMSSW_5_2_4
     """
+    ipython = get_ipython()
     rel = rel.strip()
     if  not rel or rel in ['reset', 'clear', 'clean']:
         path = os.environ['CMSSH_ROOT']
@@ -400,6 +401,9 @@ def cmsrel(rel):
             if  os.path.isdir(pdir):
                 shutil.rmtree(pdir)
             os.makedirs(pdir)
+        # Set cmssh prompt
+        prompt = 'cms-sh'
+        ipython.prompt_manager.in_template = '%s|\#> ' % prompt
         return
 
     # check if given release name is installed on user system
@@ -494,6 +498,9 @@ def cmsrel(rel):
             # cmd = "eval `scramv1 runtime -sh`; %s" % fname
             cmd = fname
             ipython.register_magic_function(Magic(cmd).execute, 'line', name)
+
+    # Set cmssh prompt
+    ipython.prompt_manager.in_template = '%s|\#> ' % rel
 
     # final message
     print "%s is ready, cwd: %s" % (rel, os.getcwd())
