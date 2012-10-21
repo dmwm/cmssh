@@ -25,7 +25,7 @@ from cmssh.iprint import print_warning, print_error, print_status, print_info
 from cmssh.filemover import copy_lfn, rm_lfn, mkdir, rmdir, list_se, dqueue
 from cmssh.utils import list_results, check_os, unsupported_linux, access2file
 from cmssh.utils import osparameters, check_voms_proxy, run, user_input
-from cmssh.utils import execmd, touch
+from cmssh.utils import execmd, touch, platform
 from cmssh.cmsfs import dataset_info, block_info, file_info, site_info, run_info
 from cmssh.cmsfs import CMSMGR, apply_filter, validate_dbs_instance
 from cmssh.cmsfs import release_info, run_lumi_info
@@ -118,10 +118,11 @@ def cms_releases(arg=None):
     List available CMS releases. Optional parameters either <list> or <all>
     Examples:
         cmssh> releases      # show installed CMSSW releases
-        cmssh> releases list # show available CMSSW releases
+        cmssh> releases list # list available CMSSW releases on given platform
         cmssh> releases all  # show all known CMS releases, including online, tests, etc.
     """
     if  arg:
+        print "CMSSW releases for %s platform" % platform()
         res = release_info(release=None, rfilter=arg)
         RESMGR.assign(res)
         releases = [str(r) for r in res]
