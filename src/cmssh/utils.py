@@ -520,6 +520,11 @@ def get_children(elem, event, row, key, notations):
         if  event == 'end':
             child.clear()
 
+def platform():
+    "Return underlying platform"
+    osname = os.uname()[0].lower()
+    return osname.replace('darwin', 'osx')
+
 def osparameters():
     "Return OS parameters as expected in CMS, osx/slc and ia32/amd64"
     osname = os.uname()[0].replace('Darwin', 'osx').replace('Linux', 'slc5')
@@ -537,7 +542,7 @@ def check_os(rel_arch):
 
 def unsupported_linux():
     "Check if underlying OS is unsupported Linux platform"
-    if  os.uname()[0].lower() == 'linux':
+    if  platform() == 'linux':
         redhat = '/etc/redhat-release'
         if  os.path.isfile(redhat):
             with open(redhat, 'r') as release:
