@@ -414,8 +414,8 @@ def cmsrel(rel):
             rel_arch = arch
             break
     if  not rel_arch:
-        msg  = 'Release %s is not yet installed on your system.\n' % rel
-        msg  = msg_red(msg)
+        msg  = 'Release ' + msg_red(rel)
+        msg += ' is not yet installed on your system.\n'
         msg += 'Use ' + msg_green('releases')
         msg += ' command to list available releases.\n'
         msg += 'Use ' + msg_green('install %s' % rel)
