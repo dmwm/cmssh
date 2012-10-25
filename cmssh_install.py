@@ -99,6 +99,24 @@ def get_scram_arch():
         sys.exit(1)
     return arch
 
+# generate pkgconfig pc file
+def pc_file(path, name, ver, lib, inc):
+    "Generate pkgconfig file"
+    tmpl = """
+prefix=%(path)s
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include/lib%(lib)s
+
+Name: %(name)s
+Description: %(name)s
+Version: %(ver)s
+Libs: -L${libdir} -l%(lib)s
+Libs.private: -lz -lbz2
+Cflags: -I${includedir} -I${includedir}/%(inc)s
+""" % {'path':path, 'name':name, 'lib': lib, 'inc':inc, 'ver': ver}
+    return tmpl
+
 # helper function to make natural sort
 def try_int(sss):
     "Convert to integer if possible."
@@ -718,6 +736,27 @@ def main():
         with open(fname, 'w') as output:
             output.write(content)
 
+    # update local pkgconfig with libpng/freetype
+    try:
+        os.makedirs('%s/install/lib/pkgconfig' % path)
+    except:
+        pass
+    with open('%s/install/lib/pkgconfig/libpng.pc' % path, 'w') as stream:
+        png_init, png_root, png_ver = find_installed_pkg('external/libpng', debug)
+        prefix = '%s/install' % path
+        name   = 'libpng'
+        lib    = 'png%s' % ''.join(png_ver.split('.')[:2])
+        ver    = png_ver
+        inc    = ''
+        stream.write(pc_file(prefix, name, ver, lib, inc))
+    with open('%s/install/lib/pkgconfig/freetype2.pc' % path, 'w') as stream:
+        ft_init, ft_root, ft_ver = find_installed_pkg('external/freetype', debug)
+        prefix = '%s/install' % path
+        name   = 'freetype'
+        lib    = 'freetype'
+        ver    = ft_ver
+        inc    = 'freetype2'
+        stream.write(pc_file(prefix, name, ver, lib, inc))
     # install standard libraries
     std_pkgs = ['Routes', 'python-dateutil', 'decorator',
             'pyOpenSSL', 'paramiko', 'pyzmq', 'tornado',
@@ -749,6 +788,8 @@ def main():
                             % (ft_root, ft_root, png_root)
                     ldflags = '-L%s/lib -L%s/lib' % (ft_root, png_root)
                     env_list += [('CFLAGS', cflags), ('LDFLAGS', ldflags)]
+                    pkgconfig = '%s/install/lib/pkgconfig' % path
+                    env_list += [('PKG_CONFIG_PATH', pkgconfig)]
                     install_pip_pkg(pip_packages, cms_env2, path, debug, pkg, ver, args, env_list)
             except:
                 pass
