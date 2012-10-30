@@ -108,9 +108,12 @@ cmsRun runevt_cfg.py
 #################################
 edit test.py
 
-ip = get_ipython()
-ip.magic_find("dataset=*Zee_M20*")
-for r in results(): print r, type(r)
+# interactive
+ip = get_ipython() # get ipython handler
+ip.run_line_magic('find', 'dataset=/ZMM*') # execute find magic command w/ given argument
+for d in results():
+    print d # print dataset name
+    ip.run_line_magic('info', 'dataset=%s' %r)
 
 #################################
 # ROOT example
