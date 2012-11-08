@@ -19,7 +19,7 @@ from   types import GeneratorType
 from   cmssh.iprint import format_dict, print_warning, print_error
 from   cmssh.url_utils import get_data
 from   cmssh.cms_objects import Run, File, Block, Dataset, Site, User, Job
-from   cmssh.cms_objects import Release
+from   cmssh.cms_objects import Release, CMSObj
 from   cmssh.tagcollector import releases
 from   cmssh.filemover import get_pfns, resolve_user_srm_path
 from   cmssh.cms_urls import phedex_url, dbs_url, conddb_url, sitedb_url
@@ -30,6 +30,7 @@ from   cmssh.lumidb import lumidb
 from   cmssh.regex import pat_dataset, pat_block, pat_lfn, pat_run
 from   cmssh.reqmgr import reqmgr
 from   cmssh.prepsrv import prep
+from   cmssh.utils import ranges
 
 def rowdict(columns, row):
     """Convert given row list into dict with column keys"""
@@ -149,6 +150,10 @@ class CMSFS(object):
         rmp.connect('releases', controller='list_releases')
         rmp.connect('release={name:CMSSW(_[0-9]){3}}', controller='list_releases')
         rmp.connect('config dataset={dataset:/.*?}', controller='list_configs')
+        rmp.connect('run_lumi dataset={dataset:/.*?}', controller='run_lumis')
+        rmp.connect('run_lumi block={block:/.*#.*?}', controller='run_lumis')
+        rmp.connect('run_lumi file={file:/.*.root}', controller='run_lumis')
+        rmp.connect('run_lumi run={run:[0-9]+}', controller='run_lumis')
         rmp.connect('lumi dataset={dataset:/.*?}', controller='list_lumis')
         rmp.connect('lumi block={block:/.*#.*?}', controller='list_lumis')
         rmp.connect('lumi file={file:/.*.root}', controller='list_lumis')
@@ -175,6 +180,26 @@ class CMSFS(object):
         Dataset access method
         """
         return self.lookup(path)
+
+    def run_lumis(self, **kwargs):
+        """
+        Controller to get CMSSW run-lumi dict
+        """
+        if  kwargs.get('dataset'):
+            run_lumi = run_lumi_dict(kwargs['dataset'])
+        elif kwargs.has_key('block'):
+            run_lumi = run_lumi_dict(kwargs['block'])
+        elif kwargs.has_key('file'):
+            run_lumi = run_lumi_dict(kwargs['file'])
+        elif kwargs.has_key('run'):
+            run_lumi = run_lumi_dict(kwargs['run'])
+        else:
+            arg = ''.join([v for k, v in kwargs.items()])
+            run_lumi = run_lumi_dict(arg)
+        rdict = {}
+        for run, lumis in run_lumi.items():
+            rdict[run] = list(ranges(lumis))
+        return [CMSObj(rdict)]
 
     def list_lumis(self, **kwargs):
         """
@@ -475,8 +500,8 @@ def parse_runlumis(filelumis):
         run_lumi.setdefault(run, []).append(lumi)
     return run_lumi
 
-def run_lumi_info(arg, verbose=None):
-    "Return run-lumi info"
+def run_lumi_dict(arg, verbose=None):
+    "Return run-lumi info for given argument (dataset, block, file, run)"
     try:
         data = json.loads(arg)
     except:
@@ -507,6 +532,11 @@ def run_lumi_info(arg, verbose=None):
             elif pat_lfn.match(data):
                 params = {'logical_file_name': data}
                 run_lumi = parse_runlumis(get_data(dbs_url('filelumis'), params, verbose))
+    return run_lumi
+
+def run_lumi_info(arg, verbose=None):
+    "Get int. luminosity for given argument (can be dataset, block, file, run)"
+    run_lumi = run_lumi_dict(arg, verbose)
     if  not run_lumi:
         print_error('Empty run-lumi list')
         return []
