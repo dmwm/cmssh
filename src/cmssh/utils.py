@@ -16,6 +16,7 @@ import types
 import readline
 import traceback
 import subprocess
+import itertools
 import functools
 from   types import GeneratorType, InstanceType
 from   cStringIO import StringIO
@@ -26,6 +27,15 @@ from   decorator import decorator
 from   cmssh.iprint import format_dict, msg_green
 from   cmssh.iprint import print_warning, print_error, print_info
 from   cmssh.regex import float_number_pattern, int_number_pattern
+
+def ranges(ilist):
+    """
+    Convert input list to list of ranges, see
+    http://stackoverflow.com/questions/4628333/converting-a-list-of-integers-into-range-in-python
+    """
+    for _, bbb in itertools.groupby(enumerate(ilist), lambda (x, y): y - x):
+        bbb = list(bbb)
+        yield [bbb[0][1], bbb[-1][1]]
 
 def touch(fname):
     "Emulate touch UNIX command"
