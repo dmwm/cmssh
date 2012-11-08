@@ -379,8 +379,8 @@ def format_dict(data):
     msg = ''
     length = 0
     for key in data.keys():
-        if  length < len(key):
-            length = len(key)
+        if  length < len(str(key)):
+            length = len(str(key))
     keys = data.keys()
     keys.sort()
     for key in keys:
@@ -391,10 +391,10 @@ def format_dict(data):
                     val = ', '.join(val)
                 else:
                     val = '\n'.join(val)
-        if  len(key) < length:
-            wkey = key + ' '*(length-len(key))
+        if  len(str(key)) < length:
+            wkey = str(key) + ' '*(length-len(str(key)))
         else:
-            wkey = key
+            wkey = str(key)
         msg += wkey + ': ' + str(val) + '\n'
     return msg
 
