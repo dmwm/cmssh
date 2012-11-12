@@ -33,9 +33,10 @@ def ranges(ilist):
     Convert input list to list of ranges, see
     http://stackoverflow.com/questions/4628333/converting-a-list-of-integers-into-range-in-python
     """
-    for _, bbb in itertools.groupby(enumerate(ilist), lambda (x, y): y - x):
-        bbb = list(bbb)
-        yield [bbb[0][1], bbb[-1][1]]
+    if  ilist:
+        for _, bbb in itertools.groupby(enumerate(ilist), lambda (x, y): y - x):
+            bbb = list(bbb)
+            yield [bbb[0][1], bbb[-1][1]]
 
 def touch(fname):
     "Emulate touch UNIX command"
