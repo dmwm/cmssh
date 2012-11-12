@@ -514,8 +514,6 @@ def run_lumi_dict(arg, verbose=None):
     if  isinstance(data, dict): # we got run-lumi dict
         for run, lumis in data.items():
             run_lumi[int(run)] = lumis
-    elif isinstance(data, int) or pat_run.match(str(data)): # we got run-number
-        run_lumi[int(data)] = None
     else:
         if  url.find('cmsdbsprod') != -1: # DBS2
             run_lumi = dbs2.run_lumi(str(data), verbose)
@@ -528,9 +526,12 @@ def run_lumi_dict(arg, verbose=None):
                     run_lumi = parse_runlumis(get_data(dbs_url('filelumis'), params, verbose))
             elif pat_block.match(data):
                 params = {'block_name': data}
-                run_lumi = parse_runlumis(get_data(dbs_url('files'), params, verbose))
+                run_lumi = parse_runlumis(get_data(dbs_url('filelumis'), params, verbose))
             elif pat_lfn.match(data):
                 params = {'logical_file_name': data}
+                run_lumi = parse_runlumis(get_data(dbs_url('filelumis'), params, verbose))
+            elif pat_run.match(data):
+                params = {'run_num': data}
                 run_lumi = parse_runlumis(get_data(dbs_url('filelumis'), params, verbose))
     return run_lumi
 
