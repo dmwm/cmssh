@@ -714,7 +714,8 @@ class FileMover(object):
             ldir = spath[1]
         dst = [r for r in resolve_user_srm_path(node, ldir)][0]
         cmd = 'srm-mkdir %s' % dst
-        print cmd
+        if  verbose:
+            print cmd
         stdout, stderr = execmd(cmd)
         if  stderr:
             print_error(stderr)
