@@ -134,10 +134,14 @@ def check_permission(dst, verbose=None):
     """
     if  verbose:
         print "Check permission to write to %s" % dst
-    cmd    = 'srm-mkdir %s' % dst
+    srmmkdir = os.environ.get('SRM_MKDIR', '')
+    if  not srmmkdir:
+        print_error('Unable to find srm mkdir command')
+        sys.exit(1)
+    cmd    = '%s %s' % (srmmkdir, dst)
     stdout, stderr = execmd(cmd)
     if  stderr.find('command not found') != -1:
-        print 'Unable to find srm-ls tool'
+        print 'Unable to find srm mkdir tool'
         print help
         sys.exit(1)
     if  stdout.find('SRM-DIR: directory not created') != -1 or\
@@ -425,26 +429,42 @@ def pfn_dst(lfn, dst, verbose=None):
         ifile = item.split("/")[-1] if not dstfname else dstfname
         yield item, '%s/%s' % (dst, ifile)
 
-def get_size(cmd, verbose=None):
+def get_size(surl, verbose=None):
     """
     Execute srm-ls <surl> command and retrieve file size information
     """
+    srmls = os.environ.get('SRM_LS', '')
+    if  not srmls:
+        print_error('Unable to find srm ls tool')
+        sys.exit(1)
+    if  srmls.find('srm-ls') != -1:
+        srmargs = ''
+    else:
+        srmargs = '-2'
+    cmd = '%s %s %s' % (srmls, srmargs, surl)
+    if  verbose:
+        print_info(cmd)
     if  cmd.find('file:///') != -1:
         return file_size(cmd.split('file:///')[-1])
     stdout, stderr = execmd(cmd)
     if  stderr.find('command not found') != -1:
-        print 'Unable to find srm-ls tool'
-        print help
+        print_error(stderr)
         sys.exit(1)
     if  stderr:
         print_error(stderr)
     orig_size = 0
     if  cmd.find('file:///') != -1: # srm-ls returns XML
-        orig_size = parse_srmls(stdout)
+        if  srmls.find('srm-ls') != -1:
+            orig_size = parse_srmls(stdout)
+        else:
+            orig_size = stdout.split()[0].strip()
     else:
-        for line in stdout.split('\n'):
-            if  line.find('Bytes') != -1:
-                orig_size = line.replace('\n', '').split('=')[-1]
+        if  srmls.find('srm-ls') != -1:
+            for line in stdout.split('\n'):
+                if  line.find('Bytes') != -1:
+                    orig_size = line.replace('\n', '').split('=')[-1]
+        else:
+            orig_size = stdout.split()[0].strip()
     return orig_size
 
 def check_file(src, dst, verbose):
@@ -452,14 +472,12 @@ def check_file(src, dst, verbose):
     Check if file is transfered and return dst, dst_size upon success.
     """
     # find file size from replica
-    rcmd  = 'srm-ls %s' % src
-    orig_size = get_size(rcmd, verbose)
+    orig_size = get_size(src, verbose)
     if  verbose:
         print "%s, size %s" % (src, orig_size)
 
     # find file size from destination (if any)
-    rcmd  = 'srm-ls %s' % dst
-    dst_size = get_size(rcmd, verbose)
+    dst_size = get_size(dst, verbose)
     if  verbose:
         print "%s, size %s" % (dst, dst_size)
 
@@ -467,24 +485,18 @@ def check_file(src, dst, verbose):
         return (dst, dst_size)
     return False
 
-def execute(cmd, lfn, verbose):
+def execute(cmd, src, dst, verbose):
     """
-    Execute given srm-copy command, but also check if file is in place at dst
-    cmd = srm-copy <from> <to> <options>
+    Execute given command, but also check if file is in place at dst
     """
-    slist  = cmd.split()
-    src    = slist[1]
-    dst    = slist[2]
     status = check_file(src, dst, verbose) 
     if  status:
         return status
     else:
-#        os.system(cmd) # execute given command
         stdout, stderr = execmd(cmd)
-        if  stderr:
-            print_error(stderr)
-        if  not stdout.find('SRM_SUCCESS') != -1:
-            print stdout
+        if  verbose:
+            print_info('Output of %s' % cmd)
+            print stdout + stderr
     status = check_file(src, dst, verbose) # check again since SRM may fail
     return status
     
@@ -530,9 +542,14 @@ class FileMover(object):
             vflag  = ''
             if  verbose:
                 vflag = '-v'
-            lcgcmd = 'lcg-cp %s -b -D srmv2 %s %s' % (vflag, pfn, pdst)
+            lcg = os.environ.get('LCG_CP', '')
+            if  not lcg:
+                return 'fail'
+            lcgcmd = '%s %s -b -D srmv2 %s %s' % (lcg, vflag, pfn, pdst)
+            if  verbose:
+                print_info(lcgcmd)
             if  background:
-                proc = Process(target=execmd, args=(lcgcmd, ))
+                proc = Process(target=execute, args=(lcgcmd, pfn, pdst, 0))
                 self.queue[lfn] = (proc, None)
                 return 'accepted'
             else:
@@ -553,32 +570,46 @@ class FileMover(object):
         cmd = 'xrdcp root://cms-xrd-global.cern.ch/%s %s' % (lfn, dst)
         if  verbose:
             print_info(cmd)
+        if  background:
+            proc = Process(target=execute, args=(cmd, pfn, pdst, 0))
+            self.queue[lfn] = (proc, None)
+            return 'accepted'
         stdout, stderr = execmd(cmd)
-        print "xrootd output", stdout, stderr
         if  stderr and stderr.find('Total') == -1:
             print_error(stderr)
             return 'fail'
         else:
-            print_info(stdout + stderr)
+            if  verbose:
+                print_info(stdout + stderr)
         return 'success'
 
-    def copy(self, lfn, dst, verbose=0, background=False):
+    def copy_via_srm(self, lfn, dst, verbose=0, background=False):
         """Copy LFN to given destination"""
         err  = 'Unable to identify total size of the file,'
         err += ' GRID middleware fails.'
         if  not background:
             bar  = PrintProgress('Gather LFN info')
-        srmargs = '-pushmode -statuswaittime 30 -3partycopy -delegation false -dcau false'
-        srmcmd  = 'srm-copy'
+        srmcmd  = os.environ.get('SRM_CP', '')
+        if  srmcmd.find('srm-copy') != -1:
+            srmargs = '-pushmode -statuswaittime 30 -3partycopy -delegation false -dcau false'
+        else:
+            srmargs = '-srm_protocol_version=2 -retry_num=1 -streams_num=1 -debug'
+        if  not srmcmd:
+            return 'fail'
         for pfn, pdst in pfn_dst(lfn, dst, verbose):
-            cmd = '%s %s %s %s' % (srmcmd, pfn, pdst, srmargs)
+            if  srmcmd.find('srm-copy') != -1:
+                cmd = '%s %s %s %s' % (srmcmd, pfn, pdst, srmargs)
+            else:
+                cmd = '%s %s %s %s' % (srmcmd, srmargs, pfn, pdst)
+            if  verbose:
+                print_info(cmd)
             if  cmd:
                 if  background:
-                    proc = Process(target=execute, args=(cmd, lfn, 0))
+                    proc = Process(target=execute, args=(cmd, pfn, pdst, 0))
                     self.queue[lfn] = (proc, None)
                     return 'accepted'
                 elif verbose:
-                    status = execute(cmd, lfn, verbose)
+                    status = execute(cmd, pfn, pdst, verbose)
                     if  status:
                         dst, dst_size = status
                         size = size_format(dst_size)
@@ -591,19 +622,17 @@ class FileMover(object):
                                 % (dst, size_format(dst_size))
                         break
                 else:
-                    arr = cmd.split() # srm-copy <sourceURL> <targetURL> <options>
-                    pfn = arr[1] # sourceURL
-                    ifile = arr[2] # targetURL
-                    pfn_size = get_size('srm-ls %s' % pfn)
+                    ifile = pdst
+                    pfn_size = get_size(pfn)
                     if  pfn_size and pfn_size != 'null':
                         tot_size = float(pfn_size)
                         bar.print_msg('LFN size=%s' % size_format(tot_size))
                         bar.init('Download in progress:')
-                        proc = Process(target=execute, args=(cmd, lfn, verbose))
+                        proc = Process(target=execute, args=(cmd, pfn, pdst, verbose))
                         proc.start()
                         while True:
                             if  proc.is_alive():
-                                size = get_size('srm-ls %s' % ifile)
+                                size = get_size(ifile)
                                 if  not size or size == 'null':
                                     bar.refresh('')
                                     pass
@@ -627,8 +656,7 @@ class FileMover(object):
         if  pat_lfn.match(lfn):
             pfnlist, selist = get_pfns(arg, verbose)
             for pfn in pfnlist:
-                cmd = "srm-ls %s" % pfn
-                print '%s %s' % (lfn, get_size(cmd, verbose))
+                print '%s %s' % (lfn, get_size(pfn, verbose))
 
     def list_se(self, arg, verbose=0):
         """list content of given directory on SE"""
@@ -637,9 +665,12 @@ class FileMover(object):
         except:
             msg = 'Given argument "%s" does not represent SE:dir' % arg
             raise Exception(msg)
-        cmd = 'srm-ls'
+        srmls = os.environ.get('SRM_LS', '')
+        if  not srmls:
+            print_error('Unable to find srm ls tool')
+            sys.exit(1)
         dst = [r for r in resolve_user_srm_path(node, ldir)][0]
-        cmd = "srm-ls %s -fulldetailed" % dst
+        cmd = "%s %s -fulldetailed" % (srmls, dst)
         if  verbose:
             print cmd
         stdout, stderr = execmd(cmd)
@@ -784,7 +815,10 @@ def copy_lfn(lfn, dst, verbose=0, background=False, overwrite=False):
             if  fname:
                 print_warning('File %s already exists' % fname)
                 return 'fail'
-    status = FM_SINGLETON.copy(lfn, dst, verbose, background)
+    if  os.environ.get('LCG_CP', ''):
+        status = FM_SINGLETON.copy_via_lcg(lfn, dst, verbose, background)
+    else:
+        status = FM_SINGLETON.copy_via_srm(lfn, dst, verbose, background)
     if  status == 'fail':
         print_info('Fallback to xrdcp method')
         FM_SINGLETON.copy_via_xrdcp(lfn, dst, verbose, background)
