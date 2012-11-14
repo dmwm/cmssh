@@ -559,8 +559,9 @@ class FileMover(object):
     def copy_via_xrdcp(self, lfn, dst, verbose=0, background=False):
         "Copy LFN to given destination via xrdcp command"
         if  not os.path.isdir(dst):
-            msg = 'xrdcp only works with local destination'
-            print_error(msg)
+            if  verbose:
+                msg = 'xrdcp only works with local destination'
+                print_error(msg)
             return 'fail'
         cmd = 'xrdcp root://xrootd.unl.edu/%s %s' % (lfn, dst)
         cmd = 'xrdcp root://cms-xrd-global.cern.ch/%s %s' % (lfn, dst)
@@ -825,13 +826,14 @@ def copy_lfn(lfn, dst, verbose=0, background=False, overwrite=False):
             if  fname:
                 print_warning('File %s already exists' % fname)
                 return 'fail'
-    if  os.environ.get('LCG_CP', ''):
-        status = FM_SINGLETON.copy_via_lcg(lfn, dst, verbose, background)
-    else:
-        status = FM_SINGLETON.copy_via_srm(lfn, dst, verbose, background)
+    status = FM_SINGLETON.copy_via_xrdcp(lfn, dst, verbose, background)
     if  status == 'fail':
-        print_info('Fallback to xrdcp method')
-        FM_SINGLETON.copy_via_xrdcp(lfn, dst, verbose, background)
+        if  verbose:
+            print_info('xrdcp fails to fetch the file, invoke fallback mechanism')
+        if  os.environ.get('LCG_CP', ''):
+            status = FM_SINGLETON.copy_via_lcg(lfn, dst, verbose, background)
+        else:
+            status = FM_SINGLETON.copy_via_srm(lfn, dst, verbose, background)
     return status
 
 def dqueue(arg=None):
