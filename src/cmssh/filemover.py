@@ -718,7 +718,7 @@ class FileMover(object):
         except:
             msg = 'Given argument "%s" does not represent SE:LFN' % arg
             raise Exception(msg)
-        cmd = 'srm-rm'
+        cmd = os.environ.get('SRM_RM', '')
         dst = [r for r in resolve_user_srm_path(node)][0]
         dst, path = dst.split('=')
         if  dst[-1] != '=':
@@ -748,8 +748,9 @@ class FileMover(object):
             node = spath[0]
             ldir = spath[1]
         dst = [r for r in resolve_user_srm_path(node, ldir)][0]
-        cmd = 'srm-rmdir %s' % dst
-        print cmd
+        cmd = '%s %s' % (os.environ.get('SRM_RMDIR', ''), dst)
+        if  verbose:
+            print cmd
         stdout, stderr = execmd(cmd)
         if  stderr:
             print_error(stderr)
@@ -866,9 +867,9 @@ def rm_lfn(lfn, verbose=0):
     return FM_SINGLETON.rm_lfn(lfn, verbose)
 
 def mkdir(dst, verbose=0):
-    """mkdir via srm-mkdir"""
+    """mkdir command"""
     return FM_SINGLETON.mkdir(dst, verbose)
 
 def rmdir(dst, verbose=0):
-    """rmdir via srm-rmdir"""
+    """rmdir command"""
     return FM_SINGLETON.rmdir(dst, verbose)
