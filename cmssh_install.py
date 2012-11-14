@@ -23,6 +23,7 @@ import stat
 import copy
 import time
 import shutil
+import socket
 import urllib2
 import tarfile
 import subprocess
@@ -301,6 +302,13 @@ class MyOptionParser:
         self.parser.add_option("--cmssw", action="store",
             type="string", default=None, dest="cmssw",
             help="specify location of CMSSW install area")
+        if  socket.gethostname().find('cern.ch') != -1:
+            lcg_default = '/afs/cern.ch/cms/LCG/LCG-2/UI/cms_ui_env.sh'
+        else:
+            lcg_default = ''
+        self.parser.add_option("--lcg", action="store",
+            type="string", default=lcg_default, dest="lcg",
+            help="specify script to setup LCG/OSG environment")
         self.parser.add_option("--multi-user", action="store_true",
             default=False, dest="multi_user",
             help="install cmssh in multi-user environment")
@@ -409,6 +417,7 @@ def main():
     "Main function"
     mgr = MyOptionParser()
     opts, _ = mgr.get_opt()
+    use_lcg = opts.lcg
 
     platform = os.uname()[0]
     if  platform == 'Darwin':
@@ -452,13 +461,13 @@ def main():
     if  platform == 'Linux':
         parch = 'x86_64'
         if  unsupported_linux:
-            ver = 'deb_5.0'
+            vdt_ver = 'deb_5.0'
         else:
-            ver = 'rhap_5'
+            vdt_ver = 'rhap_5'
         if  not arch:
             arch = DEF_SCRAM_ARCH
     elif platform == 'Darwin':
-        ver  = 'macos_10.4'
+        vdt_ver  = 'macos_10.4'
         if  not arch:
             arch = DEF_SCRAM_ARCH
     else:
@@ -560,28 +569,6 @@ def main():
         print "CMSSW python: %s/%s" % (python_root, python_ver)
         print "python version", pver
 
-    print "Install Globus"
-    os.chdir(path)
-    url = 'http://vdt.cs.wisc.edu/software/globus/4.0.8_VDT2.0.0gt4nbs/vdt_globus_essentials-VDT2.0.0-3-%s_%s.tar.gz' % (parch, ver)
-    if  not is_installed(url, path):
-        get_file(url, 'globus.tar.gz', path, debug)
-
-    print "Install Myproxy"
-    url = 'http://vdt.cs.wisc.edu/software/myproxy/5.3_VDT-2.0.0/myproxy_client-5.3-%s_%s.tar.gz' % (parch, ver)
-    if  not is_installed(url, path):
-        get_file(url, 'myproxy_client.tar.gz', path, debug)
-    url = 'http://vdt.cs.wisc.edu/software/myproxy/5.3_VDT-2.0.0/myproxy_essentials-5.3-%s_%s.tar.gz' % (parch, ver)
-    if  not is_installed(url, path):
-        get_file(url, 'myproxy_essentials.tar.gz', path, debug)
-
-    print "Install VOMS"
-    url = 'http://vdt.cs.wisc.edu/software/voms/1.8.8-2p1-1/voms-client-1.8.8-2p1-%s_%s.tar.gz' % (parch, ver)
-    if  not is_installed(url, path):
-        get_file(url, 'voms-client.tar.gz', path, debug)
-    url = 'http://vdt.cs.wisc.edu/software/voms/1.8.8-2p1-1/voms-essentials-1.8.8-2p1-%s_%s.tar.gz' % (parch, ver)
-    if  not is_installed(url, path):
-        get_file(url, 'voms-essentials.tar.gz', path, debug)
-
     if  platform == 'Darwin' and osx_ver() == '10.6':
         # CMSSW pcre is too old and srm software uses grep which linked to newer
         # pcre library, therefore install pcre 7.9 which is suitable for this case
@@ -638,40 +625,67 @@ def main():
     if  not is_installed(url, path):
         get_file(url, 'wmcore.tar.gz', path, debug)
 
-    print "Install LCG info"
-    url = 'http://vdt.cs.wisc.edu/software/lcg-infosites/2.6-2/lcg-infosites-2.6-2.tar.gz'
-    if  not is_installed(url, path):
-        get_file(url, 'lcg-infosites.tar.gz', path, debug)
-    url = 'http://vdt.cs.wisc.edu/software/lcg-info//1.11.4-1/lcg-info-1.11.4-1.tar.gz'
-    if  not is_installed(url, path):
-        get_file(url, 'lcg-info.tar.gz', path, debug)
-
     print "Install certificates"
     url = 'http://vdt.cs.wisc.edu/software/certificates/62/certificates-62-1.tar.gz'
     if  not is_installed(url, path):
         get_file(url, 'certificates.tar.gz', path, debug)
 
-    print "Install SRM client"
-    ver = '2.2.1.3.19'
-    url = 'http://vdt.cs.wisc.edu/software/srm-client-lbnl/%s/srmclient2-%s.tar.gz' \
-        % (ver, ver)
-    if  not is_installed(url, path):
-        get_file(url, 'srmclient.tar.gz', path, debug)
-        cmd  = cms_env + './configure --with-java-home=$JAVA_HOME --enable-clientonly'
-        cmd += ' --with-globus-location=%s/globus' % path
-        cmd += ' --with-cacert-path=%s/certificates' % path
-        cmd += ' --with-srm-home=%s/srmclient2' % path
-        exe_cmd(os.path.join(path, 'srmclient2/setup'), cmd, debug, log='srmclient.log')
-        # fix Lion, Unable to load native library: libjava.jnilib problem
-        # http://stackoverflow.com/questions/1482450/broken-java-mac-10-6
-        if  platform == 'Darwin' and osx_ver() == '10.6':
-            pat = 'export CLASSPATH'
-            new_pat = pat + '\nunset DYLD_LIBRARY_PATH\n'
-            for fname in os.listdir(os.path.join(path, 'srmclient2/bin')):
-                if  fname.find('srm-') != -1:
-                    filename = os.path.join(path, 'srmclient2/bin/' + fname)
-                    replace_in_file(filename, pat, new_pat)
-                    os.chmod(filename, 0755)
+    # test local setup of GRID middleware (LCG/OSG)
+    if  platform == 'Linux' and use_lcg:
+        print "Skip GRID middleware install, use local setup"
+    else:
+        print "Install Globus"
+        os.chdir(path)
+        url = 'http://vdt.cs.wisc.edu/software/globus/4.0.8_VDT2.0.0gt4nbs/vdt_globus_essentials-VDT2.0.0-3-%s_%s.tar.gz' % (parch, vdt_ver)
+        print "\n### url", url
+        if  not is_installed(url, path):
+            get_file(url, 'globus.tar.gz', path, debug)
+
+        print "Install Myproxy"
+        url = 'http://vdt.cs.wisc.edu/software/myproxy/5.3_VDT-2.0.0/myproxy_client-5.3-%s_%s.tar.gz' % (parch, vdt_ver)
+        if  not is_installed(url, path):
+            get_file(url, 'myproxy_client.tar.gz', path, debug)
+        url = 'http://vdt.cs.wisc.edu/software/myproxy/5.3_VDT-2.0.0/myproxy_essentials-5.3-%s_%s.tar.gz' % (parch, vdt_ver)
+        if  not is_installed(url, path):
+            get_file(url, 'myproxy_essentials.tar.gz', path, debug)
+
+        print "Install VOMS"
+        url = 'http://vdt.cs.wisc.edu/software/voms/1.8.8-2p1-1/voms-client-1.8.8-2p1-%s_%s.tar.gz' % (parch, vdt_ver)
+        if  not is_installed(url, path):
+            get_file(url, 'voms-client.tar.gz', path, debug)
+        url = 'http://vdt.cs.wisc.edu/software/voms/1.8.8-2p1-1/voms-essentials-1.8.8-2p1-%s_%s.tar.gz' % (parch, vdt_ver)
+        if  not is_installed(url, path):
+            get_file(url, 'voms-essentials.tar.gz', path, debug)
+
+        print "Install LCG info"
+        url = 'http://vdt.cs.wisc.edu/software/lcg-infosites/2.6-2/lcg-infosites-2.6-2.tar.gz'
+        if  not is_installed(url, path):
+            get_file(url, 'lcg-infosites.tar.gz', path, debug)
+        url = 'http://vdt.cs.wisc.edu/software/lcg-info//1.11.4-1/lcg-info-1.11.4-1.tar.gz'
+        if  not is_installed(url, path):
+            get_file(url, 'lcg-info.tar.gz', path, debug)
+
+        print "Install SRM client"
+        ver = '2.2.1.3.19'
+        url = 'http://vdt.cs.wisc.edu/software/srm-client-lbnl/%s/srmclient2-%s.tar.gz' \
+            % (ver, ver)
+        if  not is_installed(url, path):
+            get_file(url, 'srmclient.tar.gz', path, debug)
+            cmd  = cms_env + './configure --with-java-home=$JAVA_HOME --enable-clientonly'
+            cmd += ' --with-globus-location=%s/globus' % path
+            cmd += ' --with-cacert-path=%s/certificates' % path
+            cmd += ' --with-srm-home=%s/srmclient2' % path
+            exe_cmd(os.path.join(path, 'srmclient2/setup'), cmd, debug, log='srmclient.log')
+            # fix Lion, Unable to load native library: libjava.jnilib problem
+            # http://stackoverflow.com/questions/1482450/broken-java-mac-10-6
+            if  platform == 'Darwin' and osx_ver() == '10.6':
+                pat = 'export CLASSPATH'
+                new_pat = pat + '\nunset DYLD_LIBRARY_PATH\n'
+                for fname in os.listdir(os.path.join(path, 'srmclient2/bin')):
+                    if  fname.find('srm-') != -1:
+                        filename = os.path.join(path, 'srmclient2/bin/' + fname)
+                        replace_in_file(filename, pat, new_pat)
+                        os.chmod(filename, 0755)
 
     print "Install zmq"
     os.chdir(path)
@@ -900,6 +914,30 @@ fi
         source $VO_CMS_SW_DIR/$SCRAM_ARCH/$1/$2/etc/profile.d/init.sh
     fi
 }
+set_cmd()
+{
+    if  [ "$1" == "lcg" ]; then
+        export LCG_CP=`command -v lcg-cp`
+        export LCG_LS=`command -v lcg-ls`
+        export LCG_RM=`command -v lcg-del`
+    fi
+    if [ "$1" == "srm" ]; then
+        if  [ -n "`command -v srm-ls`" ]; then
+            export SRM_CP=`command -v srm-copy`
+            export SRM_LS=`command -v srm-ls`
+            export SRM_RM=`command -v srm-rm`
+            export SRM_MKDIR=`command -v srm-mkdir`
+            export SRM_RMDIR=`command -v srm-rmdir`
+        fi
+        if [ -n "`command -v srmls`" ]; then
+            export SRM_CP=`command -v srmcp`
+            export SRM_LS=`command -v srmls`
+            export SRM_RM=`command -v srmrm`
+            export SRM_MKDIR=`command -v srmmkdir`
+            export SRM_RMDIR=`command -v srmrmdir`
+        fi
+    fi
+}
 link_root()
 {
     dir=$CMSSH_ROOT/install/lib/release_root
@@ -943,6 +981,9 @@ coral_init()
         msg += 'export CRAB_ROOT=$CMSSH_ROOT/%s\n' % crab_ver
         msg += 'export PATH=/usr/bin:/bin:/usr/sbin:/sbin\n'
         msg += 'unset PYTHONPATH\n'
+        if  use_lcg:
+            msg += '# use local LCG installation\n'
+            msg += '. %s\n\n' % use_lcg
         if  os.environ.has_key('LD_LIBRARY_PATH'):
             msg += 'export LD_LIBRARY_PATH=%s\n' % os.environ['LD_LIBRARY_PATH']
         deps = ['external/apt', 'lcg/root', 'external/python',
@@ -982,6 +1023,8 @@ coral_init()
         msg += 'export PATH=$PATH:$CMSSH_ROOT/bin\n'
         msg += 'export PATH=$PATH:$CMSSH_ROOT/lcg/bin\n'
         msg += 'export PATH=$PATH:$CMSSH_ROOT/CRABClient/bin\n'
+        msg += 'set_cmd "lcg"\n'
+        msg += 'set_cmd "srm"\n'
         msg += 'export PYTHONPATH=$CMSSH_ROOT/cmssh/src:$PYTHONPATH\n'
         msg += 'export PYTHONPATH=$CMSSH_ROOT/install/lib/release_root/lib:$PYTHONPATH\n'
         msg += 'export PYTHONPATH=$PYTHONPATH:$CMSSH_ROOT\n'
