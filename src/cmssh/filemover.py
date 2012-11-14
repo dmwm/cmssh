@@ -669,7 +669,7 @@ class FileMover(object):
         if  srmls.find('srm-ls') != -1:
             cmd = "%s %s -fulldetailed" % (srmls, dst)
         else:
-            cmd = "%s %s -l" % (srmls, dst)
+            cmd = "%s -2 -l %s" % (srmls, dst)
         if  verbose:
             print cmd
         stdout, stderr = execmd(cmd)
