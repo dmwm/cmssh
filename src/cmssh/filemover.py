@@ -522,7 +522,27 @@ class FileMover(object):
         threshold = 3 # number of simulteneous downloads
         thread.start_new_thread(worker, (self.queue, threshold))
 
-    def copy_via_xrdcp(self, lfn, dst, verbose=0):
+    def copy_via_lcg(self, lfn, dst, verbose=0, background=False):
+        "Copy LFN to given destination via lcg-cp command"
+        if  not os.path.isdir(dst):
+            msg = 'lcg-cp only works with local destination'
+            print_error(msg)
+            return 'fail'
+        for srmcmd in srmcp("srm-copy", lfn, dst, verbose):
+            pieces = srmcmd.split()
+            lcgcmd = 'lcg-cp -b -D srmv2 %s %s' % (pieces[1], pieces[2])
+            if  background:
+                proc = Process(target=execmd, args=(lcgcmd, ))
+                self.queue[lfn] = (proc, None)
+                return 'accepted'
+            else:
+                stdout, stderr = execmd(lcgcmd)
+                if  stderr:
+                    print_error(stderr)
+                    return 'fail'
+        return 'success'
+
+    def copy_via_xrdcp(self, lfn, dst, verbose=0, background=False):
         "Copy LFN to given destination via xrdcp command"
         if  not os.path.isdir(dst):
             msg = 'xrdcp only works with local destination'
@@ -763,7 +783,7 @@ def copy_lfn(lfn, dst, verbose=0, background=False, overwrite=False):
     status = FM_SINGLETON.copy(lfn, dst, verbose, background)
     if  status == 'fail':
         print_info('Fallback to xrdcp method')
-        FM_SINGLETON.copy_via_xrdcp(lfn, dst, verbose)
+        FM_SINGLETON.copy_via_xrdcp(lfn, dst, verbose, background)
     return status
 
 def dqueue(arg=None):
