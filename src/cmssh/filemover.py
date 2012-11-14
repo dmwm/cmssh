@@ -670,7 +670,10 @@ class FileMover(object):
             print_error('Unable to find srm ls tool')
             sys.exit(1)
         dst = [r for r in resolve_user_srm_path(node, ldir)][0]
-        cmd = "%s %s -fulldetailed" % (srmls, dst)
+        if  srmls.find('srm-ls') != -1:
+            cmd = "%s %s -fulldetailed" % (srmls, dst)
+        else:
+            cmd = "%s %s -l" % (srmls, dst)
         if  verbose:
             print cmd
         stdout, stderr = execmd(cmd)
@@ -769,7 +772,7 @@ class FileMover(object):
             node = spath[0]
             ldir = spath[1]
         dst = [r for r in resolve_user_srm_path(node, ldir)][0]
-        cmd = 'srm-mkdir %s' % dst
+        cmd = '%s %s' % (os.environ.get('SRM_MKDIR', ''), dst)
         if  verbose:
             print cmd
         stdout, stderr = execmd(cmd)
