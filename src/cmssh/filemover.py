@@ -534,10 +534,6 @@ class FileMover(object):
 
     def copy_via_lcg(self, lfn, dst, verbose=0, background=False):
         "Copy LFN to given destination via lcg-cp command"
-        if  not os.path.isdir(dst):
-            msg = 'lcg-cp only works with local destination'
-            print_error(msg)
-            return 'fail'
         for pfn, pdst in pfn_dst(lfn, dst, verbose):
             vflag  = ''
             if  verbose:
