@@ -306,9 +306,9 @@ def get_pfns(lfn, verbose=None):
                 continue
     return pfnlist, selist
 
-def srmcp(srmcmd, lfn, dst, verbose=None):
+def pfn_dst(lfn, dst, verbose=None):
     """
-    Look-up LFN in Phedex and construct srmcp command for further processing
+    Look-up LFN in Phedex and return pfn dst for further processing
     """
     dstfname = None
     pat = re.compile('^T[0-9]_[A-Z]+(_)[A-Z]+')
@@ -420,12 +420,10 @@ def srmcp(srmcmd, lfn, dst, verbose=None):
         for pfn in pfnlist:
             print pfn
 
-    # finally let's create srmcp commands for each found pfn
+    # finally return pfn and dst paths w/ file for further processing
     for item in pfnlist:
         ifile = item.split("/")[-1] if not dstfname else dstfname
-        cmd = "%s %s %s/%s -pushmode -statuswaittime 30 -3partycopy -delegation false -dcau false" \
-                % (srmcmd, item, dst, ifile)
-        yield cmd
+        yield item, '%s/%s' % (dst, ifile)
 
 def get_size(cmd, verbose=None):
     """
@@ -528,17 +526,20 @@ class FileMover(object):
             msg = 'lcg-cp only works with local destination'
             print_error(msg)
             return 'fail'
-        for srmcmd in srmcp("srm-copy", lfn, dst, verbose):
-            pieces = srmcmd.split()
-            lcgcmd = 'lcg-cp -b -D srmv2 %s %s' % (pieces[1], pieces[2])
+        for pfn, pdst in pfn_dst(lfn, dst, verbose):
+            vflag  = ''
+            if  verbose:
+                vflag = '-v'
+            lcgcmd = 'lcg-cp %s -b -D srmv2 %s %s' % (vflag, pfn, pdst)
             if  background:
                 proc = Process(target=execmd, args=(lcgcmd, ))
                 self.queue[lfn] = (proc, None)
                 return 'accepted'
             else:
                 stdout, stderr = execmd(lcgcmd)
-                if  stderr:
-                    print_error(stderr)
+                output = stdout + stderr
+                if  output.lower().find('error') != -1:
+                    print_error(output)
                     return 'fail'
         return 'success'
 
@@ -567,7 +568,10 @@ class FileMover(object):
         err += ' GRID middleware fails.'
         if  not background:
             bar  = PrintProgress('Gather LFN info')
-        for cmd in srmcp("srm-copy", lfn, dst, verbose):
+        srmargs = '-pushmode -statuswaittime 30 -3partycopy -delegation false -dcau false'
+        srmcmd  = 'srm-copy'
+        for pfn, pdst in pfn_dst(lfn, dst, verbose):
+            cmd = '%s %s %s %s' % (srmcmd, pfn, pdst, srmargs)
             if  cmd:
                 if  background:
                     proc = Process(target=execute, args=(cmd, lfn, 0))
