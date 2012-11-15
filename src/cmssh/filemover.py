@@ -485,6 +485,7 @@ class FileMover(object):
 
     def copy_via_xrdcp(self, lfn, dst, verbose=0, background=False):
         "Copy LFN to given destination via xrdcp command"
+        status = 'fail'
         if  not os.path.isdir(dst):
             if  verbose:
                 msg = 'xrdcp only works with local destination'
@@ -493,7 +494,11 @@ class FileMover(object):
         cmd = 'xrdcp root://xrootd.unl.edu/%s %s' % (lfn, dst)
         cmd = 'xrdcp root://cms-xrd-global.cern.ch/%s %s' % (lfn, dst)
         for pfn, pdst in pfn_dst(lfn, dst, verbose):
-            status = self.transfer(cmd, lfn, pfn, pdst, verbose, background)
+            status = 'fail'
+            try:
+                status = self.transfer(cmd, lfn, pfn, pdst, verbose, background)
+            except:
+                pass
             if  status == 'success' or status == 'accepted':
                 return status
         return status
