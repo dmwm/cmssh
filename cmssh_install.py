@@ -637,7 +637,6 @@ def main():
         print "Install Globus"
         os.chdir(path)
         url = 'http://vdt.cs.wisc.edu/software/globus/4.0.8_VDT2.0.0gt4nbs/vdt_globus_essentials-VDT2.0.0-3-%s_%s.tar.gz' % (parch, vdt_ver)
-        print "\n### url", url
         if  not is_installed(url, path):
             get_file(url, 'globus.tar.gz', path, debug)
 
