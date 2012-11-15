@@ -447,24 +447,27 @@ def get_size(surl, verbose=None):
     if  cmd.find('file:///') != -1:
         return file_size(cmd.split('file:///')[-1])
     stdout, stderr = execmd(cmd)
-    if  stderr.find('command not found') != -1:
-        print_error(stderr)
-        sys.exit(1)
-    if  stderr:
-        print_error(stderr)
+    if  verbose:
+        print_info(stdout + stderr)
     orig_size = 0
     if  cmd.find('file:///') != -1: # srm-ls returns XML
         if  srmls.find('srm-ls') != -1:
             orig_size = parse_srmls(stdout)
         else:
-            orig_size = stdout.split()[0].strip()
+            try:
+                orig_size = stdout.split()[0].strip()
+            except:
+                return 0
     else:
         if  srmls.find('srm-ls') != -1:
             for line in stdout.split('\n'):
                 if  line.find('Bytes') != -1:
                     orig_size = line.replace('\n', '').split('=')[-1]
         else:
-            orig_size = stdout.split()[0].strip()
+            try:
+                orig_size = stdout.split()[0].strip()
+            except:
+                return 0
     return orig_size
 
 def check_file(src, dst, verbose):
@@ -739,13 +742,13 @@ class FileMover(object):
         cmd = "%s %s" % (cmd, dst+path)
         if  verbose:
             print cmd
-        stdout, stderr = execmd(cmd)
-        if  stderr:
-            print_error(stderr)
-        if  stdout.find('SRM_SUCCESS') != -1:
-            return 'success'
-        else:
-            print stdout
+        try:
+            stdout, stderr = execmd(cmd)
+            if  verbose:
+                print_info(stdout + stderr)
+        except:
+            return 'fail'
+        return 'success'
 
     def rmdir(self, path, verbose=0):
         """rmdir command"""
@@ -759,14 +762,14 @@ class FileMover(object):
         dst = [r for r in resolve_user_srm_path(node, ldir)][0]
         cmd = '%s %s' % (os.environ.get('SRM_RMDIR', ''), dst)
         if  verbose:
-            print cmd
-        stdout, stderr = execmd(cmd)
-        if  stderr:
-            print_error(stderr)
-        if  stdout.find('SRM_SUCCESS') != -1 or not stdout:
-            return 'success'
-        else:
-            print stdout
+            print_info(cmd)
+        try:
+            stdout, stderr = execmd(cmd)
+            if  verbose:
+                print_info(stdout + stderr)
+        except:
+            return 'fail'
+        return 'success'
 
     def mkdir(self, path, verbose=0):
         """mkdir command"""
@@ -780,14 +783,14 @@ class FileMover(object):
         dst = [r for r in resolve_user_srm_path(node, ldir)][0]
         cmd = '%s %s' % (os.environ.get('SRM_MKDIR', ''), dst)
         if  verbose:
-            print cmd
-        stdout, stderr = execmd(cmd)
-        if  stderr:
-            print_error(stderr)
-        if  stdout.find('SRM_SUCCESS') != -1 or not stdout:
-            return 'success'
-        else:
-            print stdout
+            print_info(cmd)
+        try:
+            stdout, stderr = execmd(cmd)
+            if  verbose:
+                print_info(stdout + stderr)
+        except:
+            return 'fail'
+        return 'success'
 
 def lfn_exists(lfn, dst):
     "Check if given LFN exists at local destination"
