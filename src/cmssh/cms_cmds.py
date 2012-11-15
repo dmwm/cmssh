@@ -717,7 +717,10 @@ def cms_rm(arg):
             status = rm_lfn(arg, verbose=debug)
             print_status(status)
         else:
-            raise Exception('Not implemented yet')
+            if  not os.path.exists(dst):
+                print_error('File %s does not exists' % dst)
+            else:
+                raise Exception('Not implemented yet')
 
 def cms_rmdir(arg):
     """
