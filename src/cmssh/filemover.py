@@ -616,7 +616,7 @@ class FileMover(object):
                     continue
                 output.append(line)
             return '\n'.join(output)
-        elif srmls == 'srmls':
+        elif srmls.find('srmls') != -1:
             for line in srmls_printer(stdout, dst.split('=')[-1]):
                 output.append(line)
             return '\n'.join(output)
