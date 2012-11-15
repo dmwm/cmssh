@@ -827,7 +827,7 @@ def copy_lfn(lfn, dst, verbose=0, background=False, overwrite=False):
                 return 'fail'
     status = FM_SINGLETON.copy_via_xrdcp(lfn, dst, verbose, background)
     if  status == 'fail':
-        print_warning('xrdcp fails to fetch the file, invoke GRID middleware fallback mechanism')
+        print_warning('xrdcp fails to copy file, fallback to GRID middleware mechanism')
         if  os.environ.get('LCG_CP', ''):
             status = FM_SINGLETON.copy_via_lcg(lfn, dst, verbose, background)
         else:
