@@ -29,6 +29,11 @@ def srmls_parser(stream):
     "srmls parser"
     pat = re.compile('\s*[0-9]*\s*/.*')
     row = {}
+    uid = ''
+    gid = ''
+    user = ''
+    group = ''
+    world = ''
     for line in stream.split('\n'):
         line = line.replace('\n', '')
         if  pat.match(line): # new row
@@ -43,7 +48,27 @@ def srmls_parser(stream):
                 row['name'] = content[1]
         for perm in ['user', 'group', 'world']:
             if  line.lower().find('%spermission' % perm) != -1:
-                row[perm] = line.split()[-1].lower().replace('permissions', '')
+                value = line.split()[-1].lower().replace('permissions', '')
+                if  perm == 'user':
+                    user = value
+                if  perm == 'group':
+                    group = value
+                if  perm == 'world':
+                    world = value
+                if  perm == 'user':
+                    uid = line.split()[1].replace('uid=', '').lower()
+                elif perm == 'group':
+                    gid = line.split()[1].replace('gid=', '').lower()
+        if  uid:
+            row['uid'] = uid
+        if  gid:
+            row['gid'] = gid
+        if  user:
+            row['user']  = user
+        if  group:
+            row['group'] = group
+        if  world:
+            row['world'] = world
         if  line.lower().find('modified') != -1:
             row['tstamp'] = line.split(':', 1)[-1]
         if  line.lower().find('type') != -1:
@@ -77,7 +102,12 @@ def srmls_printer(stream, dst=''):
         group  = row.get('group', 'r--')
         world  = row.get('world', 'r--')
         perm   = permissions(ftype, user, group, world)
-        yield "%s %s %s %s" % (perm, size, tstamp, name)
+        uid    = row.get('uid', '')
+        gid    = row.get('gid', '')
+        if  uid and gid:
+            yield "%s %s %s %s %s %s" % (perm, uid, gid, size, tstamp, name)
+        else:
+            yield "%s %s %s %s" % (perm, size, tstamp, name)
 
 #
 # srm-ls paser/formater/printer implementation
