@@ -62,6 +62,12 @@ def srmls_printer(stream, dst=''):
         rows.append(row)
     for row in rows:
         name   = row.get('name').replace(dst, '')
+        if  not name:
+            name = '.'
+        elif name == '/':
+            name = '.'
+        elif name[0] == '/':
+            name = name[1:]
         size   = row.get('size', 0)
         if  len(str(size)) < size_of_size:
             size = str(size).rjust(size_of_size-len(str(size))+1, ' ')
