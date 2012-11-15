@@ -206,7 +206,7 @@ def get_username(verbose=None):
     stdout, stderr = execmd(cmd)
     if  stderr.find('command not found') != -1:
         raise Exception(stderr)
-    userdn = None 
+    userdn = None
     try:
         for line in stdout.split('\n'):
             if  line.find('issuer') != -1:
@@ -476,20 +476,26 @@ def check_file(src, dst, verbose):
     if  verbose:
         print "%s, size %s" % (src, orig_size)
 
+    if  not orig_size or orig_size == 'null':
+        return False
+
     # find file size from destination (if any)
     dst_size = get_size(dst, verbose)
     if  verbose:
         print "%s, size %s" % (dst, dst_size)
 
-    if  orig_size == dst_size:
-        return (dst, dst_size)
+    if  not dst_size or dst_size == 'null':
+        return False
+
+    if  int(orig_size) == int(dst_size):
+        return (dst, int(dst_size))
     return False
 
 def execute(cmd, src, dst, verbose):
     """
     Execute given command, but also check if file is in place at dst
     """
-    status = check_file(src, dst, verbose) 
+    status = check_file(src, dst, verbose)
     if  status:
         return status
     else:
@@ -499,7 +505,7 @@ def execute(cmd, src, dst, verbose):
             print stdout + stderr
     status = check_file(src, dst, verbose) # check again since SRM may fail
     return status
-    
+
 def active_jobs(queue):
     "Return number of active jobs in a queue"
     njobs = 0
@@ -529,7 +535,7 @@ class FileMover(object):
     def __init__(self):
         self.instance = "Instance at %d" % self.__hash__()
         self.queue = {} # download queue
-        threshold = 3 # number of simulteneous downloads
+        threshold = os.environ.get('CMSSH_TRANSFER_LIMIT', 3)
         thread.start_new_thread(worker, (self.queue, threshold))
 
     def copy_via_lcg(self, lfn, dst, verbose=0, background=False):
@@ -541,20 +547,11 @@ class FileMover(object):
             lcg = os.environ.get('LCG_CP', '')
             if  not lcg:
                 return 'fail'
-            lcgcmd = '%s %s -b -D srmv2 %s %s' % (lcg, vflag, pfn, pdst)
-            if  verbose:
-                print_info(lcgcmd)
-            if  background:
-                proc = Process(target=execute, args=(lcgcmd, pfn, pdst, 0))
-                self.queue[lfn] = (proc, None)
-                return 'accepted'
-            else:
-                stdout, stderr = execmd(lcgcmd)
-                output = stdout + stderr
-                if  output.lower().find('error') != -1:
-                    print_error(output)
-                    return 'fail'
-        return 'success'
+            cmd = '%s %s -b -D srmv2 %s %s' % (lcg, vflag, pfn, pdst)
+            status = self.transfer(cmd, lfn, pfn, pdst, verbose, background)
+            if  status == 'success' or status == 'accepted':
+                return status
+        return status
 
     def copy_via_xrdcp(self, lfn, dst, verbose=0, background=False):
         "Copy LFN to given destination via xrdcp command"
@@ -565,27 +562,14 @@ class FileMover(object):
             return 'fail'
         cmd = 'xrdcp root://xrootd.unl.edu/%s %s' % (lfn, dst)
         cmd = 'xrdcp root://cms-xrd-global.cern.ch/%s %s' % (lfn, dst)
-        if  verbose:
-            print_info(cmd)
-        if  background:
-            proc = Process(target=execute, args=(cmd, pfn, pdst, 0))
-            self.queue[lfn] = (proc, None)
-            return 'accepted'
-        stdout, stderr = execmd(cmd)
-        if  stderr and stderr.find('Total') == -1:
-            print_error(stderr)
-            return 'fail'
-        else:
-            if  verbose:
-                print_info(stdout + stderr)
-        return 'success'
+        for pfn, pdst in pfn_dst(lfn, dst, verbose):
+            status = self.transfer(cmd, lfn, pfn, pdst, verbose, background)
+            if  status == 'success' or status == 'accepted':
+                return status
+        return status
 
     def copy_via_srm(self, lfn, dst, verbose=0, background=False):
         """Copy LFN to given destination"""
-        err  = 'Unable to identify total size of the file,'
-        err += ' GRID middleware fails.'
-        if  not background:
-            bar  = PrintProgress('Gather LFN info')
         srmcmd  = os.environ.get('SRM_CP', '')
         if  srmcmd.find('srm-copy') != -1:
             srmargs = '-pushmode -statuswaittime 30 -3partycopy -delegation false -dcau false'
@@ -598,54 +582,69 @@ class FileMover(object):
                 cmd = '%s %s %s %s' % (srmcmd, pfn, pdst, srmargs)
             else:
                 cmd = '%s %s %s %s' % (srmcmd, srmargs, pfn, pdst)
-            if  verbose:
-                print_info(cmd)
-            if  cmd:
-                if  background:
-                    proc = Process(target=execute, args=(cmd, pfn, pdst, 0))
-                    self.queue[lfn] = (proc, None)
-                    return 'accepted'
-                elif verbose:
-                    status = execute(cmd, pfn, pdst, verbose)
-                    if  status:
-                        dst, dst_size = status
-                        size = size_format(dst_size)
-                        if  not size or not dst_size:
-                            print_error(err)
-                            print "Status of transfer:\n", status
-                            return 'fail'
-                        else:
-                            print "\nDone, file located at %s (%s)" \
-                                % (dst, size_format(dst_size))
-                        break
+            status = self.transfer(cmd, lfn, pfn, pdst, verbose, background)
+            if  status == 'success' or status == 'accepted':
+                return status
+        return status
+
+    def transfer(self, cmd, lfn, pfn, pdst, verbose=0, background=False):
+        """Copy LFN to given destination"""
+        err  = 'Unable to identify total size of the file,'
+        err += ' GRID middleware fails.'
+        if  not background:
+            bar  = PrintProgress('Fetching LFN info')
+        if  verbose:
+            print_info(cmd)
+        if  background:
+            proc = Process(target=execute, args=(cmd, pfn, pdst, 0))
+            self.queue[lfn] = (proc, None)
+            return 'accepted'
+        elif verbose:
+            status = execute(cmd, pfn, pdst, verbose)
+            if  not status:
+                return 'fail'
+            else:
+                dst, dst_size = status
+                size = size_format(dst_size)
+                if  not size or not dst_size:
+                    print_error(err)
+                    print "Status of transfer:\n", status
+                    return 'fail'
                 else:
-                    ifile = pdst
-                    pfn_size = get_size(pfn)
-                    if  pfn_size and pfn_size != 'null':
-                        tot_size = float(pfn_size)
-                        bar.print_msg('LFN size=%s' % size_format(tot_size))
-                        bar.init('Download in progress:')
-                        proc = Process(target=execute, args=(cmd, pfn, pdst, verbose))
-                        proc.start()
-                        while True:
-                            if  proc.is_alive():
-                                size = get_size(ifile)
-                                if  not size or size == 'null':
-                                    bar.refresh('')
-                                    pass
-                                else:
-                                    progress = float(size)*100/tot_size
-                                    bar.refresh(progress)
-                                    if  progress == 100:
-                                        break
-                            else:
+                    print "\nDone, file located at %s (%s)" \
+                        % (dst, size_format(dst_size))
+                return 'success'
+        else:
+            ifile = pdst
+            pfn_size = get_size(pfn)
+            if  pfn_size and pfn_size != 'null':
+                tot_size = float(pfn_size)
+                bar.print_msg('LFN size=%s' % size_format(tot_size))
+                bar.init('Download in progress:')
+                proc = Process(target=execute, args=(cmd, pfn, pdst, verbose))
+                proc.start()
+                while True:
+                    if  proc.is_alive():
+                        size = get_size(ifile)
+                        if  not size or size == 'null':
+                            bar.refresh('')
+                            pass
+                        else:
+                            progress = float(size)*100/tot_size
+                            bar.refresh(progress)
+                            if  progress == 100:
                                 break
-                            time.sleep(0.5)
-                        bar.clear()
                     else:
-                        print_error(err)
-                        return 'fail'
-        return 'success'
+                        break
+                    time.sleep(0.5)
+                bar.clear()
+                status = check_file(pfn, pdst, verbose)
+                if  status:
+                    return 'success'
+            else:
+                print_error(err)
+                return 'fail'
+        return 'fail'
 
     def list_lfn(self, lfn, verbose=0):
         """List LFN"""
@@ -828,8 +827,7 @@ def copy_lfn(lfn, dst, verbose=0, background=False, overwrite=False):
                 return 'fail'
     status = FM_SINGLETON.copy_via_xrdcp(lfn, dst, verbose, background)
     if  status == 'fail':
-        if  verbose:
-            print_info('xrdcp fails to fetch the file, invoke fallback mechanism')
+        print_warning('xrdcp fails to fetch the file, invoke GRID middleware fallback mechanism')
         if  os.environ.get('LCG_CP', ''):
             status = FM_SINGLETON.copy_via_lcg(lfn, dst, verbose, background)
         else:
