@@ -936,6 +936,9 @@ def cms_json(arg):
 
 def integration_tests(_arg):
     "Run series of integration tests for cmssh"
+    for fname in ['file1.root', 'file2.root']:
+        if  os.path.isfile(fname):
+            os.remove(fname)
     lfn       = \
     '/store/data/CRUZET3/Cosmics/RAW/v1/000/050/832/186585EC-024D-DD11-B747-000423D94AA8.root'
     lfn2      = \
