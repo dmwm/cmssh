@@ -421,7 +421,7 @@ def check_file(src, dst, verbose):
         return (dst, int(dst_size))
     return False
 
-def execute(cmd, src, dst, verbose):
+def execute(cmds, src, dst, verbose):
     """
     Execute given command, but also check if file is in place at dst
     """
@@ -429,11 +429,23 @@ def execute(cmd, src, dst, verbose):
     if  status:
         return status
     else:
-        stdout, stderr = execmd(cmd)
-        if  verbose:
-            print_info('Output of %s' % cmd)
-            print stdout + stderr
-    status = check_file(src, dst, verbose) # check again since SRM may fail
+        if  isinstance(cmds, basestring):
+            stdout, stderr = execmd(cmds)
+            if  verbose:
+                print_info('Output of %s' % cmd)
+                print stdout + stderr
+            status = check_file(src, dst, verbose)
+        elif isinstance(cmds, list):
+            for cmd in cmds:
+                if  not cmd:
+                    continue
+                stdout, stderr = execmd(cmd)
+                if  verbose:
+                    print_info('Output of %s' % cmd)
+                    print stdout + stderr
+                status = check_file(src, dst, verbose)
+                if  status:
+                    return status
     return status
 
 def active_jobs(queue):
@@ -467,60 +479,52 @@ class FileMover(object):
         self.queue = {} # download queue
         threshold = os.environ.get('CMSSH_TRANSFER_LIMIT', 3)
         thread.start_new_thread(worker, (self.queue, threshold))
+        self.methods = ['xrdcp', 'lcgcp', 'srmcp']
 
-    def copy_via_lcg(self, lfn, dst, verbose=0, background=False):
-        "Copy LFN to given destination via lcg-cp command"
-        for pfn, pdst in pfn_dst(lfn, dst, verbose):
-            vflag  = ''
-            if  verbose:
-                vflag = '-v'
-            lcg = os.environ.get('LCG_CP', '')
-            if  not lcg:
-                return 'fail'
-            cmd = '%s %s -b -D srmv2 %s %s' % (lcg, vflag, pfn, pdst)
-            status = self.transfer(cmd, lfn, pfn, pdst, verbose, background)
-            if  status == 'success' or status == 'accepted':
-                return status
-        return status
-
-    def copy_via_xrdcp(self, lfn, dst, verbose=0, background=False):
-        "Copy LFN to given destination via xrdcp command"
-        status = 'fail'
+    def transfer_cmds(self, lfn, dst):
+        "Generate transfer commands"
+        xrdcmd = 'xrdcp root://cms-xrd-global.cern.ch/%s %s' % (lfn, dst)
         if  not os.path.isdir(dst):
-            if  verbose:
-                msg = 'xrdcp only works with local destination'
-                print_error(msg)
-            return 'fail'
-        cmd = 'xrdcp root://xrootd.unl.edu/%s %s' % (lfn, dst)
-        cmd = 'xrdcp root://cms-xrd-global.cern.ch/%s %s' % (lfn, dst)
-        for pfn, pdst in pfn_dst(lfn, dst, verbose):
-            status = 'fail'
-            try:
-                status = self.transfer(cmd, lfn, pfn, pdst, verbose, background)
-            except:
-                pass
-            if  status == 'success' or status == 'accepted':
-                return status
-        return status
-
-    def copy_via_srm(self, lfn, dst, verbose=0, background=False):
-        """Copy LFN to given destination"""
-        srmcmd  = os.environ.get('SRM_CP', '')
-        if  srmcmd.find('srm-copy') != -1:
+            xrdcmd = ''
+        srmcp  = os.environ.get('SRM_CP', '')
+        if  srmcp.find('srm-copy') != -1:
             srmargs = '-pushmode -statuswaittime 30 -3partycopy -delegation false -dcau false'
         else:
             srmargs = '-srm_protocol_version=2 -retry_num=1 -streams_num=1 -debug'
-        if  not srmcmd:
-            return 'fail'
-        for pfn, pdst in pfn_dst(lfn, dst, verbose):
-            if  srmcmd.find('srm-copy') != -1:
-                cmd = '%s %s %s %s' % (srmcmd, pfn, pdst, srmargs)
+        for pfn, pdst in pfn_dst(lfn, dst, 0): # last zero is verbose=0
+            lcg = os.environ.get('LCG_CP', '')
+            if  lcg:
+                lcgcmd = '%s %s -b -D srmv2 %s %s' % (lcg, vflag, pfn, pdst)
             else:
-                cmd = '%s %s %s %s' % (srmcmd, srmargs, pfn, pdst)
+                lcgcmd = ''
+            if  srmcp.find('srm-copy') != -1:
+                srmcmd = '%s %s %s %s' % (srmcp, pfn, pdst, srmargs)
+            else:
+                srmcmd = '%s %s %s %s' % (srmcp, srmargs, pfn, pdst)
+            yield xrdcmd, lcgcmd, srmcmd, pfn, pdst
+
+    def copy(self, lfn, dst, method='xrdcp', verbose=0, background=False):
+        """Copy LFN to given destination"""
+        if  method not in self.methods:
+            print_error('Unknown transfer method "%s"' % method)
+            return 'fail'
+        for xrdcmd, lcgcmd, srmcmd, pfn, pdst in self.transfer_cmds(lfn, dst):
+            if  method == 'xrdcp':
+                cmd = xrdcmd
+            elif method == 'lcgcp':
+                cmd = lcgcmd
+            else:
+                cmd = srmcmd
+            if  not cmd:
+                return 'fail'
+            if  background:
+                # I need to pass list of commands for transfer method
+                # for that I'll use background variable
+                background = [xrdcmd, lcgcmd, srmcmd]
             status = self.transfer(cmd, lfn, pfn, pdst, verbose, background)
             if  status == 'success' or status == 'accepted':
                 return status
-        return status
+        return 'fail'
 
     def transfer(self, cmd, lfn, pfn, pdst, verbose=0, background=False):
         """Copy LFN to given destination"""
@@ -531,7 +535,10 @@ class FileMover(object):
         if  verbose:
             print_info(cmd)
         if  background:
-            proc = Process(target=execute, args=(cmd, pfn, pdst, 0))
+            # here background is a list of commands
+            if  not isinstance(background, list):
+                return 'fail'
+            proc = Process(target=execute, args=(background, pfn, pdst, 0))
             self.queue[lfn] = (proc, None)
             return 'accepted'
         elif verbose:
@@ -735,13 +742,14 @@ def copy_lfn(lfn, dst, verbose=0, background=False, overwrite=False):
             if  fname:
                 print_warning('File %s already exists' % fname)
                 return 'fail'
-    status = FM_SINGLETON.copy_via_xrdcp(lfn, dst, verbose, background)
+    method = os.environ.get('CMSSH_TRANSFER_METHOD', 'xrdcp')
+    status = FM_SINGLETON.copy(lfn, dst, method, verbose, background)
     if  status == 'fail':
         print_warning('xrdcp fails to copy file, fallback to GRID middleware mechanism')
         if  os.environ.get('LCG_CP', ''):
-            status = FM_SINGLETON.copy_via_lcg(lfn, dst, verbose, background)
+            status = FM_SINGLETON.copy(lfn, dst, 'lcgcp', verbose, background)
         else:
-            status = FM_SINGLETON.copy_via_srm(lfn, dst, verbose, background)
+            status = FM_SINGLETON.copy(lfn, dst, 'srmcp', verbose, background)
     return status
 
 def dqueue(arg=None):
