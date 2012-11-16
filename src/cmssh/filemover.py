@@ -481,7 +481,7 @@ class FileMover(object):
         thread.start_new_thread(worker, (self.queue, threshold))
         self.methods = ['xrdcp', 'lcgcp', 'srmcp']
 
-    def transfer_cmds(self, lfn, dst):
+    def transfer_cmds(self, lfn, dst, verbose=0):
         "Generate transfer commands"
         xrdcmd = 'xrdcp root://cms-xrd-global.cern.ch/%s %s' % (lfn, dst)
         if  not os.path.isdir(dst):
@@ -494,6 +494,10 @@ class FileMover(object):
         for pfn, pdst in pfn_dst(lfn, dst, 0): # last zero is verbose=0
             lcg = os.environ.get('LCG_CP', '')
             if  lcg:
+                if  verbose:
+                    vflag = '-v'
+                else:
+                    vflag = ''
                 lcgcmd = '%s %s -b -D srmv2 %s %s' % (lcg, vflag, pfn, pdst)
             else:
                 lcgcmd = ''
@@ -508,7 +512,7 @@ class FileMover(object):
         if  method not in self.methods:
             print_error('Unknown transfer method "%s"' % method)
             return 'fail'
-        for xrdcmd, lcgcmd, srmcmd, pfn, pdst in self.transfer_cmds(lfn, dst):
+        for xrdcmd, lcgcmd, srmcmd, pfn, pdst in self.transfer_cmds(lfn, dst, verbose):
             if  method == 'xrdcp':
                 cmd = xrdcmd
             elif method == 'lcgcp':
