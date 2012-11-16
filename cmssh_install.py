@@ -293,7 +293,7 @@ class MyOptionParser:
         self.parser.add_option("-u", "--upgrade", action="store_true",
             dest="upgrade", help="upgrade cmssh")
         self.parser.add_option("--version", action="store",
-            type="string", default="v0.26",
+            type="string", default="1.0.0",
             dest="version", help="get specific version of cmssh, e.g. master")
         drivers = ', '.join(available_architectures())
         self.parser.add_option("--arch", action="store",
