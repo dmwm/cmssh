@@ -157,7 +157,8 @@ def run(cmd, cdir=None, log=None, msg=None, debug=None, shell=False, call=False)
                         print_error(stderr)
                 else:
                     print_error(stderr)
-            print stdout
+            if  stdout:
+                print stdout
     except OSError as err:
         msg = 'OSError, fail to ' + msg + ', error=%s' % str(err)
         print_error(msg)
