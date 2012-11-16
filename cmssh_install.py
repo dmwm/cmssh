@@ -970,10 +970,6 @@ coral_init()
         msg += 'export LANG="C"\n'
         if  not opts.multi_user:
             msg += 'export CMSSW_RELEASES=$CMSSH_ROOT/Releases\n'
-        if  opts.multi_user:
-            msg += 'export CMSSH_TRANSFER_LIMIT=10\n'
-        else:
-            msg += 'export CMSSH_TRANSFER_LIMIT=3\n'
         msg += 'if [ -f $VO_CMS_SW_DIR/cmsset_default.sh ]; then\n'
         msg += '   source $VO_CMS_SW_DIR/cmsset_default.sh\nfi\n'
         msg += "network=`hostname -d 2> /dev/null`\n"
