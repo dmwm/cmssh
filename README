@@ -1,11 +1,10 @@
 Interactive shell for CMS experiment, http://cms.cern.ch
-Official web page: http://vkuznet.github.com/cmssh/
 
 Dependencies:
 -------------
 The cmssh shell is written in IPython. So by definition it requires
 python (version 2.6 and above), IPython, as well as GRID middleware tools
-(Globus, SRM Client). All tools (except python) are installed via 
+(Globus, SRM Client). All tools (except python) are installed via
 cmssh_install.py script for your convenience.
 
 Installation:
@@ -16,20 +15,53 @@ for more instructions.
 
 Usage:
 ------
-The cmssw_install.py installs all required software in a self-contained area
-which you specify at install time. It contains all dependencies, configuration
-and scripts required to run cmssh. Upon install you will be provided with
-a list to cmssh. Just run it! Here is a snapshot of what you will get:
+Upon installation you will get a link to cmssh script. Just run it, e.g.
 
-Welcome to cms-sh 0.1.0!
-[python 2.6.7 (r267:88850, Aug 26 2011, 09:47:49) , ipython 0.11]
-Darwin Kernel Version 10.8.0: Tue Jun  7 16:32:41 PDT 2011; root:xnu-1504.15.3~1/RELEASE_X86_64
-Available commands:
-find     search CMS meta-data (query DBS/Phedex/SiteDB)
-ls       list LFNs, e.g. ls /store/user/file.root
-cp       copy LFNs, e.g. cp /store/user/file.root .
-releases list available CMSSW releases
-install  install CMSSW releases, e.g. install CMSSW_5_0_0
+.. doctest::
+
+    # <path>/soft/bin/cmssh
+
+    Welcome to cmssh, master@2012-11-14 19:28:25 GMT
+    Loading dependencies:................. DONE
+
+    cmssh+pylab Python environment [backend: MacOSX].
+
+    Available cmssh commands:
+    find         search CMS meta-data (query DBS/Phedex/SiteDB)
+    dbs_instance show/set DBS instance, default is DBS global instance
+    mkdir/rmdir  mkdir/rmdir command, e.g. mkdir /path/foo or rmdir T3_US_Cornell:/store/user/foo
+    ls           list file/LFN, e.g. ls local.file or ls /store/user/file.root
+    rm           remove file/LFN, e.g. rm local.file or rm T3_US_Cornell:/store/user/file.root
+    cp           copy file/LFN, e.g. cp local.file or cp /store/user/file.root .
+    info         provides detailed info about given CMS entity, e.g. info run=160915
+    das          query DAS service
+    das_json     query DAS and return data in JSON format
+    jobs         status of job queue or CMS jobs
+    read         read URL/local file content
+    root         invoke ROOT
+    du           display disk usage for given site, e.g. du T3_US_Cornell
+
+    Available CMSSW commands (once you install any CMSSW release):
+    releases     list available CMSSW releases, accepts <list|all> args
+    install      install CMSSW release, e.g. install CMSSW_5_0_0
+    cmsrel       switch to given CMSSW release and setup its environment
+    arch         show or switch to given CMSSW architecture, accept <list|all> args
+    scram        CMSSW scram command
+    cmsRun       cmsRun command for release in question
+
+    Available GRID commands: <cmd> either grid or voms
+    vomsinit     setup your proxy (aka voms-proxy-init)
+    vomsinfo     show your proxy info (aka voms-proxy-info)
+
+    Query results are accessible via results() function, e.g.
+       find dataset=/*Zee*
+       for r in results(): print r, type(r)
+
+    List cmssh commands    : commands
+    cmssh command help     : cmshelp <command>
+    Install python software: pip <search|(un)install> <package>
+
+    cms-sh|1>
 
 License:
 --------
