@@ -17,51 +17,49 @@ Usage:
 ------
 Upon installation you will get a link to cmssh script. Just run it, e.g.
 
-.. doctest::
+# <path>/soft/bin/cmssh
 
-    # <path>/soft/bin/cmssh
+Welcome to cmssh, master@2012-11-14 19:28:25 GMT
+Loading dependencies:................. DONE
 
-    Welcome to cmssh, master@2012-11-14 19:28:25 GMT
-    Loading dependencies:................. DONE
+cmssh+pylab Python environment [backend: MacOSX].
 
-    cmssh+pylab Python environment [backend: MacOSX].
+Available cmssh commands:
+find         search CMS meta-data (query DBS/Phedex/SiteDB)
+dbs_instance show/set DBS instance, default is DBS global instance
+mkdir/rmdir  mkdir/rmdir command, e.g. mkdir /path/foo or rmdir T3_US_Cornell:/store/user/foo
+ls           list file/LFN, e.g. ls local.file or ls /store/user/file.root
+rm           remove file/LFN, e.g. rm local.file or rm T3_US_Cornell:/store/user/file.root
+cp           copy file/LFN, e.g. cp local.file or cp /store/user/file.root .
+info         provides detailed info about given CMS entity, e.g. info run=160915
+das          query DAS service
+das_json     query DAS and return data in JSON format
+jobs         status of job queue or CMS jobs
+read         read URL/local file content
+root         invoke ROOT
+du           display disk usage for given site, e.g. du T3_US_Cornell
 
-    Available cmssh commands:
-    find         search CMS meta-data (query DBS/Phedex/SiteDB)
-    dbs_instance show/set DBS instance, default is DBS global instance
-    mkdir/rmdir  mkdir/rmdir command, e.g. mkdir /path/foo or rmdir T3_US_Cornell:/store/user/foo
-    ls           list file/LFN, e.g. ls local.file or ls /store/user/file.root
-    rm           remove file/LFN, e.g. rm local.file or rm T3_US_Cornell:/store/user/file.root
-    cp           copy file/LFN, e.g. cp local.file or cp /store/user/file.root .
-    info         provides detailed info about given CMS entity, e.g. info run=160915
-    das          query DAS service
-    das_json     query DAS and return data in JSON format
-    jobs         status of job queue or CMS jobs
-    read         read URL/local file content
-    root         invoke ROOT
-    du           display disk usage for given site, e.g. du T3_US_Cornell
+Available CMSSW commands (once you install any CMSSW release):
+releases     list available CMSSW releases, accepts <list|all> args
+install      install CMSSW release, e.g. install CMSSW_5_0_0
+cmsrel       switch to given CMSSW release and setup its environment
+arch         show or switch to given CMSSW architecture, accept <list|all> args
+scram        CMSSW scram command
+cmsRun       cmsRun command for release in question
 
-    Available CMSSW commands (once you install any CMSSW release):
-    releases     list available CMSSW releases, accepts <list|all> args
-    install      install CMSSW release, e.g. install CMSSW_5_0_0
-    cmsrel       switch to given CMSSW release and setup its environment
-    arch         show or switch to given CMSSW architecture, accept <list|all> args
-    scram        CMSSW scram command
-    cmsRun       cmsRun command for release in question
+Available GRID commands: <cmd> either grid or voms
+vomsinit     setup your proxy (aka voms-proxy-init)
+vomsinfo     show your proxy info (aka voms-proxy-info)
 
-    Available GRID commands: <cmd> either grid or voms
-    vomsinit     setup your proxy (aka voms-proxy-init)
-    vomsinfo     show your proxy info (aka voms-proxy-info)
+Query results are accessible via results() function, e.g.
+   find dataset=/*Zee*
+   for r in results(): print r, type(r)
 
-    Query results are accessible via results() function, e.g.
-       find dataset=/*Zee*
-       for r in results(): print r, type(r)
+List cmssh commands    : commands
+cmssh command help     : cmshelp <command>
+Install python software: pip <search|(un)install> <package>
 
-    List cmssh commands    : commands
-    cmssh command help     : cmshelp <command>
-    Install python software: pip <search|(un)install> <package>
-
-    cms-sh|1>
+cms-sh|1>
 
 License:
 --------
