@@ -11,275 +11,174 @@
     <title>cmssh</title>
   </head>
 
-<body>
+  <body>
 
-<!-- HEADER -->
-<div id="header_wrap" class="outer">
-<header class="inner">
-<a id="forkme_banner" href="https://github.com/vkuznet/cmssh">Fork Me on GitHub</a>
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/dmwm/cmssh">View on GitHub</a>
 
-<h1 id="project_title">cmssh</h1>
-<h2 id="project_tagline">Programmable shell for CMS experiment</h2>
+          <h1 id="project_title">cmssh</h1>
+          <h2 id="project_tagline">Interactive shell for CMS experiment</h2>
 
-<!--
-          <section id="downloads">
-            <a class="zip_download_link" href="https://github.com/vkuznet/cmssh/zipball/v0.11">Download this project as a .zip file</a>
-            <a class="tar_download_link" href="https://github.com/vkuznet/cmssh/tarball/v0.11">Download this project as a tar.gz file</a>
-            <a class="zip_download_link" href="https://github.com/vkuznet/cmssh/zipball/master">Download this project as a .zip file</a>
-            <a class="tar_download_link" href="https://github.com/vkuznet/cmssh/tarball/master">Download this project as a tar.gz file</a>
-          </section>
--->
-</header>
-</div>
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/dmwm/cmssh/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/dmwm/cmssh/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
 
-<!-- MAIN CONTENT -->
-<div id="main_content_wrap" class="outer">
-<section id="main_content" class="inner">
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>Welcome to cmssh project.</h1>
 
-<h1>Welcome to cmssh project.</h1>
+<p>The cmssh (CMS shell) is a part of <a href="http://cms.cern.ch/">CMS</a> software initiative to simplify your daily activity in CMS environment. Think of it as combination of data discovery, file mover and release management tools in one user-friendly shell which runs on your favorite OS, Mac or Linux. The code is based on <a href="http://ipython.org/">IPython</a> and provides access to find your favorite data, to copy desired LFNs from/to storage elements and local disk, manage your CMS releases, etc. Plus it is based on python, therefore you can extended as you wish, e.g. you can write function and use it in a shell, etc.</p>
 
-<p>
-The cmssh (CMS shell) is a part of <a href="http://cms.cern.ch/">CMS</a>
-software initiative to simplify your daily activity in CMS environment.
-It as combination of data discovery, file mover and release
-management tools in one user-friendly shell which runs on your favorite
-OS, Mac or Linux. The code is based on <a href="http://ipython.org/">IPython</a>
-and provides access to find your favorite data, to copy desired LFNs from/to
-storage elements and local disk, manage your CMS releases, etc.
-Since it is based on python you can extended as you wish, e.g.
-you can write your own code, use matplotlib, etc.
+<h1>How to set it up?</h1>
 
-A brief introduction of cmssh capabilities are outlined in this
-<a href="images/cmssh.pdf">talk</a>.
+<p>Download <a href="https://raw.github.com/dmwm/cmssh/master/cmssh_install.py">cmssh_install.py</a> script and run it as following</p>
 
-</p>
+<pre><code>./cmssh_install.py --help
+./cmssh_install.py --install --dir=your_install_dir
+</code></pre>
 
-<h1>Prerequisites</h1>
-<ul>
-<li>
-cmssh relies on usage of your GRID certificate. Please ensure that
-it is located in usual $HOME/.globus area, e.g. you should have there
-your private key (userkey.pem) and public certificate (usercert.pem).
-</li>
-<li>
-cmssh supports access to RunSummary data-service located at P5. The
-access to this service requires CERN SSO authentication. In order to gain the access
-please check that your user certificate is mapped at
-https://ca.cern.ch/ca/Certificates/MapCertificate.aspx
-</li>
-<li>
-If you intend to install cmssh on Mac OS X (Snow Leopard/Lion/Mountain Lion)
-please ensure that you have Xcode installed on your Mac. It can be found
-from AppleStore or here is direct 
-<a href="https://developer.apple.com/xcode/">link</a>.
-Mountain Lion users please install <a href="http://bit.ly/TIdOgS">command line tools</a>
-and <a href="http://bit.ly/NoAmkv">Java</a>.
-</li>
-</ul>
+<h1>How to use it?</h1>
 
-<h1>Installation</h1>
-To install cmssh please download installer
-<a href="https://raw.github.com/vkuznet/cmssh/1.0.0/cmssh_install.py">installer script</a>
-and run it as
-<p>
-<code>
-python cmssh_install.py --help
-</code>
-</p>
-It will print out all options you can use during install procedure. Most of the time
-you'll run it as
-<p>
-<code>
-python cmssh_install.py --install --dir=$PWD
-</code>
-</p>
-Please note that python should be version 2.6 or above (but not python 3 yet) and
-you'll need to have your JAVA_HOME environment set, since cmssh uses GRID middleware
-based on java. But don't worry the install script will prompt you about that.
-
-<h3>Installtion within CMSSW environment</h3>
-If you want to install cmssh on a system with already existing CMSSW environment
-please use the following command:
-<p>
-<code>
-python ./cmssh_install.py -i -d YOUR_INSTALL_AREA -v 1
---cmssw=YOUR_CMSSW_AREA --arch=YOUR_FAVORITE_ARCHITECTURE --multi-user
-</code>
-</p>
-Please note that if you have multiple architectures in your CMSSW area
-you may specify any architecture you like. It will be used to
-build cmssh dependencies, but cmssh will be able to use CMSSW release
-from different architectures.
-
-<h1>Usage</h1>
-
-<p>
-The usage of cmssh is very simple, in fact it is very similar to your
-normal shell. Here is a few basic commands you may find interesting:
-</p>
+<p>The usage of cmssh is very simple, in fact very similar to your shell. Here is a few basic commands you may find interesting:</p>
 
 <h3>search for some data</h3>
 
-<p>
-<code>find dataset=*CRUZET3*RAW</code>
-<br/>
-<code>for r in results(): print r, type(r)</code>
-</p>
+<pre><code>find dataset=*CRUZET3*RAW
+for r in results(): print r, type(r)
+</code></pre>
 
 <h3>ls/find/info command</h3>
 
-<p>
-<code>ls /Cosmics/CRUZET3-v1/RAW</code>
-<br/>
-<code>info /Cosmics/CRUZET3-v1/RAW</code>
-<br/>
-<code>find file dataset=/Cosmics/CRUZET3-v1/RAW</code>
-<br/>
-<code>find site dataset=/Cosmics/CRUZET3-v1/RAW</code>
-<br/>
-<code>find run=160915</code>
-<br/>
-<code>info run=160915</code>
-</p>
+<pre><code>ls /Cosmics/CRUZET3-v1/RAW
+info /Cosmics/CRUZET3-v1/RAW
+find file dataset=/Cosmics/CRUZET3-v1/RAW
+find site dataset=/Cosmics/CRUZET3-v1/RAW
+find run=160915
+info run=160915
+</code></pre>
 
-<p>
-Every time you run a command in cmssh there is
-<strong>results()</strong> helper function
-which captures its output. It allows you to re-iterate over
-last command output.
+<p>Every time you run a command there is <strong>results()</strong> function which capture its output. For example, for last command I can simply invoke <strong>results()</strong>, iterate over its items and print out item data members</p>
 
-For example, if you run
-<p><code>find run=160915</code></p>
-you can iterate over results again by using
-
-<p>
-<code>
-<pre>
-for r in results():
-    # do something useful with r, e.g.
+<pre><code>for r in results():
     print r.initLumi, type(r.initLumi), r.DeliveredLumi, type(r.DeliveredLumi)
-</pre>
-</code>
-</p>
-</p>
+</code></pre>
 
-<h3>find lumi information</h3>
+<h3>find lumi info</h3>
 
-<p>
-<code>
-    lumi dataset=/Photon/Run2012A-29Jun2012-v1/AOD
-</code>
-<br/>
-<code>
-    lumi block=/Photon/Run2012A-29Jun2012-v1/AOD#3e33ce8e-c44d-11e1-9a26-003048f0e1c6
-</code>
-<br/>
-<code>
-    lumi file=/store/data/Run2012A/Photon/AOD/29Jun2012-v1/0000/001B241C-ADC3-E111-BD1D-001E673971CA.root
-</code>
-<br/>
-<code>
-    lumi run=190704
-</code>
-<br/>
-<code>
-    lumi {190704:[1,2,3,4], 201706:[1,2,3,67]}
-</code>
-</p>
+<pre><code>find lumi dataset=/Photon/Run2012A-29Jun2012-v1/AOD
+find lumi block=/Photon/Run2012A-29Jun2012-v1/AOD#3e33ce8e-c44d-11e1-9a26-003048f0e1c6
+find lumi file=/store/data/Run2012A/Photon/AOD/29Jun2012-v1/0000/001B241C-ADC3-E111-BD1D-001E673971CA.root
+find lumi run=190704
+find lumi {190704:[1,2,3,4], 201706:[1,2,3,67]}
+</code></pre>
+
+<h3>find dataset configuration</h3>
+
+<pre><code>find config dataset=/SUSY_LM9_sftsht_8TeV-pythia6/Summer12-START50_V13-v1/GEN-SIM
+</code></pre>
+
+<h3>read commands</h3>
+
+<pre><code>read https://cmsweb.cern.ch/couchdb/reqmgr_config_cache/7a2f69a2a0a6df3bf57ebd6586f184e1/configFile
+find config dataset=/SUSY_LM9_sftsht_8TeV-pythia6/Summer12-START50_V13-v1/GEN-SIM &gt; config.txt
+read config.txt
+read https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookFWLitePython
+</code></pre>
 
 <h3>list/copy LFN to local disk</h3>
 
-<p>
-<code>ls /store/data/CRUZET3/Cosmics/RAW/path/file.root</code>
-<br/>
-<code>cp /store/data/CRUZET3/Cosmics/RAW/path/file.root .</code>
-</p>
+<pre><code>ls /store/data/CRUZET3/Cosmics/RAW/path/file.root
+cp /store/data/CRUZET3/Cosmics/RAW/path/file.root .
+</code></pre>
 
 <h3>SE operations, e.g. list its content, create/delete directory, etc.</h3>
 
-<p>
-<code>du T3_US_Cornell</code>
-<br/>
-<code>ls T3_US_Cornell</code>
-<br/>
-<code>ls T3_US_Cornell:/store/user/me</code>
-<br/>
-<code>mkdir T3_US_Cornell:/store/user/me/foo</code>
-<br/>
-<code>rmdir T3_US_Cornell:/store/user/me/foo</code>
-</p>
+<pre><code>du T3_US_Cornell
+ls T3_US_Cornell
+ls T3_US_Cornell:/store/user/me
+mkdir T3_US_Cornell:/store/user/me/foo
+rmdir T3_US_Cornell:/store/user/me/foo
+</code></pre>
 
 <h3>copy local file to SE</h3>
 
-<p><code>cp file.root T3_US_Cornell:/store/user/me</code></p>
+<pre><code>cp file.root T3_US_Cornell:/store/user/me
+</code></pre>
 
 <h3>copy LFN from SE to local disk</h3>
 
-<p><code>cp T3_US_Cornell:/store/user/me/file.root .</code></p>
+<pre><code>cp T3_US_Cornell:/store/user/me/file.root .
+</code></pre>
 
 <h3>delete file on SE</h3>
 
-<p><code>rm T3_US_Cornell:/xrootdfs/cms/store/user/me/file.root</code></p>
+<pre><code>rm T3_US_Cornell:/xrootdfs/cms/store/user/me/file.root
+</code></pre>
 
 <h3>copy LFN to SE area</h3>
 
-<p><code>cp /store/data/CRUZET3/Cosmics/RAW/path/file.root T3_US_Cornell:/store/user/me</code></p>
+<pre><code>cp /store/data/CRUZET3/Cosmics/RAW/path/file.root T3_US_Cornell:/store/user/me
+</code></pre>
 
 <h3>copy multiple files in background</h3>
 
-<p>
-<code>cp /store/data/CRUZET3/Cosmics/RAW/path/file1.root . &amp;</code>
-<br/>
-<code>cp /store/data/CRUZET3/Cosmics/RAW/path/file2.root . &amp;</code></p>
+<pre><code>cp /store/data/CRUZET3/Cosmics/RAW/path/file1.root . &amp;
+cp /store/data/CRUZET3/Cosmics/RAW/path/file2.root . &amp;
+</code></pre>
 
-<h3>look-up file status in background (data queue)</h3>
+<h3>look-up transfer status</h3>
 
-<p><code>dqueue</code></p>
+<pre><code>jobs list
+</code></pre>
+
+<h3>look-up job information at given site or dashboard</h3>
+
+<pre><code>jobs site=T2_US_UCSD
+jobs dashboard
+</code></pre>
+
+<h3>find user information and look-up user activity in dashboard</h3>
+
+<pre><code>find user=oliver
+jobs user=AikenOliver
+</code></pre>
 
 <h3>look-up available releases</h3>
 
-<p><code>releases</code>  </p>
+<pre><code>releases
+</code></pre>
 
 <h3>install your favorite release</h3>
-If you install cmssh on your system withon --cmssw option, you'll be
-able to manually install CMSSW releases by using the following command
 
-<p><code>install CMSSW_X_Y_Z</code></p>
-
-Once CMSSW release is installed in your shell, you can simply invoke your favorite
-release as simple as
-
-<p><code>cmsrel CMSSW_X_Y_Z</code></p>
-
-This command will setup release area and you'll be ready to use it.
+<pre><code>cmsrel CMSSW_5_2_0_pre1
+</code></pre>
 
 <h3>run cms job</h3>
-Once CMSSW release is available in your shell (cmsrel CMSSW_X_Y_Z),
-you can run your cms run job as following
 
-<p><code>cmsRun runevt_cfg.py</code></p>
+<pre><code>cmsRun runevt_cfg.py
+</code></pre>
 
 <h1>Help and Support</h1>
 
-<p>
-You can find cmssh help by typing <strong>cmshelp</strong> in your shell.
-For more information please contact the <a href="mailto:vkuznet@gmail.com">author</a>.
-For bugs please use GitHub
-<a href="https://github.com/vkuznet/cmssh/issues">tracking system</a>.
-</p>
-
+<p>You can find cmssh help by typing <strong>cmshelp</strong> in your shell. For more information please contact the <a href="mailto:vkuznet@gmail.com">author</a>. For bugs please use GitHub <a href="https://github.com/dmwm/cmssh/issues">tracking system</a>.</p>
       </section>
     </div>
 
-<!-- FOOTER  -->
-<div id="footer_wrap" class="outer">
-  <footer class="inner">
-    <p class="copyright">cmssh maintained by <a href="https://github.com/vkuznet">vkuznet</a></p>
-    <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
-  </footer>
-</div>
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">cmssh maintained by <a href="https://github.com/dmwm">dmwm</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
 
     
 
-</body>
+  </body>
 </html>
