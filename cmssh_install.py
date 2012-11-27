@@ -166,7 +166,16 @@ def find_cms_package(apt_init, pkg, debug=None, lookup=None):
     cmd  = 'source %s; apt-cache search %s | grep "%s" | grep -v toolfile ' % (apt_init, pkg, lookup)
     if  debug:
         print cmd
-    if  DEF_SCRAM_ARCH == 'osx106_amd64_gcc421': # Snow Leopard
+    if  DEF_SCRAM_ARCH == 'osx107_amd64_gcc462':
+        # fix coral lib issue for this arch
+        # https://hypernews.cern.ch/HyperNews/CMS/get/softwareDistrib/682.html
+        if  pkg == 'coral':
+            name = 'cms+coral+CORAL_2_3_21-cms25'
+        else:
+            res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+            vers = [r.replace('\n', '').split()[0] for r in res.stdout.readlines()]
+            name = natsorted(vers)[-1]
+    elif  DEF_SCRAM_ARCH == 'osx106_amd64_gcc421': # Snow Leopard
         if  pkg == 'root':
             name = 'lcg+root+5.30.02-cms4'
         elif pkg == 'py2-matplotlib':
