@@ -89,11 +89,9 @@ def get_scram_arch():
         else:
             arch = 'slc5_ia32_gcc434'
         # test presence of readline
-        readline = os.path.realpath('/usr/lib/libreadline.so')
-        if  readline.find('so.5') == -1:
+        if not re.search("libreadline\.so\.5", subprocess.check_output(["/sbin/ldconfig", "-p"])):
             msg  = 'cmssh on Linux requires readline5. Please verify that'
-            msg += ' you have it installed on your system. So far we found\n'
-            msg += '/usr/lib/libreadline.so -> %s' % readline
+            msg += ' you have it installed on your system.'
             raise Exception(msg)
     else:
         print 'Unsupported platform'
