@@ -155,7 +155,13 @@ DEF_SCRAM_ARCH = get_scram_arch()
 # the osx106_amd64_gcc421 has corrent python 2.6.4, but it picks root 5.30.02
 # which does not have pyROOT library
 
-def find_cms_package(apt_init, pkg, debug=None, lookup=None):
+def find_pkg(pkg, rel_pkgs):
+    "Find given package in list of release packages"
+    for rel_pkg in rel_pkgs:
+        if  pkg == rel_pkg or rel_pkg.find(pkg) != -1:
+            return rel_pkg
+
+def find_cms_package(apt_init, pkg, debug=None, lookup=None, rel_pkgs=[]):
     """
     Find latest version of given package in CMSSW repository.
     """
@@ -165,9 +171,12 @@ def find_cms_package(apt_init, pkg, debug=None, lookup=None):
     if  debug:
         print cmd
     if  DEF_SCRAM_ARCH == 'osx107_amd64_gcc462':
-        # fix coral lib issue for this arch
-        # https://hypernews.cern.ch/HyperNews/CMS/get/softwareDistrib/682.html
-        if  pkg == 'coral':
+        rel_pkg = find_pkg(pkg, rel_pkgs)
+        if  rel_pkg:
+            name = rel_pkg
+        elif  pkg == 'coral':
+            # fix coral lib issue for this arch
+            # https://hypernews.cern.ch/HyperNews/CMS/get/softwareDistrib/682.html
             name = 'cms+coral+CORAL_2_3_21-cms25'
         else:
             res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
@@ -189,9 +198,13 @@ def find_cms_package(apt_init, pkg, debug=None, lookup=None):
             vers = [r.replace('\n', '').split()[0] for r in res.stdout.readlines()]
             name = natsorted(vers)[-1]
     else:
-        res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-        vers = [r.replace('\n', '').split()[0] for r in res.stdout.readlines()]
-        name = natsorted(vers)[-1]
+        rel_pkg = find_pkg(pkg, rel_pkgs)
+        if  rel_pkg:
+            name = rel_pkg
+        else:
+            res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+            vers = [r.replace('\n', '').split()[0] for r in res.stdout.readlines()]
+            name = natsorted(vers)[-1]
     return name
 
 def find_installed_pkg(name, debug=0):
@@ -536,6 +549,24 @@ def main():
             cmd += 'apt-get install external+fakesystem+1.0; '
             cmd += 'apt-get update; '
             exe_cmd(sdir, cmd, debug, 'Init CMSSW apt repository', log='aptget.log')
+            # get latest non-patched/non-pre release and find out package versions
+            cmd  = "source %s; apt-cache search CMSSW_ " % apt_init
+            cmd += '| egrep -v -i "fwlite|pre|patch"'
+            cmd += "| awk '{print $1}' | tail -1"
+            exe_cmd(sdir, cmd, debug, 'Find latest CMSSW release', log='cmssw_rel.log')
+            latest_release = ''
+            with open('cmssw_rel.log', 'r') as stream:
+                latest_release = stream.read().replace('\n', '').strip()
+            rel_pkgs = []
+            if  latest_release:
+                cmd  = 'source %s; echo "N" | apt-get install %s' % (apt_init, latest_release)
+                exe_cmd(sdir, cmd, debug, 'Find %s release deps' % latest_release, log='cmssw_rel_dep.log')
+                with open('cmssw_rel_dep.log', 'r') as stream:
+                    rel_pkgs = [p for p in stream.read().split() if p.find('+')!=-1]
+                if  debug:
+                    print "Packages:"
+                    for pkg in rel_pkgs:
+                        print pkg
             # install useful set of CMS libraries
             cms_libs = ['root', 'coral', 'py2-pycurl', 'py2-matplotlib', 'py2-scipy']
             if  platform == 'Darwin' and osx_ver() == '10.6':
@@ -548,7 +579,7 @@ def main():
                     lookup = 'coral+CORAL'
                 else:
                     lookup = ''
-                name = find_cms_package(apt_init, cmspkg, debug, lookup)
+                name = find_cms_package(apt_init, cmspkg, debug, lookup, rel_pkgs)
                 cmd  = 'source %s; echo "Y" | apt-get install %s' % (apt_init, name)
                 log  = '%s/logs/%s.log' % (path, cmspkg)
                 exe_cmd(sdir, cmd, debug, msg, log)
