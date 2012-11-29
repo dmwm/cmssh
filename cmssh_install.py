@@ -905,12 +905,12 @@ python setup.py install --prefix=$idir
     else:
         print "Install cmssh"
     os.chdir(path)
-    url = 'http://github.com/vkuznet/cmssh/tarball/%s/' % opts.version
+    url = 'http://github.com/dmwm/cmssh/tarball/%s/' % opts.version
     cmssh_ver = [i for i in url.split('/') if i][-1]
     cmssh_ts  = time.strftime("%Y-%m-%d %H:%M:%S GMT", time.gmtime())
     if  opts.upgrade or not is_installed(url, path):
         try:
-            cmd = 'rm -rf vkuznet-cmssh*; rm -rf cmssh'
+            cmd = 'rm -rf dmwm-cmssh*; rm -rf cmssh'
             exe_cmd(path, cmd, debug)
         except:
             pass
@@ -920,7 +920,7 @@ python setup.py install --prefix=$idir
         except:
             pass
         get_file(url, 'cmssh.tar.gz', path, debug)
-        cmd = 'mv vkuznet-cmssh* %s/cmssh' % path
+        cmd = 'mv dmwm-cmssh* %s/cmssh' % path
         exe_cmd(path, cmd, debug)
 
     print "Create configuration"
