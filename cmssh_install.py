@@ -1014,9 +1014,10 @@ coral_init()
         msg += 'if [ X$network == X"cern.ch" ]; then\n'
         msg += "source /afs/cern.ch/project/eos/installation/pro/etc/setup.sh\n"
         msg += "export CMSSH_EOS=1\nfi\n"
-        msg += 'export OLD_PATH=$PATH\n'
         msg += 'export CRAB_ROOT=$CMSSH_ROOT/%s\n' % crab_ver
-        msg += 'export PATH=/usr/bin:/bin:/usr/sbin:/sbin\n'
+        if  not opts.multi_user:
+            msg += 'export OLD_PATH=$PATH\n'
+            msg += 'export PATH=/usr/bin:/bin:/usr/sbin:/sbin\n'
         msg += 'unset PYTHONPATH\n'
         if  use_lcg:
             msg += '# use local LCG installation\n'
