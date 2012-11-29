@@ -25,7 +25,7 @@ from cmssh.iprint import print_warning, print_error, print_status, print_info
 from cmssh.filemover import copy_lfn, rm_lfn, mkdir, rmdir, list_se, dqueue
 from cmssh.utils import list_results, check_os, unsupported_linux, access2file
 from cmssh.utils import osparameters, check_voms_proxy, run, user_input
-from cmssh.utils import execmd, touch, platform
+from cmssh.utils import execmd, touch, platform, fix_so
 from cmssh.cmsfs import dataset_info, block_info, file_info, site_info, run_info
 from cmssh.cmsfs import CMSMGR, apply_filter, validate_dbs_instance
 from cmssh.cmsfs import release_info, run_lumi_info
@@ -379,6 +379,10 @@ def cms_install(rel):
         print "Installing cms+cmssw+%s ..." % rel
         cmd = 'source %s; apt-get install cms+cmssw+%s' % (script, rel)
     subprocess.call(cmd, shell=True) # use subprocess due to apt-get interactive feature
+    if  platform() == 'osx':
+        idir = '%s/%s/cms/cmssw/%s' \
+                % (os.environ['VO_CMS_SW_DIR'], os.environ['SCRAM_ARCH'], rel)
+        fix_so(idir)
     print "Create user area for %s release ..." % rel
     cmsrel(rel)
 
