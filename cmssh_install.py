@@ -568,8 +568,6 @@ def main():
                 exe_cmd(sdir, cmd, debug, 'Find latest CMSSW release', log='cmssw_rel.log')
                 with open('cmssw_rel.log', 'r') as stream:
                     latest_release = stream.read().replace('\n', '').strip()
-            else:
-                print "Use %s release for deps" % latest_release
             rel_pkgs = []
             if  latest_release:
                 cmd  = 'source %s; echo "N" | apt-get install %s' % (apt_init, latest_release)
