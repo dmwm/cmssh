@@ -342,6 +342,9 @@ class MyOptionParser:
         self.parser.add_option("--unsupported", action="store_true",
             dest="unsupported",
             help="enforce installation on unsupported platforms, e.g. Ubuntu")
+        self.parser.add_option("--seed", action="store",
+            type="string", default="", dest="seed",
+            help="seed dependencies from given release")
 
     def get_opt(self):
         """Returns parse list of options"""
@@ -561,9 +564,10 @@ def main():
             cmd += '| egrep -v -i "fwlite|pre|patch"'
             cmd += "| awk '{print $1}' | tail -1"
             exe_cmd(sdir, cmd, debug, 'Find latest CMSSW release', log='cmssw_rel.log')
-            latest_release = ''
-            with open('cmssw_rel.log', 'r') as stream:
-                latest_release = stream.read().replace('\n', '').strip()
+            latest_release = opts.seed
+            if  not latest_release:
+                with open('cmssw_rel.log', 'r') as stream:
+                    latest_release = stream.read().replace('\n', '').strip()
             rel_pkgs = []
             if  latest_release:
                 cmd  = 'source %s; echo "N" | apt-get install %s' % (apt_init, latest_release)
