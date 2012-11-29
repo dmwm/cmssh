@@ -560,14 +560,16 @@ def main():
             cmd += 'apt-get update; '
             exe_cmd(sdir, cmd, debug, 'Init CMSSW apt repository', log='aptget.log')
             # get latest non-patched/non-pre release and find out package versions
-            cmd  = "source %s; apt-cache search CMSSW_ " % apt_init
-            cmd += '| egrep -v -i "fwlite|pre|patch"'
-            cmd += "| awk '{print $1}' | tail -1"
-            exe_cmd(sdir, cmd, debug, 'Find latest CMSSW release', log='cmssw_rel.log')
             latest_release = opts.seed
             if  not latest_release:
+                cmd  = "source %s; apt-cache search CMSSW_ " % apt_init
+                cmd += '| egrep -v -i "fwlite|pre|patch"'
+                cmd += "| awk '{print $1}' | tail -1"
+                exe_cmd(sdir, cmd, debug, 'Find latest CMSSW release', log='cmssw_rel.log')
                 with open('cmssw_rel.log', 'r') as stream:
                     latest_release = stream.read().replace('\n', '').strip()
+            else:
+                print "Use %s release for deps" % latest_release
             rel_pkgs = []
             if  latest_release:
                 cmd  = 'source %s; echo "N" | apt-get install %s' % (apt_init, latest_release)
