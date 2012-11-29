@@ -478,7 +478,10 @@ def cmsrel(rel):
 
     # get ROOT from run-time environment
     cmd = 'eval `scramv1 runtime -sh`; env | grep ^ROOTSYS='
-    stdout, _stderr = execmd(cmd)
+    stdout, stderr = execmd(cmd)
+    if  stderr:
+        print "While executing cmd=%s" % cmd
+        print_warning(stderr)
     rootsys = stdout.replace('\n', '').replace('ROOTSYS=', '')
     dst     = '%s/install/lib/release_root' % root
     if  os.path.exists(dst):
