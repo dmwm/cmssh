@@ -171,7 +171,7 @@ def find_cms_package(apt_init, pkg, debug=None, lookup=None, rel_pkgs=[]):
     if  debug:
         print cmd
     if  DEF_SCRAM_ARCH == 'osx107_amd64_gcc462':
-        rel_pkg = find_pkg(pkg, rel_pkgs)
+        rel_pkg = find_pkg(lookup, rel_pkgs)
         if  rel_pkg:
             name = rel_pkg
         elif  pkg == 'coral':
@@ -198,7 +198,7 @@ def find_cms_package(apt_init, pkg, debug=None, lookup=None, rel_pkgs=[]):
             vers = [r.replace('\n', '').split()[0] for r in res.stdout.readlines()]
             name = natsorted(vers)[-1]
     else:
-        rel_pkg = find_pkg(pkg, rel_pkgs)
+        rel_pkg = find_pkg(lookup, rel_pkgs)
         if  rel_pkg:
             name = rel_pkg
         else:
