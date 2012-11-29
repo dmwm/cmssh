@@ -89,7 +89,14 @@ def get_scram_arch():
         else:
             arch = 'slc5_ia32_gcc434'
         # test presence of readline
-        if not re.search("libreadline\.so\.5", subprocess.check_output(["/sbin/ldconfig", "-p"])):
+        if  hasattr(subprocess, "check_output"):
+            cond = re.search("libreadline\.so\.5", subprocess.check_output(["/sbin/ldconfig", "-p"]))
+        else:
+            cmd  = "/sbin/ldconfig -p"
+            res  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+            libs = [l for l in res.stdout.readlines() if l.find('libreadline.so.5') != -1]
+            cond = len(libs)
+        if  not cond:
             msg  = 'cmssh on Linux requires readline5. Please verify that'
             msg += ' you have it installed on your system.'
             raise Exception(msg)
