@@ -683,3 +683,40 @@ def qlxml_parser(source, prim_key):
         root.clear()
     source.close()
 
+### issue https://hypernews.cern.ch/HyperNews/CMS/get/swDevelopment/2730.html
+### following code helps to fix it
+def find_py_with_pat(directory, regex):
+    "Find all python files in a give directory which contains given regex pattern"
+    for root, dirs, files in os.walk(directory):
+        for fname in files:
+            if  fname.endswith('.py'):
+                path = os.path.join(root, fname)
+                content = open(path, 'r').read()
+                if  regex.findall(content):
+                    yield path
+
+def replace_so(fname):
+    "Helper function to replace .so extension in given python file name"
+    try:
+        nname = fname + '.tmp'
+        with open(fname, 'r') as fstream:
+            with open(nname, 'w') as nstream:
+                for line in fstream.readlines():
+                    if  line.find('gSystem.Load'):
+                        line = line.replace('.so', '')
+                    nstream.write(line)
+        os.remove(fname)
+        os.rename(nname, fname)
+    except:
+        pass
+
+def fix_so(idir):
+    """
+    Fix "so" extension in python code which loads shared libraries,
+    since it does not work on OSX, see
+    https://hypernews.cern.ch/HyperNews/CMS/get/swDevelopment/2730.html
+    """
+    regex = re.compile('gSystem.Load\("[a-zA-Z]+\.so"\)')
+    for fname in find_py_with_pat(idir, regex):
+        replace_so(fname)
+### end of issue
