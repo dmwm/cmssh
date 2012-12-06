@@ -43,14 +43,14 @@ The cmssh (CMS shell) is a part of <a href="http://cms.cern.ch/">CMS</a>
 software initiative to simplify your daily activity in CMS environment.
 It as combination of data discovery, file mover and release
 management tools in one user-friendly shell which runs on your favorite
-OS, Mac or Linux. The code is based on <a href="http://ipython.org/">IPython</a>
-and provides access to find your favorite data, to copy desired LFNs from/to
-storage elements and local disk, manage your CMS releases, etc.
-Since it is based on python you can extended as you wish, e.g.
-you can write your own code, use matplotlib, etc.
+OS, e.g. Mac or Linux. The code is based on <a href="http://ipython.org/">IPython</a>
+project and provides access to find your favorite data, copies LFNs from/to
+storage elements and local disk and manages your CMS releases, etc.
+Python code base allows you to extend it in any direction and use
+any 3-d party python libraries.
 
-A brief introduction of cmssh capabilities are outlined in this
-<a href="images/cmssh.pdf">talk</a>.
+A brief introduction of cmssh capabilities is outlined in
+<a href="https://indico.cern.ch/conferenceDisplay.py?confId=217263">cmssh tutorial</a>.
 
 </p>
 
@@ -58,13 +58,13 @@ A brief introduction of cmssh capabilities are outlined in this
 <ul>
 <li>
 cmssh relies on usage of your GRID certificate. Please ensure that
-it is located in usual $HOME/.globus area, e.g. you should have there
+it is located in $HOME/.globus area, e.g. you should have there
 your private key (userkey.pem) and public certificate (usercert.pem).
 </li>
 <li>
-cmssh supports access to RunSummary data-service located at P5. The
-access to this service requires CERN SSO authentication. In order to gain the access
-please check that your user certificate is mapped at
+cmssh supports access to CMS RunSummary data-service. The access to this
+service requires CERN SSO authentication. To make it work please check that
+your user certificate is mapped at
 https://ca.cern.ch/ca/Certificates/MapCertificate.aspx
 </li>
 <li>
@@ -78,14 +78,14 @@ and <a href="http://bit.ly/NoAmkv">Java</a>.
 </ul>
 
 <h1>Installation</h1>
-To install cmssh please download installer
+To install cmssh please download 
 <a href="https://raw.github.com/dmwm/cmssh/1.0.0/cmssh_install.py">installer script</a>
 and run it as
 <pre>
 python cmssh_install.py --help
 </pre>
 It will print out all options you can use during install procedure. Most of the time
-you'll run it as
+you'll run it as simple as
 <pre>
 python cmssh_install.py --install --dir=$PWD
 </pre>
