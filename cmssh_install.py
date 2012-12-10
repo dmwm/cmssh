@@ -341,7 +341,7 @@ class MyOptionParser:
             help="install cmssh in multi-user environment")
         self.parser.add_option("--unsupported", action="store_true",
             dest="unsupported",
-            help="enforce installation on unsupported platforms, e.g. Ubuntu")
+            help="enforce installation on unsupported CMS platforms, e.g. non SLC Linux")
         self.parser.add_option("--seed", action="store",
             type="string", default="", dest="seed",
             help="seed dependencies from given release")
