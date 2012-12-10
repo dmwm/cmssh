@@ -10,6 +10,12 @@ mkdir
 find dataset=*CRUZET3*RAW
 for r in results(): print r, type(r)
 
+# Use different DBS instances
+dbs_instance cms_dbs_prod_global
+find dataset=/Z0*
+dbs_instance cms_dbs_ph_analysis_02
+find dataset=/Z0*
+
 # info about file/dataset/run
 ls /Cosmics/CRUZET3-v1/RAW
 info /Cosmics/CRUZET3-v1/RAW
