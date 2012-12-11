@@ -563,7 +563,7 @@ def main():
             latest_release = opts.seed
             if  not latest_release:
                 cmd  = "source %s; apt-cache search CMSSW_ " % apt_init
-                cmd += '| egrep -v -i "fwlite|pre|patch"'
+                cmd += '| egrep -v -i "fwlite|pre|patch|dqm"'
                 cmd += "| awk '{print $1}' | tail -1"
                 exe_cmd(sdir, cmd, debug, 'Find latest CMSSW release', log='cmssw_rel.log')
                 with open('cmssw_rel.log', 'r') as stream:
