@@ -27,9 +27,11 @@ from   cmssh.regex import pat_dataset, pat_block, pat_lfn, pat_run
 
 def list_datasets(kwargs):
     """Find sites"""
-    dataset = kwargs.pop('dataset')
-#    query  = 'find dataset, dataset.createdate, dataset.createby, dataset.moddate, dataset.modby, datatype, dataset.status where dataset=%s' % dataset
-    query  = 'find dataset where dataset=%s' % dataset
+    if  kwargs.has_key('dataset'):
+        dataset = kwargs.pop('dataset')
+        query   = 'find dataset where dataset=%s' % dataset
+    else:
+        query   = 'find dataset where dataset=*'
     if  kwargs.has_key('status'):
         kwargs['dataset.status'] = kwargs['status']
         del kwargs['status']
