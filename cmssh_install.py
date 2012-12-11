@@ -830,6 +830,8 @@ def main():
         ver  = None
         args = None
         env_list = []
+        if  pkg.lower() == 'feedparser':
+            ver = '5.1.2' # tested
         if  pkg.lower() == 'pyopenssl':
             # use 0.12 version of pyOpenSSL due to
             # http://stackoverflow.com/questions/7340784/easy-install-pyopenssl-error
