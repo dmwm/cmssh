@@ -49,8 +49,8 @@ read config.txt
 read https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookFWLitePython
 
 # list/copy LFN to local disk
-ls /store/data/CRUZET3/Cosmics/RAW/v1/000/050/832/186585EC-024D-DD11-B747-000423D94AA8.root
-cp /store/data/CRUZET3/Cosmics/RAW/v1/000/050/832/186585EC-024D-DD11-B747-000423D94AA8.root .
+ls /store/data/Run2012A/ElectronHad/AOD/PromptReco-v1/000/193/686/58802521-EF9A-E111-9EE7-BCAEC518FF50.root
+cp /store/data/Run2012A/ElectronHad/AOD/PromptReco-v1/000/193/686/58802521-EF9A-E111-9EE7-BCAEC518FF50.root .
 ls -l
 
 # SE operations, e.g. list its content, create/delete directory, etc.
@@ -63,28 +63,28 @@ rmdir T3_US_Cornell:/store/user/valya/foo
 ls T3_US_Cornell:/store/user/valya
 
 # copy local file to SE
-cp 186585EC-024D-DD11-B747-000423D94AA8.root T3_US_Cornell:/store/user/valya
+cp 58802521-EF9A-E111-9EE7-BCAEC518FF50.root T3_US_Cornell:/store/user/valya
 ls T3_US_Cornell:/store/user/valya
 ls -l
-rm 186585EC-024D-DD11-B747-000423D94AA8.root
+rm 58802521-EF9A-E111-9EE7-BCAEC518FF50.root
 
 # copy LFN from SE to local disk
-cp T3_US_Cornell:/store/user/valya/186585EC-024D-DD11-B747-000423D94AA8.root .
+cp T3_US_Cornell:/store/user/valya/58802521-EF9A-E111-9EE7-BCAEC518FF50.root .
 ls -l
 
 # delete file on SE
-rm T3_US_Cornell:/xrootdfs/cms/store/user/valya/186585EC-024D-DD11-B747-000423D94AA8.root
+rm T3_US_Cornell:/xrootdfs/cms/store/user/valya/58802521-EF9A-E111-9EE7-BCAEC518FF50.root
 ls T3_US_Cornell:/store/user/valya
 
 # copy LFN to SE area
-cp /store/data/CRUZET3/Cosmics/RAW/v1/000/050/832/186585EC-024D-DD11-B747-000423D94AA8.root T3_US_Cornell:/store/user/valya
+cp /store/data/Run2012A/ElectronHad/AOD/PromptReco-v1/000/193/686/58802521-EF9A-E111-9EE7-BCAEC518FF50.root T3_US_Cornell:/store/user/valya
 ls T3_US_Cornell:/store/user/valya
-rm T3_US_Cornell:/xrootdfs/cms/store/user/valya/186585EC-024D-DD11-B747-000423D94AA8.root
+rm T3_US_Cornell:/xrootdfs/cms/store/user/valya/58802521-EF9A-E111-9EE7-BCAEC518FF50.root
 ls T3_US_Cornell:/store/user/valya
 
 # copy multiple files
-cp /store/data/CRUZET3/Cosmics/RAW/v1/000/050/832/186585EC-024D-DD11-B747-000423D94AA8.root . &
-cp /store/data/CRUZET3/Cosmics/RAW/v1/000/050/796/4E1D3610-E64C-DD11-8629-001D09F251FE.root . &
+cp /store/data/Run2012A/ElectronHad/AOD/PromptReco-v1/000/193/686/58802521-EF9A-E111-9EE7-BCAEC518FF50.root . &
+cp /store/data/Run2012A/ElectronHad/AOD/PromptReco-v1/000/190/450/84087548-ED80-E111-A737-0025901D5D80.root . &
 jobs
 
 # copy user file from T1 tier
