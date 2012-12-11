@@ -947,9 +947,9 @@ def integration_tests(_arg):
         if  os.path.isfile(fname):
             os.remove(fname)
     lfn       = \
-    '/store/data/CRUZET3/Cosmics/RAW/v1/000/050/832/186585EC-024D-DD11-B747-000423D94AA8.root'
+    '/store/data/Run2012A/ElectronHad/AOD/PromptReco-v1/000/193/686/58802521-EF9A-E111-9EE7-BCAEC518FF50.root'
     lfn2      = \
-    '/store/data/CRUZET3/Cosmics/RAW/v1/000/050/796/4E1D3610-E64C-DD11-8629-001D09F251FE.root'
+    '/store/data/Run2012A/ElectronHad/AOD/PromptReco-v1/000/190/450/84087548-ED80-E111-A737-0025901D5D80.root'
     dataset   = '/PhotonHad/Run2011A-PromptReco-v1/RECO'
     dataset2  = '/SUSY_LM9_sftsht_8TeV-pythia6/Summer12-START50_V13-v1/GEN-SIM'
     run       = 160915
@@ -958,7 +958,7 @@ def integration_tests(_arg):
     cmd_list += ['ls', 'mkdir ttt', 'ls -l', 'rmdir ttt', 'ls']
     cmd_list += ['ls dataset=%s' % dataset, 'ls run=%s' % run, 'ls file=%s' % lfn]
     cmd_list += ['ls %s' % dataset, 'info %s' % dataset]
-    cmd_list += ['find dataset=/ZMM*', 'das dataset=/ZMM*']
+    cmd_list += ['find dataset=/ZMM*', 'das dataset=/ZMM*', 'find dataset file=%s' % lfn]
     cmd_list += ['find lumi dataset=%s' % dataset,
                  'find lumi {"190704":[1,2,3]}',
                  'find lumi {190704:[1,2,3]}']
