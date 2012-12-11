@@ -44,7 +44,7 @@ find config dataset=/SUSY_LM9_sftsht_8TeV-pythia6/Summer12-START50_V13-v1/GEN-SI
 
 # read commands
 read https://cmsweb.cern.ch/couchdb/reqmgr_config_cache/7a2f69a2a0a6df3bf57ebd6586f184e1/configFile
-find config dataset=/SUSY_LM9_sftsht_8TeV-pythia6/Summer12-START50_V13-v1/GEN-SIM > config.txt
+read https://cmsweb.cern.ch/couchdb/reqmgr_config_cache/7a2f69a2a0a6df3bf57ebd6586f184e1/configFile > config.txt
 read config.txt
 read https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookFWLitePython
 
