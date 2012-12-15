@@ -85,7 +85,11 @@ def get_data_helper(url, kwargs=None, headers=None,
     else:
         res = urllib2.urlopen(req)
     if  decoder == 'json':
-        data = json.load(res)
+        try:
+            data = json.load(res)
+        except Exception as err:
+            data = {}
+            print_error(str(err))
     else:
         data = res.read()
     return data
