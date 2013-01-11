@@ -663,7 +663,7 @@ def main():
 
     print "Install CRAB"
     os.chdir(path)
-    crab_ver = 'CRAB_2_8_4.patch_2'
+    crab_ver = 'CRAB_2_8_4_patch2'
     url = 'http://cmsdoc.cern.ch/cms/ccs/wm/www/Crab/Docs/%s.tgz' % crab_ver
     if  not is_installed(url, path):
         get_file(url, 'crab.tar.gz', path, debug)
