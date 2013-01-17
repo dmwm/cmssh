@@ -1002,7 +1002,7 @@ coral_init()
 {
     coral=$CORAL_DIR/$SCRAM_ARCH
     coral_external=$CORAL_DIR/external/$SCRAM_ARCH/lib
-    export PYTHONPATH=$PYTHONPATH:$PWD:$coral/python:$coral/lib:$coral_external
+    export PYTHONPATH=$PYTHONPATH:$CMSSH_ROOT:$coral/python:$coral/lib:$coral_external
     export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$coral/lib:$coral_external
     export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$coral/lib:$coral_external
     if [ -f $CORAL_DIR/$SCRAM_ARCH/lib/liblcg_PyCoral.dylib ]; then
@@ -1083,7 +1083,7 @@ coral_init()
         msg += 'export PYTHONPATH=$PYTHONPATH:$CMSSH_ROOT\n'
         msg += 'export PYTHONPATH=$PYTHONPATH:$CMSSH_ROOT/CRABClient/src/python\n'
         msg += 'export PYTHONPATH=$PYTHONPATH:$CMSSH_ROOT/WMCore/src/python\n'
-        msg += 'export PYTHONPATH=$PWD/soft/install/lib/python%s/site-packages:$PYTHONPATH\n' % pver
+        msg += 'export PYTHONPATH=$CMSSH_ROOT/install/lib/python%s/site-packages:$PYTHONPATH\n' % pver
         msg += 'export DBS_INSTANCE=cms_dbs_prod_global\n'
         msg += 'export LCG_GFAL_INFOSYS=lcg-bdii.cern.ch:2170\n'
         msg += 'export VOMS_USERCONF=$CMSSH_ROOT/glite/etc/vomses\n'
