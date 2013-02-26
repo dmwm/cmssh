@@ -666,9 +666,12 @@ def main():
     crab_ver = 'CRAB_current'
     url = 'http://cmsdoc.cern.ch/cms/ccs/wm/www/Crab/Docs/%s.tgz' % crab_ver
     if  not is_installed(url, path):
-        get_file(url, 'crab.tar.gz', path, debug)
-        cmd = 'cd %s; ./configure' % crab_ver
-        exe_cmd(path, cmd, debug, log='crab.log')
+        try:
+            get_file(url, 'crab.tar.gz', path, debug)
+            cmd = 'cd %s; ./configure' % crab_ver
+            exe_cmd(path, cmd, debug, log='crab.log')
+        except:
+            print "Unable to fetch CRAB tar ball, will skip this step"
 
     print "Install WMCore"
     ver = '0.8.21'
@@ -823,7 +826,7 @@ def main():
         stream.write(pc_file(prefix, name, ver, lib, inc))
     # install standard libraries
     std_pkgs = ['Routes', 'python-dateutil', 'decorator',
-            'pyOpenSSL', 'paramiko', 'pyzmq', 'tornado',
+            'pyOpenSSL', 'paramiko', 'pyzmq', 'tornado', 'pytz', 'pycrypto',
             'numpy', 'matplotlib', 'html2text', 'feedparser',
     ]
     for pkg in std_pkgs:
