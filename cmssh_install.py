@@ -1107,6 +1107,8 @@ coral_init()
         else:
             msg += 'export CMS_JSON=None\n'
         msg += 'coral_init\n'
+        cmssw = opts.cmssw if opts.cmssw else ''
+        msg += 'export CMSSH_CMSSW=%s\n' % cmssw
         msg += 'echo " DONE"'
         if  debug:
             print "+++ write setup.sh"
@@ -1170,7 +1172,7 @@ fi
 if [ ! -d $ipdir/profile_cmssh ]; then
     mkdir -p $ipdir/profile_cmssh
 fi
-if [ -f /tmp/$USER/.ipython/extensions/cmssh_extension.py ]; then
+if [ -f $ipdir/extensions/cmssh_extension.py ]; then
     /bin/rm -f /tmp/$USER/.ipython/extensions/cmssh_extension.py
 fi
 if [ ! -f $ipdir/extensions/cmssh_extension.py ]; then
