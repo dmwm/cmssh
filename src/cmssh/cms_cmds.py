@@ -355,7 +355,7 @@ def cms_install(rel):
         return
 
     # check if we have stand-alone installation
-    if  os.path.islink(os.environ['VO_CMS_SW_DIR']):
+    if  os.environ.get('CMSSH_CMSSW', None):
         msg  = '\nYou are not allowed to install new release, '
         msg += 'since cmssh was installed with system CMSSW install area'
         print msg
@@ -385,6 +385,14 @@ def cms_install(rel):
         fix_so(idir)
     print "Create user area for %s release ..." % rel
     cmsrel(rel)
+
+def cmsenv(_arg):
+    "cmsenv command"
+    # in CMS cmsenv is an alias to: eval `scramv1 runtime -sh`'
+    msg  = 'Within cmssh it is not required to use cmsenv\n'
+    msg += 'please use ' + msg_green('cmsrel') + ' command and '
+    msg += 'CMS release environment will be set for you'
+    print_info(msg)
 
 def cmsrel(rel):
     """
