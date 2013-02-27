@@ -25,7 +25,7 @@ from   cmssh.cms_cmds import cms_rm, cms_rmdir, cms_mkdir, cms_root, cms_xrdcp
 from   cmssh.cms_cmds import cms_install, cms_releases, cms_info, debug_http
 from   cmssh.cms_cmds import cmsrel, cmsrun, cms_help, cms_arch, cms_vomsinit
 from   cmssh.cms_cmds import cms_help_msg, results, cms_apt, cms_das, cms_das_json
-from   cmssh.cms_cmds import github_issues, demo, cms_json, cms_jobs
+from   cmssh.cms_cmds import github_issues, demo, cms_json, cms_jobs, cmsenv
 from   cmssh.cms_cmds import cms_lumi, integration_tests, cms_read
 from   cmssh.cms_cmds import cms_config, cms_commands, cms_pager
 
@@ -102,7 +102,7 @@ cmsMagicList = [ \
     ('env', Magic('env').execute),
     ('pip', Magic('pip').subprocess),
     # CMS commands
-    ('cmsenv', Magic('eval `scramv1 runtime -sh`').execute),
+    ('cmsenv', cmsenv),
     ('scram', Magic('scramv1').execute),
     ('vomsinit', cms_vomsinit),
     ('vomsinfo', Magic('voms-proxy-info').execute),
