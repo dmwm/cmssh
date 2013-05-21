@@ -681,6 +681,7 @@ def main():
 
     print "Install certificates"
     url = 'http://vdt.cs.wisc.edu/software/certificates/62/certificates-62-1.tar.gz'
+    url = 'http://dist.eugridpma.info/distribution/igtf/current/accredited/igtf-preinstalled-bundle-classic.tar.gz'
     if  not is_installed(url, path):
         get_file(url, 'certificates.tar.gz', path, debug)
 
