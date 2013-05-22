@@ -682,8 +682,12 @@ def main():
     print "Install certificates"
     url = 'http://vdt.cs.wisc.edu/software/certificates/62/certificates-62-1.tar.gz'
     url = 'http://dist.eugridpma.info/distribution/igtf/current/accredited/igtf-preinstalled-bundle-classic.tar.gz'
-    if  not is_installed(url, path):
-        get_file(url, 'certificates.tar.gz', path, debug)
+    opath = os.getcwd()
+    cpath = os.path.join(path, 'certificates')
+    if  not is_installed(url, cpath):
+        os.makedirs(cpath)
+        get_file(url, 'certificates.tar.gz', cpath, debug)
+    os.chdir(opath)
 
     # test local setup of GRID middleware (LCG/OSG)
     if  platform == 'Linux' and use_lcg:
