@@ -766,14 +766,23 @@ def main():
 
     print "Install pip"
     os.chdir(path)
-    url = 'https://raw.github.com/pypa/virtualenv/master/virtualenv.py'
+    ver = '1.10.1'
+    url = 'https://pypi.python.org/packages/source/v/virtualenv/virtualenv-%s.tar.gz' % ver
     if  not is_installed(url, path):
-        with open('virtualenv.py', 'w') as fname:
-            fname.write(getdata(url, debug))
-        cmd = cms_env + 'python %s/virtualenv.py %s/install' % (path, path)
+        get_file(url, 'virtualenv.tar.gz', path, debug) # it call add_url2packages
+        cmd = cms_env + 'python virtualenv.py %s/install' % path
         cmd += '; . %s/install/activate' % path
-        exe_cmd(path, cmd, debug, log='pip.log')
+        idir = '%s/virtualenv-%s' % (path, ver)
+        exe_cmd(idir, cmd, debug, log='pip.log')
         add_url2packages(url, path)
+#    url = 'https://raw.github.com/pypa/virtualenv/master/virtualenv.py'
+#    if  not is_installed(url, path):
+#        with open('virtualenv.py', 'w') as fname:
+#            fname.write(getdata(url, debug))
+#        cmd = cms_env + 'python %s/virtualenv.py %s/install' % (path, path)
+#        cmd += '; . %s/install/activate' % path
+#        exe_cmd(path, cmd, debug, log='pip.log')
+#        add_url2packages(url, path)
 
     # get list of installed packages in pip repository
     cmd = cms_env + '%s/install/bin/pip freeze' % path
