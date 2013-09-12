@@ -841,7 +841,7 @@ def main():
     # install standard libraries
     std_pkgs = ['Routes', 'python-dateutil', 'decorator',
             'pyOpenSSL', 'paramiko', 'pyzmq', 'tornado', 'pytz', 'pycrypto',
-            'numpy', 'matplotlib', 'html2text', 'feedparser',
+            'numpy', 'matplotlib', 'html2text', 'feedparser', 'jinja2',
     ]
     for pkg in std_pkgs:
         ver  = None
