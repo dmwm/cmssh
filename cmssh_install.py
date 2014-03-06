@@ -645,15 +645,24 @@ def main():
         os.chdir(os.path.join(path, 'expat-%s' % ver))
         exe_cmd(os.path.join(path, 'expat-%s' % ver), cmd, debug, log='expat.log')
 
+    # I need to clone whole CMSSW and then copy PythonUtilities into FWCore
+    print "Download CMSSW"
+    ver = 'CMSSW_7_0_X'
+    if  not os.path.isfile('%s.zip' % ver):
+	cmd = 'curl -L -O https://github.com/cms-sw/cmssw/archive/%s.zip' % ver
+	exe_cmd(path, cmd, debug)
+    cmssw_gdir = 'cmssw-%s' % ver
+    if  not os.path.isdir(cmssw_gdir):
+	cmd = 'unzip -qq %s.zip' % ver
+	exe_cmd(path, cmd, debug)
+
+    # install python utilities
     print "Install PythonUtilities"
-    url = "http://cmssw.cvs.cern.ch/cgi-bin/cmssw.cgi/CMSSW/FWCore/PythonUtilities.tar.gz?view=tar"
-    if  not is_installed(url, path):
-        get_file(url, 'PythonUtilities.tar.gz', path, debug)
-        cmd = 'touch __init__.py; mv python/*.py .'
-        exe_cmd(os.path.join(path, 'PythonUtilities'), cmd, debug)
-        os.chdir(path)
-        cmd = 'mkdir FWCore; touch FWCore/__init__.py; mv PythonUtilities FWCore'
-        exe_cmd(path, cmd, debug)
+    cmd = 'mkdir FWCore; touch FWCore/__init__.py'
+    exe_cmd(path, cmd, debug)
+    cmd = 'cp -r %s/FWCore/PythonUtilities/{python,scripts} FWCore' % cmssw_gdir
+    exe_cmd(path, cmd, debug)
+
 
 #    print "Install CRAB3"
 #    ver = '3.0.6a'
@@ -919,15 +928,13 @@ python setup.py install --prefix=$idir
 
     print "Install LumiDB"
     os.chdir(path)
-    url = 'http://cmssw.cvs.cern.ch/cgi-bin/cmssw.cgi/CMSSW/RecoLuminosity.tar.gz?view=tar'
-    if  not is_installed(url, path):
-        get_file(url, 'lumidb.tar.gz', path, debug)
-        dst = os.path.join(path, 'install/lib/python%s/site-packages/RecoLuminosity' % pver)
+    dst = os.path.join(path, 'install/lib/python%s/site-packages/RecoLuminosity' % pver)
+    if  not os.path.isdir(dst):
         try:
             os.makedirs(dst)
         except:
             pass
-        shutil.copytree('RecoLuminosity/LumiDB/python', os.path.join(dst, 'LumiDB'))
+        shutil.copytree('%s/RecoLuminosity/LumiDB/python' % cmssw_gdir, os.path.join(dst, 'LumiDB'))
         with open(os.path.join(dst, '__init__.py'), 'w') as init_file:
             init_file.write("")
         shutil.copy(os.path.join(dst, '__init__.py'), os.path.join(dst, 'LumiDB'))
