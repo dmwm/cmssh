@@ -1230,7 +1230,9 @@ if  [ $# == 1 ]; then
         export CMSSH_NOTEBOOK=1
     fi
 fi
-opts="$notebook $pylab"
+# TODO: fix pylab issue on OSX, upon load it claims that python is not installed as framework
+#opts="$notebook $pylab"
+opts="$notebook"
 ipython $opts --ipython-dir=$ipdir --profile=cmssh
 """ % {'path':path, 'pver':pver, 'mver': matplotlib_ver}
         cmssh.write(msg)
